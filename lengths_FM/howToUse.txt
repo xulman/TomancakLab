@@ -1,0 +1,13 @@
+Please, install this "enhanced" VolumeManager to your Fiji instalation.
+This can be achieved by replacing the VolumeManager*.jar file inside
+the 'plugins' folder with this file. Restart Fiji.
+
+- in Fiji, open VolumeManager (SCF -> ...), you don't need to open any image
+- go File -> Import from disc, and point it at your .zip file with the ROIs
+- go File -> Export -> Save current volume to text files and point it to
+  a folder, where __ROIcoords.txt files shall appear
+- you can close Fiji now
+
+- in Matlab, navigate to the folder where is the SOI.xml file
+- open the Proper_length_from_Fiji.m and edit the section with parameters
+- execute the script, or its pieces
