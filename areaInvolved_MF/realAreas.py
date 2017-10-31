@@ -1,4 +1,5 @@
 from ij import IJ
+from ij import ImagePlus
 import sys
 
 def readRealSizes():
@@ -22,4 +23,12 @@ def readRealSizes():
 
 	# and return the "2D pixel areas"
 	return realSizes;
+
+
+def checkSize2DarrayVsImgPlus(realSize, imp):
+	if (len(realSizes) != imp.width):
+		sys.exit('x dimension mismatch!')
+
+	if (len(realSizes[0]) != imp.height):
+		sys.exit('y dimension mismatch!')
 
