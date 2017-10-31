@@ -32,6 +32,9 @@ RoiD  = ij.ImagePlus.getRoi(bigImg)
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes();
 
+# test that sizes of realSizes and bigImg matches
+checkSize2DarrayVsImgPlus(realSizes, bigImg);
+
 RoiSize = 0
 for point in RoiD:
 	RoiSize += realSizes[point.x][point.y]

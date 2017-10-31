@@ -73,7 +73,8 @@ ip = imp.getProcessor()
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes();
 
-# TODO: test that sizes of realSizes and imp matches
+# test that sizes of realSizes and imp matches
+checkSize2DarrayVsImgPlus(realSizes, imp);
 
 
 backgroundPixelValue = 1 # in case of cell nuclei

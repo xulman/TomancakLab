@@ -92,7 +92,8 @@ for filename in os.listdir(InputFolder):
 	if imp != None:
 		ip = imp.getProcessor()
 
-		# TODO: test that sizes of realSizes and imp matches
+		# test that sizes of realSizes and imp matches
+		checkSize2DarrayVsImgPlus(realSizes, imp);
 		
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
