@@ -21,11 +21,16 @@ from ij.measure import ResultsTable
 import os
 import sys
 
+# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF"))
+# from realAreas import *
+execfile("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF/realAreas.py")
+
 #Get ROI
 bigImg = IJ.getImage()
 RoiD  = ij.ImagePlus.getRoi(bigImg)
 
-realSizes = [[1 for y in range(bigImg.height)] for x in range(bigImg.width)]
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes();
 
 RoiSize = 0
 for point in RoiD:

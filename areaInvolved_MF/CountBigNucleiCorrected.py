@@ -21,6 +21,10 @@ import os
 import sys
 from ij.measure import ResultsTable
 
+# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF"))
+# from realAreas import *
+execfile("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF/realAreas.py")
+
 class Nucleus:
 
 	def __init__(self,Pixels,Color):
@@ -65,6 +69,9 @@ class Nucleus:
 		self.circularity = abs(self.size - ((self.edgeSize**2)/(4*math.pi)))/self.size # lower value means higher circulatriy
 
 
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes();
+
 #Choose input folder
 
 #dc1 = DirectoryChooser("Choose your input folder")
@@ -83,8 +90,9 @@ for filename in os.listdir(InputFolder):
 	imp = IJ.openImage(InputFolder+filename)
 	
 	if imp != None:
-		realSizes = [[1 for y in range(imp.height)] for x in range(imp.width)]
 		ip = imp.getProcessor()
+
+		# TODO: test that sizes of realSizes and imp matches
 		
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
