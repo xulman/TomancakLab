@@ -42,6 +42,6 @@ aux_coord    = aux_g.apply();
 % pullbacked/unwrapped image and holds z,y,x, respectively, component of original 3D coordinate
 % of every pixel, now save it (while preserving and not-scaling the real values)
 [s_file,s_path,s_filter]=uiputfile([chart,'.txt'],'Save the files with pixel coordinates');
-dlmwrite([s_path,'/',s_file(1:end-4),'_Z',s_file(end-3:end)],aux_coord{1,1},' ');
-dlmwrite([s_path,'/',s_file(1:end-4),'_Y',s_file(end-3:end)],aux_coord{1,2},' ');
-dlmwrite([s_path,'/',s_file(1:end-4),'_X',s_file(end-3:end)],aux_coord{1,3},' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'_Z',s_file(end-3:end)],corResFactor*aux_coord{1,1},' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'_Y',s_file(end-3:end)],corResFactor*aux_coord{1,2},' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'_X',s_file(end-3:end)],corResFactor*aux_coord{1,3},' ');
