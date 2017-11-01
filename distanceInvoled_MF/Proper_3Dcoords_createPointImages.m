@@ -29,7 +29,7 @@ for z = zInterval(1):zInterval(2),
 
 	% query the original pixel (rounded) coordinates
 	slice = zeros(ySize,xSize);
-	for point = fittingPoints,
+	for point = fittingPoints',
 		slice(round(Y(point))-yInterval(1)+1, round(X(point))-xInterval(1)+1) = 1;
 	end
 
