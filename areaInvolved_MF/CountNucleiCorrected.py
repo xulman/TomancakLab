@@ -1,4 +1,5 @@
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@File (label="Pixel areas map:") aMapFile
 #
 # This script counts the nuclei in a given ROI over time.
 # It takes a folder of binary images and the ROI as input, and then displays a table
@@ -30,7 +31,7 @@ bigImg = IJ.getImage()
 RoiD  = ij.ImagePlus.getRoi(bigImg)
 
 # reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes();
+realSizes = readRealSizes(aMapFile.getAbsolutePath());
 
 # test that sizes of realSizes and bigImg matches
 checkSize2DarrayVsImgPlus(realSizes, bigImg);

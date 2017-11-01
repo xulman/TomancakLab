@@ -1,6 +1,7 @@
 #@int(label="A big nucleus is everything bigger than ... Pixels", value=100) bigBorder
 #@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)", value=0.5) maxCircularity
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@File (label="Pixel areas map:") aMapFile
 #@File (style="directory", label="Input directory") inputDir
 
 # This script counts all the nuclei, that are nearly circular and bigger than a given threshold.
@@ -70,7 +71,7 @@ class Nucleus:
 
 
 # reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes();
+realSizes = readRealSizes(aMapFile.getAbsolutePath());
 
 #Choose input folder
 

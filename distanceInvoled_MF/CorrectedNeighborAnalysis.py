@@ -149,8 +149,8 @@ for pix in CirclePixelsSorted:
 CirclePixels2D[ActualColumn] = deepcopy(ActualColumnPixels)	
 
 #Calculate the 'real Coordinates', that take into account the different pixel sizes
-realCoordinates = readRealCoords(xMapFile,yMapFile,zMapFile);
-maxim = [len(xMapFile), len(xMapFile[0])];
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath());
+maxim = [len(realCoordinates), len(realCoordinates[0])];
 
 # Process the images
 for filename in os.listdir(InputFolder):
