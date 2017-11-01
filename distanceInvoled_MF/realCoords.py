@@ -2,7 +2,7 @@ from ij import IJ
 from ij import ImagePlus
 import sys
 
-def readRealCoords():
+def readRealCoordsUI():
 	# ask for input files
 	XcoordFile = IJ.getFilePath("Choose your X pixel coordinates, Matlab exported file:")
 	YcoordFile = IJ.getFilePath("Choose your Y pixel coordinates, Matlab exported file:")

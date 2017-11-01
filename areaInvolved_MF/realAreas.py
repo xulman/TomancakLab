@@ -2,7 +2,7 @@ from ij import IJ
 from ij import ImagePlus
 import sys
 
-def readRealSizes():
+def readRealSizesUI():
 	# ask for input file
 	AreaFile = IJ.getFilePath("Choose your pixel areas, Matlab exported file:")
 	if (AreaFile is None):
