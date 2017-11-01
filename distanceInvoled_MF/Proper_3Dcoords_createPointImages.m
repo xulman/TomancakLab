@@ -42,4 +42,15 @@ fittingPoints = find(zInterval(1) <= Z & Z <= zInterval(2) ...
                    & xInterval(1) <= X & X <= xInterval(2) ...
                    & yInterval(1) <= Y & Y <= yInterval(2));
 
-plot3(X(fittingPoints),Y(fittingPoints),Z(fittingPoints),'+');
+%% open it full, if you're brave enough :)
+plot3(X(fittingPoints),Y(fittingPoints),Z(fittingPoints),'.');
+
+%% reduced number of points for Matlab plotting
+reductionFactor=100;
+fittingPointsB=fittingPoints([1:reductionFactor:size(fittingPoints)]);
+plot3(X(fittingPointsB),Y(fittingPointsB),Z(fittingPointsB),'.');
+
+%% add axis legends:
+xlabel('X')
+ylabel('Y')
+zlabel('Z')
