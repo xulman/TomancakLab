@@ -14,12 +14,10 @@ xInterval = [ floor(min(X(:))), ceil(max(X(:))) ];
 yInterval = [ floor(min(Y(:))), ceil(max(Y(:))) ];
 zInterval = [ floor(min(Z(:))), ceil(max(Z(:))) ];
 
-
 %% sweep the z-slices
 % determine the output image size
 xSize = xInterval(2) - xInterval(1) +1;
 ySize = yInterval(2) - yInterval(1) +1;
-slice = zeros(ySize,xSize);
 
 % and create images
 for z = zInterval(1):zInterval(2),
@@ -30,10 +28,18 @@ for z = zInterval(1):zInterval(2),
 	                   & yInterval(1) <= Y & Y <= yInterval(2));
 
 	% query the original pixel (rounded) coordinates
+	slice = zeros(ySize,xSize);
 	for point = fittingPoints,
 		slice(round(Y(point))-yInterval(1)+1, round(X(point))-xInterval(1)+1) = 1;
 	end
 
-	['saving slice z=',z]
-	dlmwrite(['~/img__',z,'.txt'],slice,' ');
+	['saving slice z=',num2str(z-zInterval(1))]
+	imwrite(slice,['~/img__',num2str(z-zInterval(1)),'.tif']);
 end
+
+%% Matlab internal plotting
+fittingPoints = find(zInterval(1) <= Z & Z <= zInterval(2) ...
+                   & xInterval(1) <= X & X <= xInterval(2) ...
+                   & yInterval(1) <= Y & Y <= yInterval(2));
+
+plot3(X(fittingPoints),Y(fittingPoints),Z(fittingPoints),'+');
