@@ -3,13 +3,21 @@ from ij import ImagePlus
 import sys
 
 def readRealSizes():
-
+	# ask for input file
 	AreaFile = IJ.getFilePath("Choose your pixel areas, Matlab exported file:")
 	if (AreaFile is None):
 			sys.exit('User canceled Dialog!')
 
+	# and the call the main worker
+	return readRealSizes(AreaFile)
+
+
+def readRealSizes(aFile):
+	if (aFile is None):
+			sys.exit('Missing input file!')
+
 	# open the selected file
-	IJ.run("Text Image... ", "open="+AreaFile);
+	IJ.run("Text Image... ", "open="+aFile);
 
 	# get pixel 1D array, and image sizes
 	imp = IJ.getImage();
@@ -25,10 +33,10 @@ def readRealSizes():
 	return realSizes;
 
 
-def checkSize2DarrayVsImgPlus(realSize, imp):
-	if (len(realSizes) != imp.width):
+def checkSize2DarrayVsImgPlus(array, imp):
+	if (len(array) != imp.width):
 		sys.exit('x dimension mismatch!')
 
-	if (len(realSizes[0]) != imp.height):
+	if (len(array[0]) != imp.height):
 		sys.exit('y dimension mismatch!')
 

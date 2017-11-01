@@ -11,7 +11,7 @@ def readRealCoords():
 			sys.exit('User canceled Dialog!')
 
 	# and the call the main worker
-	readRealCoords(XcoordFile,YcoordFile,ZcoordFile)
+	return readRealCoords(XcoordFile,YcoordFile,ZcoordFile)
 
 
 def readRealCoords(xFile, yFile, zFile):
@@ -31,28 +31,28 @@ def readRealCoords(xFile, yFile, zFile):
 	#y:
 	IJ.run("Text Image... ", "open="+yFile);
 	imp = IJ.getImage();
-	checkSize2DarrayVsImgPlus(rawPixelsX, imp);
+	checkSizeExplicitVsImgPlus(ww,hh, imp);
 	rawPixelsY = imp.getProcessor().getPixels();
 	imp.close();
 
 	#z:
 	IJ.run("Text Image... ", "open="+zFile);
 	imp = IJ.getImage();
-	checkSize2DarrayVsImgPlus(rawPixelsX, imp);
+	checkSizeExplicitVsImgPlus(ww,hh, imp);
 	rawPixelsZ = imp.getProcessor().getPixels();
 	imp.close();
 
-	# convert the data array to "2D image", and close it
+	# convert the data array to "3D image"
 	real3DCoords = [[ [rawPixelsX[y*ww +x],rawPixelsY[y*ww +x],rawPixelsZ[y*ww +x]] for y in range(hh)] for x in range(ww)]
 
-	# and return the "2D pixel areas"
+	# and return it
 	return real3DCoords;
 
 
-def checkSize2DarrayVsImgPlus(realSize, imp):
-	if (len(realSizes) != imp.width):
+def checkSizeExplicitVsImgPlus(ww,hh, imp):
+	if (ww != imp.width):
 		sys.exit('x dimension mismatch!')
 
-	if (len(realSizes[0]) != imp.height):
+	if (hh != imp.height):
 		sys.exit('y dimension mismatch!')
 
