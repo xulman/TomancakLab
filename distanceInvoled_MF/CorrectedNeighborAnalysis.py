@@ -1,5 +1,8 @@
-#@int (label="Search radius:", value=50) R
+#@int (label="Search radius [microns]:", value=50) R
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
 #@File (style="directory", label="Input directory") inputDir
 #@File (style="directory", label="Output directory") outputDir
 
@@ -27,6 +30,10 @@ from math import floor
 from ij.process import FloatProcessor
 from ij.io import DirectoryChooser, FileSaver
 from ij.measure import ResultsTable
+
+# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/distanceInvolved_MF"))
+# from realCoords import *
+execfile("/Users/ulman/p_Akanksha/git_repo/distanceInvolved_MF/realCoords.py")
 
 #Function that helps sorting Pixels
 def PixelKey(pix):
@@ -90,8 +97,6 @@ for filename in os.listdir(InputFolder):
 if FirstImage == None:
 	sys.exit('No images in input folder ' + InputFolder + '!')
 	
-realSizes = [[float(randint(1,3)) for y in range(FirstImage.height)] for x in range(FirstImage.width)]
-
 
 #Create a Circle
 
@@ -144,22 +149,8 @@ for pix in CirclePixelsSorted:
 CirclePixels2D[ActualColumn] = deepcopy(ActualColumnPixels)	
 
 #Calculate the 'real Coordinates', that take into account the different pixel sizes
-
-realCoordinates = [[[0.0,0.0] for y in range(FirstImage.height)] for x in range(FirstImage.width)]
-for i in range(1, FirstImage.width):
-	realCoordinates[i][0] = [realCoordinates[i-1][0][0] + realSizes[i-1][0], 0.0]
-
-for i in range(1, FirstImage.height):
-	realCoordinates[0][i] = [0.0, realCoordinates[0][i-1][1] + realSizes[0][i-1]]
-
-for x in range (1, FirstImage.width):
-	for y in range (1, FirstImage.height):
-		realX = realCoordinates[x-1][y][0] + realSizes[x-1][y]
-		realY = realCoordinates[x][y-1][1] + realSizes[x][y-1]
-		realCoordinates[x][y] = [copy(realX), copy(realY)]
-    
-
-maxim = [floor(realCoordinates[FirstImage.width-1][FirstImage.height-1][0]),floor(realCoordinates[FirstImage.width-1][FirstImage.height-1][1])]
+realCoordinates = readRealCoords(xMapFile,yMapFile,zMapFile);
+maxim = [len(xMapFile), len(xMapFile[0])];
 
 # Process the images
 for filename in os.listdir(InputFolder):
@@ -209,12 +200,14 @@ for filename in os.listdir(InputFolder):
 			Pixels = ColorAndPixels[Color]
 			sumX = 0
 			sumY = 0
+			sumZ = 0
 			for pix in Pixels:
 				sumX += realCoordinates[pix[0]][pix[1]][0]
 				sumY += realCoordinates[pix[0]][pix[1]][1]
+				sumZ += realCoordinates[pix[0]][pix[1]][2]
 		
-					
-			NucleiCenters[Color] = [sumX/len(Pixels),sumY/len(Pixels)]
+			# the real (in micron units) 3D coordinate of nuclei centre
+			NucleiCenters[Color] = [sumX/len(Pixels),sumY/len(Pixels),sumZ/len(Pixels)]
 
 		# Later, we will just have to search for neighbors in the boxes that are partly or fully inside the search radius,
 		# and not in the whole image. 
@@ -225,7 +218,7 @@ for filename in os.listdir(InputFolder):
 		
 		
 		for Color in NucleiCenters:
-			center = NucleiCenters[Color]
+			center = [ NucleiCenters[Color][0],NucleiCenters[Color][1] ]
 			box = GiveBox(center)
 			boxes[box[0]][box[1]].append(Color)
 
@@ -235,14 +228,15 @@ for filename in os.listdir(InputFolder):
 		neighbors = {}
 		
 		for Color in NucleiCenters:
-			center = NucleiCenters[Color]
+			MyCenter = NucleiCenters[Color]
+			center = [ NucleiCenters[Color][0],NucleiCenters[Color][1] ]
 			boxesInside = BoxesInside(center)
 			numberOfNeighbors = 0
 			for box in boxesInside:
 				for Nucl in boxes[box[0]][box[1]]:
 					# test if this nucleus is inside the search radius
 					OtherCenter = NucleiCenters[Nucl]
-					distanceSquared = (OtherCenter[0] - center[0])**2 + (OtherCenter[1] - center[1])**2
+					distanceSquared = (OtherCenter[0] - MyCenter[0])**2 + (OtherCenter[1] - MyCenter[1])**2 + (OtherCenter[2] - MyCenter[2])**2
 					if distanceSquared < R**2:
 						numberOfNeighbors +=1
 					
@@ -283,7 +277,7 @@ for filename in os.listdir(InputFolder):
 		# Add values to the table
 		for Color in neighbors:
 			table.incrementCounter()
-			table.addValue('Center of nucleus', str(round(NucleiCenters[Color][0],2))+", "+str(round(NucleiCenters[Color][1],2)))
+			table.addValue('Center of nucleus', str(round(NucleiCenters[Color][0],2))+", "+str(round(NucleiCenters[Color][1],2))+", "+str(round(NucleiCenters[Color][2],2)))
 			table.addValue('Number of neighbors within radius '+str(R),neighbors[Color])
 
 		table.show('Results')
@@ -298,4 +292,4 @@ for filename in os.listdir(InputFolder):
 
 print
 print("All files processed.")
-	
+
