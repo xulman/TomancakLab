@@ -31,6 +31,16 @@ import struct
 from ij.process import ImageConverter
 from ij.gui import Plot
 
+# this section adds a folder, in which this very script is living,
+# to the current search paths so that we can import our "library script"
+import sys.path
+import os.path
+import inspect
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+
+# import our "library script"
+from realCoords import *
+
 #Choose input folder and location of output folders
 #dc1 = DirectoryChooser("Choose your input folder")
 #InputFolder = dc1.getDirectory()

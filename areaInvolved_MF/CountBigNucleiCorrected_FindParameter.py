@@ -20,9 +20,15 @@ import math
 from ij.io import DirectoryChooser 
 from ij.process import ColorProcessor 
 
-# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF"))
-# from realAreas import *
-execfile("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF/realAreas.py")
+# this section adds a folder, in which this very script is living,
+# to the current search paths so that we can import our "library script"
+import sys.path
+import os.path
+import inspect
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+
+# import our "library script"
+from importsFromImSAnE import *
 
 class Nucleus:
 

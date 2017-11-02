@@ -20,10 +20,15 @@ import math
 import os
 import sys
 
-# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/distanceInvolved_MF"))
-# from realCoords import *
-execfile("/Users/ulman/p_Akanksha/git_repo/distanceInvoled_MF/realCoords.py")
-execfile("/Users/ulman/p_Akanksha/git_repo/areaInvolved_MF/realAreas.py")
+# this section adds a folder, in which this very script is living,
+# to the current search paths so that we can import our "library script"
+import sys.path
+import os.path
+import inspect
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+
+# import our "library script"
+from importsFromImSAnE import *
 
 
 # reads the 3D coordinates for every pixel, coordinates are in units of microns

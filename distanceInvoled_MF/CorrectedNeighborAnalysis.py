@@ -31,9 +31,15 @@ from ij.process import FloatProcessor
 from ij.io import DirectoryChooser, FileSaver
 from ij.measure import ResultsTable
 
-# sys.path.append(os.path.abspath("/Users/ulman/p_Akanksha/git_repo/distanceInvolved_MF"))
-# from realCoords import *
-execfile("/Users/ulman/p_Akanksha/git_repo/distanceInvoled_MF/realCoords.py")
+# this section adds a folder, in which this very script is living,
+# to the current search paths so that we can import our "library script"
+import sys.path
+import os.path
+import inspect
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+
+# import our "library script"
+from importsFromImSAnE import *
 
 #Function that helps sorting Pixels
 def PixelKey(pix):
