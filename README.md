@@ -21,12 +21,15 @@ folder of this repository) in the forms of Fiji plug-ins, Fiji scripts, or
 Matlab scripts that together allow to carry on certain correct(ed)
 measurements on the wrapped images.
 
-The folder names contains a suffix: 'M' stands for Matlab, 'F' stands for
-Fiji, order matters. The meaning for '_MF', for example, is that one needs
-first run some Matlab scripts (typically to export necessary data), and
-continue afterwads with some Fiji processing. In the case of '_MFM', one
-has to return to Matlab again after the Fiji processing to complete the
-calculations.
+Note the number prefix in folder names. One should, ideally at first,
+export relevant data from ImSAnE/Matlab environment right after the
+wrapping of images is done. This can be achieved by running content of the
+Matlab script (extension .m). Second, carry on image analysis inside Fiji
+with the Jython scripts (extension .py) on the wrapped images with proper
+length/area information utilized. If VolumeManager is used for ROI-based
+manual segmentation of volumes, one can export the ROIs from the
+VolumeManager (use the version found in the attached .jar file) back into
+ImSAnE/Matlab and calculate therein proper perimeters of the exported ROIs.
 
 
 Contact: Vladimír Ulman, ulman na mpi-cbg.de
