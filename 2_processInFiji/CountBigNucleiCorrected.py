@@ -1,4 +1,4 @@
-#@int(label="A big nucleus is everything bigger than ... Pixels", value=100) bigBorder
+#@int(label="A big nucleus is everything bigger than ... um^2", value=100) bigBorder
 #@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)", value=0.5) maxCircularity
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile

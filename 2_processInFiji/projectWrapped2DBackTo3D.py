@@ -5,7 +5,7 @@
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
-# The input image can be any scalar voxel type.
+# The input image can be any scalar voxel type, does NOT work for RGB well.
 
 # Usage:
 # 	- Find suitable parameters with CountBigNuclei_FindParameter.py
