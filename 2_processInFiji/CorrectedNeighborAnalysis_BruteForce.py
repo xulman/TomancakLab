@@ -150,7 +150,8 @@ for filename in os.listdir(InputFolder):
 		#Creating the output image
 		print("Creating output image...")
 		
-		maxim2 = 0
+		maxim2 = 1
+		#NB: zero would make more sense but it is prone to division-by-zero
 		
 		for Color in neighbors:
 			if neighbors[Color] > maxim2:
