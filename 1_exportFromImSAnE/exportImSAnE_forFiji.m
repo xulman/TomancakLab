@@ -17,19 +17,14 @@ SOI.NCalcInducedMetric();
 %
 %% this part creates an image that reports area of every pixel
 timePoint = 1;
-chart = 'cylinder2';
+chart = 'cylinder1';
 
-%% experiment "16":
+%% experiment metadata
 corResFactor = 0.38;    %in microns per pixel, resolution of the original images
-corCoordsScaling = 1.0; %factor to multiply ROI coordinates before proper length is calculated
-timeDelayBetween = 1.5; %in minutes between consecutive frames
-
-%% experiment "27":
-corResFactor = 0.38;    %in microns per pixel, resolution of the original images
-corCoordsScaling = 2.0; %factor to multiply ROI coordinates before proper length is calculated
-timeDelayBetween = 2.0; %in minutes between consecutive frames
 
 
+%% JUST RUN/EXECUTE THE REST OF THE FILE
+%
 %% reach the chart data
 aux_chart    = SOI.atlas(timePoint).getChart(chart);
 aux_stepSize = aux_chart.image.stepSize;
@@ -55,9 +50,23 @@ aux_detg = aux_detg .* aux_res;
 %% aux_detg is now a matrix (of single/float type) of the same size as is the
 % pullbacked/unwrapped image and holds area of every pixel, now save it
 % (while preserving and not-scaling the real values)
-[s_file,s_path,s_filter]=uiputfile([chart,'.txt'],'Save the file with pixel areas');
-dlmwrite([s_path,'/',s_file],aux_detg,' ');
+[s_file,s_path,s_filter]=uiputfile([chart,'.txt'],'Save the file with projection metadata');
+dlmwrite([s_path,'/',s_file(1:end-4),'_area',s_file(end-3:end)],aux_detg./minArea,' ');
 
 % save also the relative sizes, derived from the min size
 minArea = min(aux_detg(:));
-dlmwrite([s_path,'/',s_file(1:end-4),'_relative',s_file(end-3:end)],aux_detg./minArea,' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'_relativeArea',s_file(end-3:end)],aux_detg./minArea,' ');
+
+
+%% get the metric matrix (i.e., trasformation to get proper lengths on pullbacks)
+aux_g        = SOI.getField('embedding').getPatch(aux_domName);
+
+%% get 3D coordinates matrices -- instantiate the metric to every pixel point
+aux_coord    = aux_g.apply();
+
+%% aux_coord are now three matrices (of single/float type) of the same size as is the
+% pullbacked/unwrapped image and holds z,y,x, respectively, component of original 3D coordinate
+% of every pixel, now save it (while preserving and not-scaling the real values)
+dlmwrite([s_path,'/',s_file(1:end-4),'coords_Z',s_file(end-3:end)],corResFactor*aux_coord{1,1},' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'coords_Y',s_file(end-3:end)],corResFactor*aux_coord{1,2},' ');
+dlmwrite([s_path,'/',s_file(1:end-4),'coords_X',s_file(end-3:end)],corResFactor*aux_coord{1,3},' ');
