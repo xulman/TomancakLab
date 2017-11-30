@@ -83,7 +83,7 @@ def main():
 	# a list of time points
 	for TT in range(timeSpanFrom,timeSpanTo+1):
 		# a properly formatted string with time point
-		T = '%(time)03d' % { 'time' : TT }
+		T = '%(time)04d' % { 'time' : TT }
 
 		# create an empty stack
 		# read the first image to determine dimension
