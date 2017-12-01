@@ -25,8 +25,6 @@ from ij import IJ
 import ij.ImagePlus
 import ij.ImageStack
 
-from ij.process import ImageConverter
-from ij.gui import Plot
 
 def main():
 	# create a list of folders F:
