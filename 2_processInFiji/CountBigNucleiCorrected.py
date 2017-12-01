@@ -17,7 +17,6 @@
 # 	- You'll get a table out of it, that you can visualize or measure it with an table calculating program like Excel.
 
 from ij import IJ
-import math
 from ij.io import DirectoryChooser 
 import os
 import sys
@@ -33,48 +32,8 @@ sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
 # import our "library script"
 from importsFromImSAnE import *
 
-class Nucleus:
-
-	def __init__(self,Pixels,Color):
-		self.Pixels = Pixels
-		self.Color = Color
-		self.size = 0
-		for pix in Pixels:
-			self.size += realSizes[pix[0]][pix[1]]
-			
-		self.edgePixels = []
-
-		for pix in Pixels:
-			thisColor = ip.getPixel(pix[0],pix[1])
-			try:
-				ColorLeft = ip.getPixel(pix[0]-1,pix[1])
-			except:
-				ColorLeft = - 1
-
-			try:
-				ColorAbove = ip.getPixel(pix[0],pix[1]-1)
-			except:
-				ColorAbove = -1
-
-			try:
-				ColorBelow = ip.getPixel(pix[0],pix[1]+1)
-			except:
-				ColorBelow = -1
-
-			try:
-				ColorRight = ip.getPixel(pix[0]+1,pix[1])
-			except:
-				ColorRight = -1
-			
-			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorBelow or thisColor != ColorRight:
-				self.edgePixels.append([pix[0],pix[1]])
-		
-		self.edgeSize = 0
-		for pix in self.edgePixels:
-			self.edgeSize += realSizes[pix[0]][pix[1]]
-
-
-		self.circularity = abs(self.size - ((self.edgeSize**2)/(4*math.pi)))/self.size # lower value means higher circulatriy
+# import the same Nucleus class to make sure the very same calculations are used
+from Nucleus import Nucleus
 
 
 # reads the area_per_pixel information, already in squared microns
