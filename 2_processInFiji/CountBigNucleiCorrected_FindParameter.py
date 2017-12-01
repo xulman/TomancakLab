@@ -1,11 +1,21 @@
-#@int(label="A big nucleus is everything bigger than ... um^2", value=100) bigBorder
-#@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)", value=0.5) maxCircularity
+#@int(label="A nucleus is everything  BIGGER than (um^2)", value=70) areaMin
+#@int(label="A nucleus is everything SMALLER than (um^2)", value=130) areaMax
+#@boolean (label="Filter according to size") filterArea
+#
+#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)", value=0.3) circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)", value=0.7) circularityMax
+#@boolean (label="Filter according to circularity") filterCirc
+#
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
+#
+#@boolean (label="Show sheet with analysis data") showRawData
 
 # This script should be used to find siutable parameters for CountBigNuclei.py
-# You'll see in blue the nuclei that are too small to be called 'big'
-# And in red the ones that are not circular enough.
+# You'll see:
+# red nuclei   -- does not fit into circularity range
+# blue nuclei  -- does not fit into area range
+# white nuclei -- fit into both ranges
 
 # Usage:
 #	- Run Fiji
@@ -17,8 +27,8 @@
 from ij import IJ
 from ij import ImagePlus
 import math
-from ij.io import DirectoryChooser 
 from ij.process import ColorProcessor 
+from ij.measure import ResultsTable
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -30,17 +40,39 @@ sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
 # import our "library script"
 from importsFromImSAnE import *
 
+imp = IJ.getImage()
+ip = imp.getProcessor()
+
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes(aMapFile.getAbsolutePath());
+
+
 class Nucleus:
 
 	def __init__(self,Pixels,Color):
+		# list of pixels that make up this nuclei (nuclei mask)
 		self.Pixels = Pixels
+
+		# label of the nuclei
 		self.Color = Color
+
+		# in squared microns
 		self.size = 0
+
+		# geometric centre in pixel coordinates
+		self.centreX = 0.0
+		self.centreY = 0.0
+
 		for pix in Pixels:
 			self.size += realSizes[pix[0]][pix[1]]
-			
-		self.edgePixels = []
+			self.centreX += pix[0]
+			self.centreY += pix[1]
 
+		# finish calculation of the geometrical centre
+		self.centreX /= len(Pixels)
+		self.centreY /= len(Pixels)
+
+		self.edgePixels = []
 		for pix in Pixels:
 			thisColor = ip.getPixel(pix[0],pix[1])
 			try:
@@ -62,96 +94,111 @@ class Nucleus:
 				ColorRight = ip.getPixel(pix[0]+1,pix[1])
 			except:
 				ColorRight = -1
-			
+
+			# mimics 2D 4-neighbor erosion
 			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorBelow or thisColor != ColorRight:
 				self.edgePixels.append([pix[0],pix[1]])
-		
+
 		self.edgeSize = 0
 		for pix in self.edgePixels:
 			self.edgeSize += realSizes[pix[0]][pix[1]]
 
-
-		self.circularity = abs(self.size - ((self.edgeSize**2)/(4*math.pi)))/self.size # lower value means higher circulatriy
-
-
-imp = IJ.getImage()
-ip = imp.getProcessor()
-
-# reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes(aMapFile.getAbsolutePath());
-
-# test that sizes of realSizes and imp matches
-checkSize2DarrayVsImgPlus(realSizes, imp);
+		# lower value means higher circularity
+		self.circularity = abs(self.size - ((self.edgeSize**2)/(4*math.pi)))/self.size
 
 
-backgroundPixelValue = 1 # in case of cell nuclei
-if (not inputImageShowsNuclei):
-	backgroundPixelValue = 2 # in case of cell membranes
+def main():
+	# test that sizes of realSizes and imp matches
+	checkSize2DarrayVsImgPlus(realSizes, imp);
 
-# fix pixel values;
-for x in range(imp.getWidth()):
-	for y in range(imp.getHeight()):
-		if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
-			ip.set(x,y,0)
-		else:
-			ip.set(x,y,255)
 
-#Detect Nuclei
-IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
-labelMap = IJ.getImage()
-LPP = labelMap.getProcessor()
-labeledPixels = LPP.getPixels()
+	backgroundPixelValue = 1 # in case of cell nuclei
+	if (not inputImageShowsNuclei):
+		backgroundPixelValue = 2 # in case of cell membranes
 
-#Detect all Pixel belonging to one Color
-pixelPerColor = {}
-
-for x in range(labelMap.width):
-	for y in range(labelMap.height):
-		MyColor = LPP.getPixel(x,y)
-		if  MyColor != 0:
-			if str(MyColor) in pixelPerColor:
-				pixelPerColor[str(MyColor)].append([x,y])
+	# fix pixel values;
+	for x in range(imp.getWidth()):
+		for y in range(imp.getHeight()):
+			if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
+				ip.set(x,y,0)
 			else:
-				pixelPerColor[str(MyColor)] = [[x,y]]
+				ip.set(x,y,255)
 
-nuclei = []
+	#Detect Nuclei
+	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
+	labelMap = IJ.getImage()
+	LPP = labelMap.getProcessor()
+	labeledPixels = LPP.getPixels()
 
-for Color in pixelPerColor:
-	nuclei.append(Nucleus(pixelPerColor[Color],Color))
+	#Detect all Pixel belonging to one Color
+	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
+	pixelPerColor = {}
 
-circularitySum = 0 
-sizesum = 0
+	for x in range(labelMap.width):
+		for y in range(labelMap.height):
+			MyColor = LPP.getPixel(x,y)
+			if  MyColor != 0:
+				if str(MyColor) in pixelPerColor:
+					pixelPerColor[str(MyColor)].append([x,y])
+				else:
+					pixelPerColor[str(MyColor)] = [[x,y]]
 
-for nucl in nuclei:
-	circularitySum += nucl.circularity
-	sizesum += nucl.size
+	# a list of nuclei objects
+	nuclei = []
 
-print("Average Circularity: "+str(circularitySum/len(nuclei)))
-print("Average Size: "+str(sizesum/len(nuclei))+" Pixels")
+	for Color in pixelPerColor:
+		nuclei.append(Nucleus(pixelPerColor[Color],Color))
 
-print("Creating output image ...")
+	circularitySum = 0 
+	sizesum = 0
 
-OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
+	for nucl in nuclei:
+		circularitySum += nucl.circularity
+		sizesum += nucl.size
 
-for nucl in nuclei:
-	if nucl.circularity > maxCircularity:
-		for pix in nucl.Pixels:
-			OutputPixels[pix[1]][pix[0]] = 0xFF0000
-	elif nucl.size <= bigBorder:
-		for pix in nucl.Pixels:
-			OutputPixels[pix[1]][pix[0]] = 0xFF
-	else:
-		for pix in nucl.Pixels:
-			OutputPixels[pix[1]][pix[0]] = 0xFFFFFF
+	print("Average Circularity: "+str(circularitySum/len(nuclei)))
+	print("Average Size: "+str(sizesum/len(nuclei))+" Pixels")
 
-OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
+	print("Creating output image ...")
 
-cp = ColorProcessor(labelMap.getWidth() ,labelMap.getHeight(), OutputPixelsNew)  
-OutputImg = ImagePlus("OutputImg", cp)
+	OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
 
-OutputImg.show()
+	# red nuclei   -- does not fit into circularity range
+	# blue nuclei  -- does not fit into area range
+	# white nuclei -- fit into both ranges
+	for nucl in nuclei:
+		if (filterCirc == True and nucl.circularity >= circularityMin and nucl.circularity <= circularityMax):
+			for pix in nucl.Pixels:
+				OutputPixels[pix[1]][pix[0]] = 0xFF0000
+		elif (filterArea == True and nucl.size >= areaMin and nucl.size <= areaMax):
+			for pix in nucl.Pixels:
+				OutputPixels[pix[1]][pix[0]] = 0xFF
+		else:
+			for pix in nucl.Pixels:
+				OutputPixels[pix[1]][pix[0]] = 0xFFFFFF
 
-print("Done.")
+	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
+	cp = ColorProcessor(labelMap.getWidth() ,labelMap.getHeight(), OutputPixelsNew)
+	OutputImg = ImagePlus("OutputImg", cp)
+	OutputImg.show()
 
-			
 
+	if (showRawData):
+		# create an output table with three columns: label, size, circularity, positionX, positionY
+		# 
+		print("Populating a table...")
+		rt = ResultsTable()
+		for nucl in nuclei:
+			rt.incrementCounter()
+			rt.addValue("label"                            ,nucl.Color)
+			rt.addValue("area (um^2)"                      ,nucl.size)
+			rt.addValue("circularity (lower more roundish)",nucl.circularity)
+			rt.addValue("centreX (px)"                     ,nucl.centreX)
+			rt.addValue("centreY (px)"                     ,nucl.centreY)
+		rt.show("Nuclei properties")
+
+
+	print("Done.")
+
+
+main()
