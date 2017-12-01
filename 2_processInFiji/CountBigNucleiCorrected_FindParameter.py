@@ -1,6 +1,6 @@
 #@int(label="A nucleus is everything  BIGGER than (um^2)", value=70) areaMin
 #@int(label="A nucleus is everything SMALLER than (um^2)", value=130) areaMax
-#@boolean (label="Filter according to size") filterArea
+#@boolean (label="Filter according to area") filterArea
 #
 #@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)", value=0.3) circularityMin
 #@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)", value=0.7) circularityMax
@@ -57,14 +57,16 @@ class Nucleus:
 		self.Color = Color
 
 		# in squared microns
-		self.size = 0
+		self.area = 0.0
+		# in pixel count
+		self.size = len(Pixels)
 
 		# geometric centre in pixel coordinates
 		self.centreX = 0.0
 		self.centreY = 0.0
 
 		for pix in Pixels:
-			self.size += realSizes[pix[0]][pix[1]]
+			self.area += realSizes[pix[0]][pix[1]]
 			self.centreX += pix[0]
 			self.centreY += pix[1]
 
@@ -99,12 +101,14 @@ class Nucleus:
 			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorBelow or thisColor != ColorRight:
 				self.edgePixels.append([pix[0],pix[1]])
 
+		# TODO: edgeSize has to be edgeLength !!! involve proper length measurement, see issue #1
 		self.edgeSize = 0
 		for pix in self.edgePixels:
 			self.edgeSize += realSizes[pix[0]][pix[1]]
 
+		# TODO: edgeSize has to be edgeLength !!! involve proper length measurement, see issue #1
 		# lower value means higher circularity
-		self.circularity = abs(self.size - ((self.edgeSize**2)/(4*math.pi)))/self.size
+		self.circularity = abs(self.area - ((self.edgeSize**2)/(4*math.pi)))/self.area
 
 
 def main():
@@ -154,15 +158,14 @@ def main():
 
 	for nucl in nuclei:
 		circularitySum += nucl.circularity
-		sizesum += nucl.size
+		sizesum += nucl.area
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
-	print("Average Size: "+str(sizesum/len(nuclei))+" Pixels")
+	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
 
 	print("Creating output image ...")
-
 	OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
-
+	#
 	# red nuclei   -- does not fit into circularity range
 	# blue nuclei  -- does not fit into area range
 	# white nuclei -- fit into both ranges
@@ -170,7 +173,7 @@ def main():
 		if (filterCirc == True and nucl.circularity >= circularityMin and nucl.circularity <= circularityMax):
 			for pix in nucl.Pixels:
 				OutputPixels[pix[1]][pix[0]] = 0xFF0000
-		elif (filterArea == True and nucl.size >= areaMin and nucl.size <= areaMax):
+		elif (filterArea == True and nucl.area >= areaMin and nucl.area <= areaMax):
 			for pix in nucl.Pixels:
 				OutputPixels[pix[1]][pix[0]] = 0xFF
 		else:
@@ -184,15 +187,16 @@ def main():
 
 
 	if (showRawData):
-		# create an output table with three columns: label, size, circularity, positionX, positionY
+		# create an output table with three columns: label, circularity, area, size, positionX, positionY
 		# 
 		print("Populating a table...")
 		rt = ResultsTable()
 		for nucl in nuclei:
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
-			rt.addValue("area (um^2)"                      ,nucl.size)
 			rt.addValue("circularity (lower more roundish)",nucl.circularity)
+			rt.addValue("area (um^2)"                      ,nucl.area)
+			rt.addValue("area (px)"                        ,nucl.size)
 			rt.addValue("centreX (px)"                     ,nucl.centreX)
 			rt.addValue("centreY (px)"                     ,nucl.centreY)
 		rt.show("Nuclei properties")
