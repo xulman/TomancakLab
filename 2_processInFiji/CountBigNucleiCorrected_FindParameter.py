@@ -1,9 +1,9 @@
-#@int(label="A nucleus is everything  BIGGER than (um^2)", value=70) areaMin
-#@int(label="A nucleus is everything SMALLER than (um^2)", value=130) areaMax
+#@int(label="A nucleus is everything  BIGGER than (um^2)") areaMin
+#@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
 #@boolean (label="Filter according to area") filterArea
 #
-#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)", value=0.3) circularityMin
-#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)", value=0.7) circularityMax
+#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
@@ -11,7 +11,7 @@
 #
 #@boolean (label="Show sheet with analysis data") showRawData
 
-# This script should be used to find siutable parameters for CountBigNuclei.py
+# This script should be used to find siutable parameters for CountBigNucleiCorrected.py
 # You'll see:
 # red nuclei   -- does not fit into circularity range
 # blue nuclei  -- does not fit into area range

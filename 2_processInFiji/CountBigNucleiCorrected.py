@@ -1,14 +1,15 @@
-#@int(label="A big nucleus is everything bigger than ... um^2", value=100) bigBorder
-#@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)", value=0.5) maxCircularity
+#@int(label="A nucleus is everything  BIGGER than (um^2)") areaMin
+#@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
+#@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)") maxCircularity
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
 #@File (style="directory", label="Input directory") inputDir
 
-# This script counts all the nuclei, that are nearly circular and bigger than a given threshold.
+# This script counts all the nuclei, that are nearly circular and their areas are within the given interval.
 # It takes a folder of segmented binary images and outputs a table with the number of big nuclei per timestamp.
 
 # Usage:
-# 	- Find suitable parameters with CountBigNuclei_FindParameter.py
+# 	- Find suitable parameters with CountBigNucleiCorrected_FindParameter.py
 #	- Run Fiji
 # 	- Make sure that the update site SCF-MPI-CBG is activated
 #	- Run this script
@@ -140,7 +141,7 @@ for filename in os.listdir(InputFolder):
 		bigNuclei = 0
 		
 		for nucl in nuclei:
-			if nucl.circularity < maxCircularity and nucl.size > bigBorder:
+			if nucl.circularity < maxCircularity and nucl.area >= areaMin and nucl.area <= areaMax:
 				bigNuclei += 1
 	
 		number = ''
