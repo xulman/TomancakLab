@@ -27,7 +27,8 @@
 from ij import IJ
 from ij import ImagePlus
 import math
-from ij.process import ColorProcessor 
+from ij.process import ColorProcessor
+from ij.process import FloatProcessor
 from ij.measure import ResultsTable
 
 # this section adds a folder, in which this very script is living,
@@ -152,7 +153,7 @@ def main():
 	for Color in pixelPerColor:
 		nuclei.append(Nucleus(pixelPerColor[Color],Color[0:len(Color)-2]))
 
-	circularitySum = 0 
+	circularitySum = 0
 	sizesum = 0
 
 	for nucl in nuclei:
@@ -186,10 +187,15 @@ def main():
 
 
 	if (showRawData):
+		print("Populating table...")
+
 		# create an output table with three columns: label, circularity, area, size, positionX, positionY
-		# 
-		print("Populating a table...")
 		rt = ResultsTable()
+
+		# also create two hidden 1D images (arrays essentially) and ask to display their histograms later
+		imgArea = []
+		imgCirc = []
+
 		for nucl in nuclei:
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
@@ -198,8 +204,22 @@ def main():
 			rt.addValue("area (px)"                        ,nucl.size)
 			rt.addValue("centreX (px)"                     ,nucl.centreX)
 			rt.addValue("centreY (px)"                     ,nucl.centreY)
+
+			imgArea.append(nucl.area)
+			imgCirc.append(nucl.circularity)
+
+		# show the image
 		rt.showRowNumbers(False)
 		rt.show("Nuclei properties")
+
+		# show the histograms
+		#imgArea = ImagePlus("areas of nuclei",FloatProcessor(len(nuclei),1,imgArea))
+		imgArea = ImagePlus("nuclei_areas",FloatProcessor(len(nuclei),1,imgArea))
+		IJ.run(imgArea, "Histogram", str( (imgArea.getDisplayRangeMax() - imgArea.getDisplayRangeMin()) / 10 ))
+
+		#imgCirc = ImagePlus("circularities of nuclei",FloatProcessor(len(nuclei),1,imgCirc))
+		imgCirc = ImagePlus("nuclei_circularities",FloatProcessor(len(nuclei),1,imgCirc))
+		IJ.run(imgCirc, "Histogram", "20")
 
 
 	print("Done.")
