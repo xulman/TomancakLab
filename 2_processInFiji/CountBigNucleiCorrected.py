@@ -78,24 +78,24 @@ for filename in os.listdir(InputFolder):
 		IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
 		labelMap = IJ.getImage()
 		LPP = labelMap.getProcessor()
-		labeledPixels = LPP.getPixels()
 		
 		#Detect all Pixel belonging to one Color
 		pixelPerColor = {}
 		
 		for x in range(labelMap.width):
 			for y in range(labelMap.height):
-				MyColor = LPP.getPixel(x,y)
+				MyColor = LPP.getf(x,y)
 				if  MyColor != 0:
 					if str(MyColor) in pixelPerColor:
 						pixelPerColor[str(MyColor)].append([x,y])
 					else:
 						pixelPerColor[str(MyColor)] = [[x,y]]
 		
+		# a list of nuclei objects
 		nuclei = []
 		
 		for Color in pixelPerColor:
-			nuclei.append(Nucleus(pixelPerColor[Color],Color))
+			nuclei.append(Nucleus(Color[0:len(Color)-2],pixelPerColor[Color],ip,realSizes))
 		
 		bigNuclei = 0
 		

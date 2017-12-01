@@ -3,12 +3,12 @@ import math
 
 class Nucleus:
 
-	def __init__(self,Pixels,Color):
-		# list of pixels that make up this nuclei (nuclei mask)
-		self.Pixels = Pixels
-
+	def __init__(self,Color,Pixels,ip,realSizes):
 		# label of the nuclei
 		self.Color = Color
+
+		# list of pixels that make up this nuclei (nuclei mask)
+		self.Pixels = Pixels
 
 		# in squared microns
 		self.area = 0.0

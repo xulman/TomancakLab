@@ -44,13 +44,11 @@ from importsFromImSAnE import *
 from Nucleus import Nucleus
 
 
-imp = IJ.getImage()
-ip = imp.getProcessor()
-
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath());
 
-
+imp = IJ.getImage()
+ip = imp.getProcessor()
 
 
 def main():
@@ -92,7 +90,7 @@ def main():
 	nuclei = []
 
 	for Color in pixelPerColor:
-		nuclei.append(Nucleus(pixelPerColor[Color],Color[0:len(Color)-2]))
+		nuclei.append(Nucleus(Color[0:len(Color)-2],pixelPerColor[Color],ip,realSizes))
 
 	circularitySum = 0
 	sizesum = 0
