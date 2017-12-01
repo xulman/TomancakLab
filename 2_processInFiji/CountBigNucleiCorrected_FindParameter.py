@@ -132,7 +132,6 @@ def main():
 	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
 	labelMap = IJ.getImage()
 	LPP = labelMap.getProcessor()
-	labeledPixels = LPP.getPixels()
 
 	#Detect all Pixel belonging to one Color
 	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
@@ -140,7 +139,7 @@ def main():
 
 	for x in range(labelMap.width):
 		for y in range(labelMap.height):
-			MyColor = LPP.getPixel(x,y)
+			MyColor = LPP.getf(x,y)
 			if  MyColor != 0:
 				if str(MyColor) in pixelPerColor:
 					pixelPerColor[str(MyColor)].append([x,y])
@@ -151,7 +150,7 @@ def main():
 	nuclei = []
 
 	for Color in pixelPerColor:
-		nuclei.append(Nucleus(pixelPerColor[Color],Color))
+		nuclei.append(Nucleus(pixelPerColor[Color],Color[0:len(Color)-2]))
 
 	circularitySum = 0 
 	sizesum = 0
@@ -199,6 +198,7 @@ def main():
 			rt.addValue("area (px)"                        ,nucl.size)
 			rt.addValue("centreX (px)"                     ,nucl.centreX)
 			rt.addValue("centreY (px)"                     ,nucl.centreY)
+		rt.showRowNumbers(False)
 		rt.show("Nuclei properties")
 
 
