@@ -20,7 +20,6 @@
 #	- Choose the input folders and ranges
 #	- Choose an output folder
 
-from copy import copy
 from ij import IJ
 import ij.ImagePlus
 import ij.ImageStack
