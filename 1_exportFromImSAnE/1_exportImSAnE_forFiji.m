@@ -51,7 +51,11 @@ aux_detg = aux_detg .* aux_res;
 % pullbacked/unwrapped image and holds area of every pixel, now save it
 % (while preserving and not-scaling the real values)
 [s_file,s_path,s_filter]=uiputfile([chart,'.txt'],'Save the file with projection metadata');
-dlmwrite([s_path,'/',s_file(1:end-4),'_area',s_file(end-3:end)],aux_detg,' ');
+if s_file == 0
+	['WARN: User canceled dialog, should not proceed further!']
+else
+	dlmwrite([s_path,'/',s_file(1:end-4),'_area',s_file(end-3:end)],aux_detg,' ');
+end
 
 % save also the relative sizes, derived from the min size
 minArea = min(aux_detg(:));
