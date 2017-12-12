@@ -37,7 +37,7 @@ from ij.measure import ResultsTable
 import sys.path
 import os.path
 import inspect
-sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 
 # import our "library script"
 from importsFromImSAnE import *
