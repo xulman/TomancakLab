@@ -1,6 +1,11 @@
 #@int(label="A nucleus is everything  BIGGER than (um^2)") areaMin
 #@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
-#@float(label="A nucleus has a maximum circularity of... (lower value means higher circularity)") maxCircularity
+#@boolean (label="Filter according to area") filterArea
+#
+#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
+#@boolean (label="Filter according to circularity") filterCirc
+#
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
 #@File (style="directory", label="Input directory") inputDir
@@ -96,18 +101,18 @@ for filename in os.listdir(InputFolder):
 		
 		for Color in pixelPerColor:
 			nuclei.append(Nucleus(Color[0:len(Color)-2],pixelPerColor[Color],ip,realSizes))
-		
+
 		bigNuclei = 0
-		
+
 		for nucl in nuclei:
-			if nucl.circularity < maxCircularity and nucl.area >= areaMin and nucl.area <= areaMax:
+			if nucl.doesQualify(filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax) == True:
 				bigNuclei += 1
-	
+
 		number = ''
 		for c in filename:
 			if c == '0' or c == '1' or c == '2' or c == '3' or c == '4' or c == '5' or c == '6' or c == '7' or c == '8' or c == '9': 
 				number += c
-		
+
 		if not noNumbers:
 			if number == '':
 				noNumbers = True
