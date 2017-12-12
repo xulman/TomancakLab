@@ -51,6 +51,7 @@ def main():
 		if (img is None):
 			print "couldn't open file: "+F
 			return
+		img.show()
 
 		# check whether A/BsliceTo indices are within the image z-axis range
 		if (AsliceTo > img.getStackSize() or BsliceTo > img.getStackSize()):
@@ -58,55 +59,22 @@ def main():
 			return
 
 		# 1st interval
-		# start with the first projected plane...
-		# and create an initial MIP from it
+		IJ.run("Z Project...", "start="+str(AsliceFrom)+" stop="+str(AsliceTo)+" projection=[Max Intensity]");
+		omg = IJ.getImage();
 		F = inputDir.getPath() + "/MIP_A/cmp_MIP_T" + T + ".tif"
-		img.setZ(AsliceFrom)
-		omg = ij.ImagePlus(F,img.getProcessor().duplicate())
-		op = omg.getProcessor()
-
-		# do the projection over the first range of slices
-		for Z in range(AsliceFrom+1, AsliceTo+1):
-			img.setZ(Z)
-			ip = img.getProcessor();
-
-			# one slice "merging"
-			for y in range(ip.height):
-				for x in range(ip.width):
-					valI = ip.getf(x,y)
-					valO = op.getf(x,y)
-					if (valI > valO):
-						op.setf(x,y,valI)
-
-		# now, create and save the image
 		print "saving: "+F
 		IJ.save(omg,F)
-
+		omg.close()
 
 		# 2nd interval
-		# start with the first projected plane...
-		# and create an initial MIP from it
+		IJ.run("Z Project...", "start="+str(BsliceFrom)+" stop="+str(BsliceTo)+" projection=[Max Intensity]");
+		omg = IJ.getImage();
 		F = inputDir.getPath() + "/MIP_B/cmp_MIP_T" + T + ".tif"
-		img.setZ(BsliceFrom)
-		omg = ij.ImagePlus(F,img.getProcessor().duplicate())
-		op = omg.getProcessor()
-
-		# do the projection over the first range of slices
-		for Z in range(BsliceFrom+1, BsliceTo+1):
-			img.setZ(Z)
-			ip = img.getProcessor();
-
-			# one slice "merging"
-			for y in range(ip.height):
-				for x in range(ip.width):
-					valI = ip.getf(x,y)
-					valO = op.getf(x,y)
-					if (valI > valO):
-						op.setf(x,y,valI)
-
-		# now, create and save the image
 		print "saving: "+F
 		IJ.save(omg,F)
+		omg.close()
+
+		img.close()
 
 
 main()
