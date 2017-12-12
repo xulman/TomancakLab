@@ -19,14 +19,22 @@
 #	- Choose the input folder and ranges
 
 from ij import IJ
+import os
 import ij.ImagePlus
 import ij.ImageStack
 
 
 def main():
+	# try to create output folders
+	if (os.path.isdir(inputDir.getPath() + "/MIP_A") == False):
+		os.mkdir(inputDir.getPath() + "/MIP_A")
+
+	if (os.path.isdir(inputDir.getPath() + "/MIP_B") == False):
+		os.mkdir(inputDir.getPath() + "/MIP_B")
+
 	# check that input z-ranges make sense
 	if (AsliceFrom < 1 or BsliceFrom < 1):
-		print "A or B slice FROM index can't be negative."
+		print "A or B slice FROM index can't be less than 1."
 		return
 	if (AsliceFrom > AsliceTo or BsliceFrom > BsliceTo):
 		print "A or B slice FROM index can't be larger than TO index."
