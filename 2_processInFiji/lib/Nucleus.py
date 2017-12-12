@@ -63,3 +63,12 @@ class Nucleus:
 		# TODO: edgeSize has to be edgeLength !!! involve proper length measurement, see issue #1
 		# lower value means higher circularity
 		self.circularity = abs(self.area - ((self.edgeSize**2)/(4*math.pi)))/self.area
+
+	# the same condition that every one should use to filter out nuclei that
+	# do not qualify for this study
+	def doesQualify(self, areaConsidered,areaMin,areaMax, circConsidered,circMin,circMax):
+		if (circConsidered == True and (self.circularity < circMin or self.circularity > circMax)):
+			return False;
+		if (areaConsidered == True and (self.area < areaMin or self.area > areaMax)):
+			return False;
+		return True;
