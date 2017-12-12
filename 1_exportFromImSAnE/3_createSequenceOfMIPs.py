@@ -25,7 +25,7 @@ import ij.ImageStack
 
 def main():
 	# check that input z-ranges make sense
-	if (AsliceFrom < 0 or BsliceFrom < 0):
+	if (AsliceFrom < 1 or BsliceFrom < 1):
 		print "A or B slice FROM index can't be negative."
 		return
 	if (AsliceFrom > AsliceTo or BsliceFrom > BsliceTo):
@@ -49,47 +49,56 @@ def main():
 			print "A or B slice TO index is beyond last z-slice."
 			return
 
-		# create a zeroed yet-empty projected plane
-		plane = [[ 0 for y in range(img.getHeight()) ] for x in range(img.getWidth()) ]
+		# 1st interval
+		# start with the first projected plane...
+		# and create an initial MIP from it
+		F = inputDir.getPath() + "/MIP_A/cmp_MIP_T" + T + ".tif"
+		img.setZ(AsliceFrom)
+		omg = ij.ImagePlus(F,img.getProcessor().duplicate())
+		op = omg.getProcessor()
 
 		# do the projection over the first range of slices
-		for Z in range(AsliceFrom, AsliceTo+1):
-			img.setZ(Z+1)
+		for Z in range(AsliceFrom+1, AsliceTo+1):
+			img.setZ(Z)
 			ip = img.getProcessor();
 
 			# one slice "merging"
 			for y in range(ip.height):
 				for x in range(ip.width):
-					val = ip.getf(x,y)
-					if (val > plane[x][y]):
-						plane[x][y] = val
+					valI = ip.getf(x,y)
+					valO = op.getf(x,y)
+					if (valI > valO):
+						op.setf(x,y,valI)
 
 		# now, create and save the image
-		ip.setPixels(plane);
-		F = inputDir.getPath() + "MIP_A/cmp_MIP_T" + T + ".tif"
 		print "saving: "+F
-		IJ.save(ij.ImagePlus(F,ip),F)
+		IJ.save(omg,F)
 
-		# create a zeroed yet-empty projected plane
-		plane = [[ 0 for y in range(img.getHeight()) ] for x in range(img.getWidth()) ]
+
+		# 2nd interval
+		# start with the first projected plane...
+		# and create an initial MIP from it
+		F = inputDir.getPath() + "/MIP_B/cmp_MIP_T" + T + ".tif"
+		img.setZ(BsliceFrom)
+		omg = ij.ImagePlus(F,img.getProcessor().duplicate())
+		op = omg.getProcessor()
 
 		# do the projection over the first range of slices
-		for Z in range(BsliceFrom, BsliceTo+1):
-			img.setZ(Z+1)
+		for Z in range(BsliceFrom+1, BsliceTo+1):
+			img.setZ(Z)
 			ip = img.getProcessor();
 
 			# one slice "merging"
 			for y in range(ip.height):
 				for x in range(ip.width):
-					val = ip.getf(x,y)
-					if (val > plane[x][y]):
-						plane[x][y] = val
+					valI = ip.getf(x,y)
+					valO = op.getf(x,y)
+					if (valI > valO):
+						op.setf(x,y,valI)
 
 		# now, create and save the image
-		ip.setPixels(plane);
-		F = inputDir.getPath() + "MIP_B/cmp_MIP_T" + T + ".tif"
 		print "saving: "+F
-		IJ.save(ij.ImagePlus(F,ip),F)
+		IJ.save(omg,F)
 
 
 main()
