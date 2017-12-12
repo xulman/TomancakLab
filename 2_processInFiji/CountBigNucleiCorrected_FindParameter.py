@@ -11,11 +11,13 @@
 #
 #@boolean (label="Show sheet with analysis data") showRawData
 
-# This script should be used to find siutable parameters for CountBigNucleiCorrected.py
-# You'll see:
-# red nuclei   -- does not fit into circularity range
-# blue nuclei  -- does not fit into area range
-# white nuclei -- fit into both ranges
+# This script should be used to find suitable parameters for CountBigNucleiCorrected.py
+# You'll see nuclei of various colors:
+# green - fit both conditions      (area good, circularity good)
+# white - does not fit circularity (area good, circularity bad)
+# blue - does not fit area         (area bad,  circularity good)
+# red - fails both conditions      (area bad,  circularity bad)
+colors = [0x00FF00, 0xFFFFFF, 0x0000FF, 0xFF0000]
 
 # Usage:
 #	- Run Fiji
@@ -54,7 +56,6 @@ ip = imp.getProcessor()
 def main():
 	# test that sizes of realSizes and imp matches
 	checkSize2DarrayVsImgPlus(realSizes, imp);
-
 
 	backgroundPixelValue = 1 # in case of cell nuclei
 	if (not inputImageShowsNuclei):
@@ -104,20 +105,20 @@ def main():
 
 	print("Creating output image ...")
 	OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
+	# green - fit both conditions
+	# blue - does not fit area
+	# white - does not fit circularity
+	# red - fails both conditions
 	#
-	# red nuclei   -- does not fit into circularity range
-	# blue nuclei  -- does not fit into area range
-	# white nuclei -- fit into both ranges
 	for nucl in nuclei:
-		if (filterCirc == True and nucl.circularity >= circularityMin and nucl.circularity <= circularityMax):
-			for pix in nucl.Pixels:
-				OutputPixels[pix[1]][pix[0]] = 0xFF0000
-		elif (filterArea == True and nucl.area >= areaMin and nucl.area <= areaMax):
-			for pix in nucl.Pixels:
-				OutputPixels[pix[1]][pix[0]] = 0xFF
-		else:
-			for pix in nucl.Pixels:
-				OutputPixels[pix[1]][pix[0]] = 0xFFFFFF
+		errCnt = 0
+		if (filterCirc == True and (nucl.circularity < circularityMin or nucl.circularity > circularityMax)):
+			errCnt += 1
+		if (filterArea == True and (nucl.area < areaMin or nucl.area > areaMax)):
+			errCnt += 2
+
+		for pix in nucl.Pixels:
+			OutputPixels[pix[1]][pix[0]] = colors[errCnt]
 
 	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
 	cp = ColorProcessor(labelMap.getWidth() ,labelMap.getHeight(), OutputPixelsNew)
