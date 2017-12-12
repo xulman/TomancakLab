@@ -55,11 +55,11 @@ if s_file == 0
 	['WARN: User canceled dialog, should not proceed further!']
 else
 	dlmwrite([s_path,'/',s_file(1:end-4),'_area',s_file(end-3:end)],aux_detg,' ');
-end
 
-% save also the relative sizes, derived from the min size
-minArea = min(aux_detg(:));
-dlmwrite([s_path,'/',s_file(1:end-4),'_relativeArea',s_file(end-3:end)],aux_detg./minArea,' ');
+	% save also the relative sizes, derived from the min size
+	minArea = min(aux_detg(:));
+	dlmwrite([s_path,'/',s_file(1:end-4),'_relativeArea',s_file(end-3:end)],aux_detg./minArea,' ');
+end
 
 
 %% get the metric matrix (i.e., trasformation to get proper lengths on pullbacks)
