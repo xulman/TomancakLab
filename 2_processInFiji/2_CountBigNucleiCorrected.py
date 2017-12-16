@@ -150,6 +150,9 @@ else:
 		table.addValue('Number of big Nuclei',BigNucleiPerTimestamp[i])
 
 table.show('Results')
+IJ.saveAs("Results", inputDir+"/nucleiList.xls")
+IJ.saveAs("Results", inputDir+"/nucleiList.txt")
+IJ.saveAs("Results", inputDir+"/nucleiList.csv")
 
 print
 print("All files processed.")

@@ -108,7 +108,7 @@ for filename in os.listdir(InputFolder):
 			for y in range(imp.height):
 				MyColor = labelMapProcessor.getPixel(x,y)
 				if MyColor != 0:
-					if  MyColor in ColorAndPixels:
+					if MyColor in ColorAndPixels:
 						ColorAndPixels[MyColor].append([x,y])
 					else:
 						ColorAndPixels[MyColor] = [[x,y]]
@@ -188,8 +188,10 @@ for filename in os.listdir(InputFolder):
 
 		table.show('Results')
 		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".xls")
-		tablWindow = ij.WindowManager.getWindow("Results")
-		tablWindow.close()
+		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".txt")
+		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".csv")
+		#tablWindow = ij.WindowManager.getWindow("Results")
+		#tablWindow.close()
 				
 		print('Image "'+filename+'" successfully processed.')
 
