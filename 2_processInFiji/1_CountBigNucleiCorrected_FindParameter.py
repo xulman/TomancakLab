@@ -39,8 +39,9 @@ import os.path
 import inspect
 sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 
-# import our "library script"
+# import our "library scripts"
 from importsFromImSAnE import *
+from chooseNuclei import *
 
 # import the same Nucleus class to make sure the very same calculations are used
 from Nucleus import Nucleus
@@ -50,7 +51,6 @@ from Nucleus import Nucleus
 realSizes = readRealSizes(aMapFile.getAbsolutePath());
 
 imp = IJ.getImage()
-ip = imp.getProcessor()
 
 
 def main():
@@ -61,38 +61,10 @@ def main():
 	if (not inputImageShowsNuclei):
 		backgroundPixelValue = 2 # in case of cell membranes
 
-	# fix pixel values;
-	for x in range(imp.getWidth()):
-		for y in range(imp.getHeight()):
-			if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
-				ip.set(x,y,0)
-			else:
-				ip.set(x,y,255)
+	# obtain list of viable nuclei
+	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax);
 
-	#Detect Nuclei
-	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
-	labelMap = IJ.getImage()
-	LPP = labelMap.getProcessor()
-
-	#Detect all Pixel belonging to one Color
-	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
-	pixelPerColor = {}
-
-	for x in range(labelMap.width):
-		for y in range(labelMap.height):
-			MyColor = LPP.getf(x,y)
-			if  MyColor != 0:
-				if str(MyColor) in pixelPerColor:
-					pixelPerColor[str(MyColor)].append([x,y])
-				else:
-					pixelPerColor[str(MyColor)] = [[x,y]]
-
-	# a list of nuclei objects
-	nuclei = []
-
-	for Color in pixelPerColor:
-		nuclei.append(Nucleus(Color[0:len(Color)-2],pixelPerColor[Color],ip,realSizes))
-
+	# ------- analysis starts here -------
 	circularitySum = 0
 	sizesum = 0
 
@@ -121,7 +93,7 @@ def main():
 			OutputPixels[pix[1]][pix[0]] = colors[errCnt]
 
 	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
-	cp = ColorProcessor(labelMap.getWidth() ,labelMap.getHeight(), OutputPixelsNew)
+	cp = ColorProcessor(imp.getWidth(),imp.getHeight(), OutputPixelsNew)
 	OutputImg = ImagePlus("OutputImg", cp)
 	OutputImg.show()
 
