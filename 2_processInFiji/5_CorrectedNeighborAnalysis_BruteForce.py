@@ -1,3 +1,11 @@
+#@int(label="A nucleus is everything  BIGGER than (um^2)") areaMin
+#@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
+#@boolean (label="Filter according to area") filterArea
+#
+#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
+#@boolean (label="Filter according to circularity") filterCirc
+#
 #@int (label="Search radius [microns]:", value=50) R
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="X coordinate map:") xMapFile
@@ -5,6 +13,7 @@
 #@File (label="Z coordinate map:") zMapFile
 #@File (style="directory", label="Input directory") inputDir
 #@File (style="directory", label="Output directory") outputDir
+#@int (label="Vizu: estimated max no. of nuclei [-1 for perFrame autodetection]:", value=30) maxim1
 
 #This script takes a folder of segmented binary images and measures properties of neighboring objects. 
 #The Output images are stored in two folders: One contains the results of counting the neighbors in a firm radius,
@@ -18,7 +27,9 @@
 #	- Choose an input folder
 #	- Choose an output folder
 
-
+# make sure there is a "recognized" number used (and we don't like maxim1 = 0)
+if maxim1 < 1:
+	maxim1 = -1
 
 import sys
 import os
@@ -78,46 +89,19 @@ for filename in os.listdir(InputFolder):
 	imp = IJ.openImage(InputFolder+filename)
 
 	if imp is not None:
-		ip = imp.getProcessor()	
-
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
 			backgroundPixelValue = 2 # in case of cell membranes
-		
-		# fix pixel values;
-		for x in range(imp.width):
-			for y in range(imp.height):
-				if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
-					ip.set(x,y,0)
-				else:
-					ip.set(x,y,255)
 
-		#Detect nuclei
-		print("Detecting nuclei...")			
-		
-		IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
-		labelMap = IJ.getImage()
-		labelMapProcessor = labelMap.getProcessor()
+		# obtain list of viable nuclei
+		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax);
 
-		print("Calculating the nuclei centers...")
-		
-		ColorAndPixels = {}
-					
-		#Find all Pixels per Color (for detecting the nuclei centers later)
-		for x in range(imp.width):
-			for y in range(imp.height):
-				MyColor = labelMapProcessor.getPixel(x,y)
-				if MyColor != 0:
-					if MyColor in ColorAndPixels:
-						ColorAndPixels[MyColor].append([x,y])
-					else:
-						ColorAndPixels[MyColor] = [[x,y]]
-					
-		NucleiCenters = {}
-					
+		# ------- analysis starts here -------
+
 		#Detect centers of all nuclei inside ROI (by computing the average values of the containing pixels)
-		for Color in ColorAndPixels:
-			Pixels = ColorAndPixels[Color]
+		NucleiCenters = []
+		for nucl in nuclei:
+			Pixels = nucl.Pixels;
 			sumX = 0
 			sumY = 0
 			sumZ = 0
@@ -127,13 +111,15 @@ for filename in os.listdir(InputFolder):
 				sumZ += realCoordinates[pix[0]][pix[1]][2]
 		
 			# the real (in micron units) 3D coordinate of nuclei centre
-			NucleiCenters[Color] = [sumX/len(Pixels),sumY/len(Pixels),sumZ/len(Pixels)]
+			NucleiCenters[nucl.Color] = [sumX/len(Pixels),sumY/len(Pixels),sumZ/len(Pixels)]
 
 
 		#Count the neighbors of each nucleus 
 		print("Counting the neighbors...")
 		
 		neighbors = {}
+		maxim2 = 1
+		#NB: zero would make more sense but it is prone to division-by-zero
 		
 		for Color in NucleiCenters:
 			MyCenter = NucleiCenters[Color]
@@ -146,31 +132,26 @@ for filename in os.listdir(InputFolder):
 					numberOfNeighbors +=1
 					
 			neighbors[Color] = numberOfNeighbors-1
+			if neighbors[Color] > maxim2:
+				maxim2 = neighbors[Color]
 
 		#Creating the output image
 		print("Creating output image...")
+
+		if maxim1 == -1:
+			maxim1 = maxim2;
 		
-		maxim2 = 1
-		#NB: zero would make more sense but it is prone to division-by-zero
-		
-		for Color in neighbors:
-			if neighbors[Color] > maxim2:
-				maxim2 = neighbors[Color]	
-		
-		OutputPixels = []
-		
-		for y in range(imp.height):
-			for x in range(imp.width):
-				Color = labelMapProcessor.getPixel(x,y)
-				if Color == 0:
-					OutputPixels.append(0)
-				else:
-					OutputPixels.append((float(neighbors[Color])/float(maxim2))*255)
-					
-		labelMap.close()
+		OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
+		for nucl in nuclei:
+			nn = neighbors[nucl.Color]
+			if nn > maxim1:
+				nn = maxim1
+			intensityColor = float(nn)/float(maxim1))*255
+			for pix in nucl.Pixels:
+				OutputPixels[pix[1]][pix[0]] = intensityColor
 		
 		fp = FloatProcessor(imp.width, imp.height, OutputPixels, None)  
-		OutputImg = ImagePlus("OutputImg", fp)
+		OutputImg = ImagePlus("Nuclei_Density_in_R="+str(R)+"_microns", fp)
 		
 		fs = FileSaver(OutputImg)
 		fs.saveAsTiff(OutputFolder+"CountNeighborsWithinRadius"+str(R)+'/'+filename)
@@ -190,9 +171,11 @@ for filename in os.listdir(InputFolder):
 		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".xls")
 		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".txt")
 		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".csv")
-		#tablWindow = ij.WindowManager.getWindow("Results")
-		#tablWindow.close()
+		tablWindow = ij.WindowManager.getWindow("Results")
+		tablWindow.close()
 				
+		imp.close()
+
 		print('Image "'+filename+'" successfully processed.')
 
 	else:

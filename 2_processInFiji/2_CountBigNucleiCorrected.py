@@ -62,51 +62,23 @@ for filename in os.listdir(InputFolder):
 	imp = IJ.openImage(InputFolder+filename)
 	
 	if imp != None:
-		ip = imp.getProcessor()
-
 		# test that sizes of realSizes and imp matches
 		checkSize2DarrayVsImgPlus(realSizes, imp);
 		
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
 			backgroundPixelValue = 2 # in case of cell membranes
-			
-		# fix pixel values;
-		for x in range(imp.getWidth()):
-			for y in range(imp.getHeight()):
-				if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
-					ip.set(x,y,0)
-				else:
-					ip.set(x,y,255)
-		
-		#Detect Nuclei
-		IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
-		labelMap = IJ.getImage()
-		LPP = labelMap.getProcessor()
-		
-		#Detect all Pixel belonging to one Color
-		pixelPerColor = {}
-		
-		for x in range(labelMap.width):
-			for y in range(labelMap.height):
-				MyColor = LPP.getf(x,y)
-				if  MyColor != 0:
-					if str(MyColor) in pixelPerColor:
-						pixelPerColor[str(MyColor)].append([x,y])
-					else:
-						pixelPerColor[str(MyColor)] = [[x,y]]
-		
-		# a list of nuclei objects
-		nuclei = []
-		
-		for Color in pixelPerColor:
-			nuclei.append(Nucleus(Color[0:len(Color)-2],pixelPerColor[Color],ip,realSizes))
 
-		bigNuclei = 0
+		# obtain list of viable nuclei
+		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax);
 
-		for nucl in nuclei:
-			if nucl.doesQualify(filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax) == True:
-				bigNuclei += 1
+		# ------- analysis starts here -------
+		bigNuclei = len(nuclei)
+
+#		for nucl in nuclei:
+#			if nucl.doesQualify(filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax) == True:
+#				bigNuclei += 1
+#NB: every nuclei in the list qualifies...
 
 		number = ''
 		for c in filename:
@@ -123,7 +95,6 @@ for filename in os.listdir(InputFolder):
 		Images.append(filename)
 		BigNucleiPerTimestamp.append(bigNuclei)
 	
-		labelMap.close()
 		imp.close()
 	
 		print("Image "+filename+" successfully processed.")
