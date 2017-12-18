@@ -4,7 +4,7 @@ from ij.process import ColorProcessor
 
 from Nucleus import Nucleus
 
-def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
+def findComponents(imp,bgPixelValue,realSizes,prefix):
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
 
@@ -31,14 +31,23 @@ def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterC
 				if MyColor in pixelPerColor:
 					pixelPerColor[MyColor].append([x,y])
 				else:
-					print "detected (1st run): "+str(MyColor)
+					#print "detected (1st run): "+str(MyColor)
 					pixelPerColor[MyColor] = [[x,y]]
 	labelMap.close()
 
 	# a list of detected objects (connected components)
 	components = []
 	for Color in pixelPerColor:
-		components.append(Nucleus("1_"+str(Color),pixelPerColor[Color],ip,realSizes))
+		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],ip,realSizes))
+
+	return components
+
+
+def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
+	# obtain list of all components that are found initially in the image
+	components = findComponents(imp,bgPixelValue,realSizes,"1_")
+	# obtain "handle" to the pixels
+	ip = imp.getProcessor()
 
 	# output list of nuclei
 	nuclei = []
@@ -68,25 +77,8 @@ def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterC
 		IJ.run("Erode (3D)", "1")
 		IJ.run("Erode (3D)", "1")
 
-		# do again the component analysis (HMAX+labelling)
-		IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
-		labelMap = IJ.getImage()
-		LPP = labelMap.getProcessor()
-		# extract again all components
-		pixelPerColor = {}
-		for x in range(labelMap.width):
-			for y in range(labelMap.height):
-				MyColor = int(LPP.getf(x,y))
-				if  MyColor != 0:
-					if MyColor in pixelPerColor:
-						pixelPerColor[MyColor].append([x,y])
-					else:
-						print "detected (2nd run): "+str(MyColor)
-						pixelPerColor[MyColor] = [[x,y]]
-		labelMap.close()
-		components = []
-		for Color in pixelPerColor:
-			components.append(Nucleus("2_"+str(Color),pixelPerColor[Color],ip,realSizes))
+		# find again the new components
+		components = findComponents(imp,bgPixelValue,realSizes,"2_")
 
 		# and filter again this new components
 		for comp in components:
