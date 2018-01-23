@@ -64,8 +64,8 @@ def main():
 		img.show()
 
 		# check whether A/BsliceTo indices are within the image z-axis range
-		if (AsliceTo > img.getStackSize() or BsliceTo > img.getStackSize()):
-			print "A or B slice TO index is beyond last z-slice."
+		if (AsliceTo > img.getStackSize() or BsliceTo > img.getStackSize() or CsliceTo > img.getStackSize() or DsliceTo > img.getStackSize()):
+			print "Some slice TO index is beyond last z-slice."
 			return
 
 		# 1st interval
