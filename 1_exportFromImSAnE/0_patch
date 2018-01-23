@@ -1,0 +1,110 @@
+diff -u imsane_min/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m imsane_Vlado/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m
+--- imsane_min/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m	2018-01-23 20:09:10.000000000 +0100
++++ imsane_Vlado/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m	2018-01-23 21:22:30.000000000 +0100
+@@ -117,6 +117,13 @@
+             %                       WARNING: this option will delete
+             %                       previously stored other layers if they
+             %                       were made
++            %   - nLayersP:         number of P layers (optional)
++            %   - nLayersM:         number of M layers (optional)
++            %                       either this pair of layers or nLayers
++            %                       must be specified; if one or both of this pair
++            %                       are missing, the function will use the symmetric
++            %                       nLayers variant; MIP and/or SIP is disabled
++            %                       if this pair is used
+ 
+             % We have:
+             % - a chart phi: M -> R^2
+@@ -137,8 +144,10 @@
+                             'sigma', 1, 'makeIP', false, 'IPonly', false,...
+                             'zEvolve',false);
+             else
+-                assert(isfield(onionOpts, 'nLayers') && rem(onionOpts.nLayers, 2),...
+-                'onionOptions should have field nLayers with odd integer value')
++                assert((isfield(onionOpts,'nLayersP') && onionOpts.nLayersP >= 0 && ...
++                        isfield(onionOpts,'nLayersM') && onionOpts.nLayersM >= 0) || ...
++                       (isfield(onionOpts, 'nLayers') && rem(onionOpts.nLayers, 2)),...
++                'onionOptions should have either field nLayers with odd integer value, or pair of fields nLayersP,nLayersM with non-negative integer values')
+                 if ~isfield(onionOpts, 'layerDistance')
+                     onionOpts.layerDistance = 1;
+                 end
+@@ -149,18 +158,31 @@
+             end
+ 
+             % store number of layers
+-            this.nLayers = onionOpts.nLayers;
+-            halfLayers = (this.nLayers - 1)/2;
++            if ~isfield(onionOpts, 'nLayersP') || ~isfield(onionOpts, 'nLayersM')
++                % backward compatible variant
++                this.nLayers = onionOpts.nLayers;
++                halfLayers = (this.nLayers - 1)/2;
++                pLayers = halfLayers;
++                mLayers = halfLayers;
++            else
++                % newer variant
++                this.nLayers = 1;
++                pLayers = onionOpts.nLayersP;
++                mLayers = onionOpts.nLayersM;
++                onionOpts.makeIP = 0;
++            end
+ 
+             % create fields for onion layers
+-            for li = 1:halfLayers;
+-
+-                name = 'data_layer_';
+-                PT = this.data.patchClass;
+-                TS = this.data.targetSpace;
+-                    
++            PT = this.data.patchClass;
++            TS = this.data.targetSpace;
++            name = 'data_layer_';
++            for li = 1:pLayers;
+                 if this.getField([name 'p' num2str(li)]) == 0 
+                     this.createField([name 'p' num2str(li)], PT, TS, true);
++                end
++            end
++            for li = 1:mLayers;
++                if this.getField([name 'm' num2str(li)]) == 0 
+                     this.createField([name 'm' num2str(li)], PT, TS, true);
+                 end
+             end
+@@ -255,9 +277,7 @@
+                 for ni = 1:numel(dX); dX{ni}(isnan(dX{ni})) = 0; end
+ 
+                 % now loop through the layers
+-                for li = 1:this.nLayers
+-
+-                    idx = li - halfLayers - 1;
++					 for idx = [ -floor(mLayers):-1 , 0, 1:floor(pLayers) ]
+ 
+                     % normally evolved embedding
+                     def = {X{1} + idx*dX{1}, X{2} + idx*dX{2}, X{3} + idx*dX{3}};
+@@ -281,7 +301,6 @@
+                     end
+                     
+                     % convert index to field name
+-                    idx = li - halfLayers - 1;
+                     if idx < 0
+                         fieldName = ['data_layer_m' num2str(-idx)];
+                     elseif idx > 0
+@@ -327,9 +346,11 @@
+                 end
+                 
+                 if onionOpts.IPonly
+-                    for li = 1:halfLayers;
+-                        name = 'data_layer_';
++                    name = 'data_layer_';
++                    for li = 1:pLayers;
+                         this.removeField([name 'p' num2str(li)]);
++                    end 
++                    for li = 1:mLayers;
+                         this.removeField([name 'm' num2str(li)]);
+                     end 
+                 end
+@@ -817,4 +838,4 @@
+         end
+     end
+  
+-end
+\ No newline at end of file
++end

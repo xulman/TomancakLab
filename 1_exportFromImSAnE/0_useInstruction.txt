@@ -1,0 +1,35 @@
+This is a manual on how to change a little the original functionality of ImSAnE
+by introducing asymmetric export of onion layers (when producing embedded charts).
+
+First step: Change the source of the ImSAnE
+1) locate instalation of ImSAnE, it is a folder in which "+diffgeometry", "+project" and more are listed
+2) open prompt/command line/console and 'cd' into it
+3) call: cp SurfaceOfInterest.m SurfaceOfInterest__BACKUP.m 
+4) call: patch -p 1 < path_to_this_repository/1_exportFromImSAnE/0_patch
+
+This sequence should create a backup of all modified files (in fact, only 1 file is modified).
+It should upgrade/change the file +surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m ,
+which should become similar to the 0_surfaceAnalysis_SurfaceOfInterest_SurfaceOfInterest.m
+from this repository.
+
+
+Second step: Use the upgrade ImSAnE
+1) open/install and use ImSAnE as usual (you don't need to close the current session of Matlab!)
+2) modify the commands:
+
+onionOpts = struct('nLayers', 3, 'layerDistance', 2, 'sigma', 20,'makeIP' ,'MIP');
+xp.SOI.pullbackStack(xp.stack, xp.currentROI, xp.currentTime, onionOpts);
+
+in your pipeline to the new commands:
+
+onionOpts = struct('nLayersP', 8, 'nLayersM', 5, 'layerDistance', 2, 'sigma', 20,'makeIP' ,'MIP');
+xp.SOI.pullbackStack(xp.stack, xp.currentROI, xp.currentTime, onionOpts);
+
+3) re-run your pipeline from this place
+
+Notice that 'nLayers' was replaced with a pair 'nLayersP' and 'nLayersM'.
+This sequence should export your charts as usual except that 8 p-layers and 5 m-layers are created,
+instead of the original 3 additional p-layers and 3 m-layers. When this pair of parameters
+is used, the intensity projection parameter 'makeIP' is not applied and no addition projections
+are created (you may still find projection folders on your harddisk, these will be from your
+previous attempts, note their timestamps).
