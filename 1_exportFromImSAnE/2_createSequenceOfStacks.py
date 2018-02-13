@@ -1,5 +1,5 @@
-#@File (style="directory", label="Input directory FROM") inputDirFrom
-#@File (style="directory", label="Input directory   TO") inputDirTo
+#@File (style="directory", label="Input directory with the M layers") inputDirFrom
+#@File (style="directory", label="Input directory with the P layers") inputDirTo
 #@String (label="path between input dirs and slice images", value="cylinder1_index/cylinder1") subPath
 #@File (style="directory", label="Output directory to store stacks") outputDir
 #@int (label="First time-point to be used", value="1") timeSpanFrom
@@ -38,12 +38,14 @@ def main():
 	pat = s[i+11] + s[i+12]
 	if (i+13 < len(s)):
 		pat += s[i+13]
+	pat += '/'
 
-	orderDict = ["p40","p39","p38","p37","p36","p35","p34","p33","p32","p31","p30","p29","p28","p27","p26","p25","p24","p23","p22","p21","p20","p19","p18","p17","p16","p15","p14","p13","p12","p11","p10","p9","p8","p7","p6","p5","p4","p3","p2","p1","m1","m2","m3","m4","m5","m6","m7","m8","m9","m10","m11","m12","m13","m14","m15","m16","m17","m18","m19","m20","m21","m22","m23","m24","m25","m26","m27","m28","m29","m30","m31","m32","m33","m34","m35","m36","m37","m38","m39","m40"]
+	orderDict = ["m50/","m49/","m48/","m47/","m46/","m45/","m44/","m43/","m42/","m41/","m40/","m39/","m38/","m37/","m36/","m35/","m34/","m33/","m32/","m31/","m30/","m29/","m28/","m27/","m26/","m25/","m24/","m23/","m22/","m21/","m20/","m19/","m18/","m17/","m16/","m15/","m14/","m13/","m12/","m11/","m10/","m9/","m8/","m7/","m6/","m5/","m4/","m3/","m2/","m1/","p1/","p2/","p3/","p4/","p5/","p6/","p7/","p8/","p9/","p10/","p11/","p12/","p13/","p14/","p15/","p16/","p17/","p18/","p19/","p20/","p21/","p22/","p23/","p24/","p25/","p26/","p27/","p28/","p29/","p30/","p31/","p32/","p33/","p34/","p35/","p36/","p37/","p38/","p39/","p40/","p41/","p42/","p43/","p44/","p45/","p46/","p47/","p48/","p49/","p50/"]
 
 	zFrom = -1
 	for i in range(len(orderDict)):
 		if (pat.find(orderDict[i]) > -1):
+			#print "Matching pattern "+pat+" against "+orderDict[i]+" (i="+str(i)+")"
 			zFrom = i;
 
 	if (zFrom == -1):
@@ -60,21 +62,24 @@ def main():
 	pat = s[i+11] + s[i+12]
 	if (i+13 < len(s)):
 		pat += s[i+13]
+	pat += '/'
 
 	zTo = -1
 	for ii in range(len(orderDict)):
 		if (pat.find(orderDict[ii]) > -1):
+			#print "Matching pattern "+pat+" against "+orderDict[ii]+" (ii="+str(ii)+")"
 			zTo = ii;
 
 	if (zTo == -1):
 		print "haven't recognized '"+pat+"' in the path of inputDirTo"
 		return
 
+	print "Recognized z interval from "+orderDict[zFrom]+" to "+orderDict[zTo]
 
 	# creates full filenames of the individual input images
 	def createInputName(T, FF):
 		# s is the string of the inputDirTo
-		F = s[0:i+11] + orderDict[FF] + "/" + subPath + "/cmp_1_1_T" + T + ".tif"
+		F = s[0:i+11] + orderDict[FF] + subPath + "/cmp_1_1_T" + T + ".tif"
 		return F
 
 
