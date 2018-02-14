@@ -49,6 +49,10 @@ from chooseNuclei import *
 # import the same Nucleus class to make sure the very same calculations are used
 from Nucleus import Nucleus
 
+# VLADO PROPER CIRC DEBUG
+# VLADO PIXEL CIRC DEBUG
+import math
+
 
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath())
@@ -107,6 +111,20 @@ def main():
 	OutputImg.show()
 
 
+	# VLADO PROPER CIRC DEBUG
+	for nucl in nuclei:
+		nucl.DrawValue = nucl.Circularity*1000.0
+	#drawChosenNucleiValue(imp.getWidth(),imp.getHeight(), nuclei)
+	# VLADO PROPER CIRC DEBUG
+
+	# VLADO PIXEL CIRC DEBUG
+	for nucl in nuclei:
+		nucl.DrawValue = abs(nucl.Size - ((nucl.EdgeSize**2)/(4*math.pi)))/nucl.Size
+		nucl.DrawValue *= 1000.0
+	#drawChosenNucleiValue(imp.getWidth(),imp.getHeight(), nuclei)
+	# VLADO PIXEL CIRC DEBUG
+
+
 	if (showRawData):
 		print("Populating table...")
 
@@ -121,6 +139,7 @@ def main():
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
 			rt.addValue("circularity (lower more roundish)",nucl.Circularity)
+			rt.addValue("circularity (pixel-based)"        ,nucl.DrawValue) # VLADO PIXEL CIRC DEBUG
 			rt.addValue("area (um^2)"                      ,nucl.Area)
 			rt.addValue("area (px)"                        ,nucl.Size)
 			rt.addValue("centreX (px)"                     ,nucl.CentreX)
