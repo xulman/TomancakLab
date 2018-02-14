@@ -4,9 +4,20 @@ import sys
 import math
 
 def getPixelAtRealPos(array, x,y):
-	# some existing nearby pixel
+	# returns bilinearily interpolated value/vector at [x,y]
+	# from the array of values/vectors
+
+	# some existing nearby pixel: bottom-left corner
 	X = int(math.floor(x))
 	Y = int(math.floor(y))
+
+	# diagonal, top-right corner
+	X2 = X+1
+	Y2 = Y+1
+
+	# axial distances from the bottom-left corner
+	x = float(x-X)
+	y = float(y-Y)
 
 	# array[X][Y] is assumed to be an array again
 	N = len(array[X][Y])
@@ -14,7 +25,12 @@ def getPixelAtRealPos(array, x,y):
 	# build output array (of length N)
 	res = []
 	for i in range(N):
-		res.append(array[X][Y][i])
+		# bilinearily interpolated value
+		val  = float(array[X ][Y ][i]) * (1.0-x)*(1.0-y)
+		val += float(array[X ][Y2][i]) * (1.0-x)*(    y)
+		val += float(array[X2][Y ][i]) * (    x)*(1.0-y)
+		val += float(array[X2][Y2][i]) * (    x)*(    y)
+		res.append(val)
 
 	return res
 
@@ -34,12 +50,12 @@ def properLength(xyCoords, realCoordinates):
 		# embedded 2D coords of the current line segment
 		a = xyCoords[idx-1]
 		b = xyCoords[idx  ]
-		print "[ "+str(a[0])+" , "+str(a[1])+" ] -> [ "+str(b[0])+" , "+str(b[1])+" ]"
+		#print "[ "+str(a[0])+" , "+str(a[1])+" ] --> [ "+str(b[0])+" , "+str(b[1])+" ]"
 
 		# the proper/original 3D coords of the current line segment...
 		aXYZ = getPixelAtRealPos(realCoordinates, a[0],a[1])
 		bXYZ = getPixelAtRealPos(realCoordinates, b[0],b[1])
-		print "[ "+str(aXYZ[0])+" , "+str(aXYZ[1])+" , "+str(aXYZ[2])+" ] -> [ "+str(bXYZ[0])+" , "+str(bXYZ[1])+" , "+str(bXYZ[2])+" ]"
+		#print "[ "+str(aXYZ[0])+" , "+str(aXYZ[1])+" , "+str(aXYZ[2])+" ] -> [ "+str(bXYZ[0])+" , "+str(bXYZ[1])+" , "+str(bXYZ[2])+" ]"
 
 		# ...are subtracted from each other...
 		dx = aXYZ[0] - bXYZ[0]
