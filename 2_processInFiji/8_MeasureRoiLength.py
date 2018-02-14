@@ -4,6 +4,7 @@
 
 from ij import IJ
 from ij.gui import PolygonRoi, Roi
+from ij.measure import ResultsTable
 import math
 
 # this section adds a folder, in which this very script is living,
@@ -66,9 +67,14 @@ def collectAndReportPoints():
 
 
 # scan through all slices of the image and report respective ROIs
+table = ResultsTable()
 #for z in range(1,2):
 for z in range(1,image.getNSlices()+1):
 	image.setSlice(z)
 	coords = collectAndReportPoints()
-	print "slice "+str(z)+" length "+str(properLength(coords,realCoordinates))
+	if (len(coords) > 0):
+		table.incrementCounter()
+		table.addValue('Slice no.',z)
+		table.addValue('Proper Length',properLength(coords,realCoordinates))
+table.show('Results')
 
