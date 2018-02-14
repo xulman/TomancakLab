@@ -10,27 +10,33 @@ class Nucleus:
 		# list of pixels that make up this nuclei (nuclei mask)
 		self.Pixels = Pixels
 
-		# in squared microns
-		self.area = 0.0
-		# in pixel count
-		self.size = len(Pixels)
+		# object area in squared microns
+		self.Area = 0.0
+		# object area in pixel number
+		self.Size = len(Pixels)
 
 		# geometric centre in pixel coordinates
-		self.centreX = 0.0
-		self.centreY = 0.0
+		self.CentreX = 0.0
+		self.CentreY = 0.0
 
+		# calculate real size and geometrical centre
 		for pix in Pixels:
-			self.area += realSizes[pix[0]][pix[1]]
-			self.centreX += pix[0]
-			self.centreY += pix[1]
+			self.Area += realSizes[pix[0]][pix[1]]
+			self.CentreX += pix[0]
+			self.CentreY += pix[1]
 
 		# finish calculation of the geometrical centre
-		self.centreX /= len(Pixels)
-		self.centreY /= len(Pixels)
+		self.CentreX /= len(Pixels)
+		self.CentreY /= len(Pixels)
 
-		self.edgePixels = []
+		# list of pixels that make up boundary of this nuclei (nuclei mask)
+		self.EdgePixels = []
+
+		# (approximate) length of the boundary in microns
+		self.EdgeLength = 0
+
+		# determine boundary pixels
 		for pix in Pixels:
-			thisColor = ip.getPixel(pix[0],pix[1])
 			try:
 				ColorLeft = ip.getPixel(pix[0]-1,pix[1])
 			except:
@@ -40,6 +46,8 @@ class Nucleus:
 				ColorAbove = ip.getPixel(pix[0],pix[1]-1)
 			except:
 				ColorAbove = -1
+
+			thisColor = ip.getPixel(pix[0],pix[1])
 
 			try:
 				ColorBelow = ip.getPixel(pix[0],pix[1]+1)
@@ -65,10 +73,12 @@ class Nucleus:
 		self.circularity = abs(self.area - ((self.edgeSize**2)/(4*math.pi)))/self.area
 
 	# the same condition that every one should use to filter out nuclei that
+
+	# the same condition that everyone should use to filter out nuclei that
 	# do not qualify for this study
 	def doesQualify(self, areaConsidered,areaMin,areaMax, circConsidered,circMin,circMax):
-		if (circConsidered == True and (self.circularity < circMin or self.circularity > circMax)):
+		if (circConsidered == True and (self.Circularity < circMin or self.Circularity > circMax)):
 			return False;
-		if (areaConsidered == True and (self.area < areaMin or self.area > areaMax)):
+		if (areaConsidered == True and (self.Area < areaMin or self.Area > areaMax)):
 			return False;
 		return True;
