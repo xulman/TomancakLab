@@ -8,6 +8,9 @@
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
 #
 #@boolean (label="Show sheet with analysis data") showRawData
 
@@ -48,30 +51,34 @@ from Nucleus import Nucleus
 
 
 # reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes(aMapFile.getAbsolutePath());
+realSizes = readRealSizes(aMapFile.getAbsolutePath())
+
+# read the 'real Coordinates', that take into account the different pixel sizes
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
 
 imp = IJ.getImage()
 
 
 def main():
 	# test that sizes of realSizes and imp matches
-	checkSize2DarrayVsImgPlus(realSizes, imp);
+	checkSize2DarrayVsImgPlus(realSizes, imp)
+	checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
 	backgroundPixelValue = 1 # in case of cell nuclei
 	if (not inputImageShowsNuclei):
 		backgroundPixelValue = 2 # in case of cell membranes
 
 	# obtain list of all nuclei
-	nuclei = findComponents(imp,backgroundPixelValue,realSizes,"")
-	#nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+	nuclei = findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"")
+	#nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 
 	# ------- analysis starts here -------
 	circularitySum = 0
 	sizesum = 0
 
 	for nucl in nuclei:
-		circularitySum += nucl.circularity
-		sizesum += nucl.area
+		circularitySum += nucl.Circularity
+		sizesum += nucl.Area
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
@@ -85,9 +92,9 @@ def main():
 	#
 	for nucl in nuclei:
 		errCnt = 0
-		if (filterCirc == True and (nucl.circularity < circularityMin or nucl.circularity > circularityMax)):
+		if (filterCirc == True and (nucl.Circularity < circularityMin or nucl.Circularity > circularityMax)):
 			errCnt += 1
-		if (filterArea == True and (nucl.area < areaMin or nucl.area > areaMax)):
+		if (filterArea == True and (nucl.Area < areaMin or nucl.Area > areaMax)):
 			errCnt += 2
 
 		for pix in nucl.Pixels:
@@ -112,14 +119,14 @@ def main():
 		for nucl in nuclei:
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
-			rt.addValue("circularity (lower more roundish)",nucl.circularity)
-			rt.addValue("area (um^2)"                      ,nucl.area)
-			rt.addValue("area (px)"                        ,nucl.size)
-			rt.addValue("centreX (px)"                     ,nucl.centreX)
-			rt.addValue("centreY (px)"                     ,nucl.centreY)
+			rt.addValue("circularity (lower more roundish)",nucl.Circularity)
+			rt.addValue("area (um^2)"                      ,nucl.Area)
+			rt.addValue("area (px)"                        ,nucl.Size)
+			rt.addValue("centreX (px)"                     ,nucl.CentreX)
+			rt.addValue("centreY (px)"                     ,nucl.CentreY)
 
-			imgArea.append(nucl.area)
-			imgCirc.append(nucl.circularity)
+			imgArea.append(nucl.Area)
+			imgCirc.append(nucl.Circularity)
 
 		# show the image
 		rt.showRowNumbers(False)

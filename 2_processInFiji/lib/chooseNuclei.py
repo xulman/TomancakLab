@@ -4,7 +4,7 @@ from ij.process import ColorProcessor
 
 from Nucleus import Nucleus
 
-def findComponents(imp,bgPixelValue,realSizes,prefix):
+def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
 
@@ -38,14 +38,14 @@ def findComponents(imp,bgPixelValue,realSizes,prefix):
 	# a list of detected objects (connected components)
 	components = []
 	for Color in pixelPerColor:
-		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],ip,realSizes))
+		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],ip,realSizes,realCoords))
 
 	return components
 
 
-def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
+def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
 	# obtain list of all components that are found initially in the image
-	components = findComponents(imp,bgPixelValue,realSizes,"1_")
+	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
 
@@ -78,7 +78,7 @@ def chooseNuclei(imp,bgPixelValue,realSizes, filterArea,areaMin,areaMax, filterC
 		IJ.run("Erode (3D)", "1")
 
 		# find again the new components
-		components = findComponents(imp,bgPixelValue,realSizes,"2_")
+		components = findComponents(imp,bgPixelValue,realSizes,realCoords,"2_")
 
 		# and filter again this new components
 		for comp in components:
