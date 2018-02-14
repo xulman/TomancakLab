@@ -17,6 +17,10 @@ class Nucleus:
 		# label of the nuclei
 		self.Color = Color
 
+		# a scalar value to be used in chooseNuclei.drawChosenNucleiValue(),
+		# one may save here an arbitrary visualization hint for the nuclei drawing
+		self.DrawValue = 1
+
 		# list of pixels that make up this nuclei (nuclei mask)
 		self.Pixels = Pixels
 

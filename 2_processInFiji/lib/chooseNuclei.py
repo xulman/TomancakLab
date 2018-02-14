@@ -99,12 +99,28 @@ def drawChosenNuclei(width,height, nuclei):
 
 	nuclCnt = 0
 	for nucl in nuclei:
-		nuclCnt = nuclCnt + 1
+		nuclCnt += 1
 		color = colors[nuclCnt % colNo]
 		for pix in nucl.Pixels:
 			OutputPixels[pix[1]][pix[0]] = color
 
 	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
 	cp = ColorProcessor(width,height, OutputPixelsNew)
-	OutputImg = ImagePlus("Viable Nuclei", cp)
+	OutputImg = ImagePlus("Choosen Nuclei", cp)
+	OutputImg.show()
+
+
+def drawChosenNucleiValue(width,height, nuclei):
+	# will place Nucleus.DrawValue into the image
+
+	#initiate output pixel buffer
+	OutputPixels = [[0 for y in range(width)] for x in range(height)]
+
+	for nucl in nuclei:
+		for pix in nucl.Pixels:
+			OutputPixels[pix[1]][pix[0]] = nucl.DrawValue
+
+	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
+	cp = ColorProcessor(width,height, OutputPixelsNew)
+	OutputImg = ImagePlus("Visualized Nuclei", cp)
 	OutputImg.show()
