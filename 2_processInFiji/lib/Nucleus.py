@@ -3,7 +3,7 @@ import math
 
 class Nucleus:
 
-	def __init__(self,Color,Pixels,ip,realSizes):
+	def __init__(self,Color,Pixels,ip,realSizes,realCoords):
 		# label of the nuclei
 		self.Color = Color
 
@@ -59,20 +59,110 @@ class Nucleus:
 			except:
 				ColorRight = -1
 
-			# mimics 2D 4-neighbor erosion
-			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorBelow or thisColor != ColorRight:
-				self.edgePixels.append([pix[0],pix[1]])
+			# mimics 2D 4-neighbor erosion:
+			# encode which neighbors are missing, and how many of them
+			missNeig = 0
+			cnt = 0;
 
-		# TODO: edgeSize has to be edgeLength !!! involve proper length measurement, see issue #1
-		self.edgeSize = 0
-		for pix in self.edgePixels:
-			self.edgeSize += realSizes[pix[0]][pix[1]]
+			if thisColor != ColorLeft:
+				missNeig += 1
+				cnt += 1
+			if thisColor != ColorAbove:
+				missNeig += 2
+				cnt += 1
+			if thisColor != ColorRight:
+				missNeig += 4
+				cnt += 1
+			if thisColor != ColorBelow:
+				missNeig += 8
+				cnt += 1
 
-		# TODO: edgeSize has to be edgeLength !!! involve proper length measurement, see issue #1
-		# lower value means higher circularity
-		self.circularity = abs(self.area - ((self.edgeSize**2)/(4*math.pi)))/self.area
+			if missNeig != 0:
+				# found border-forming pixel, enlist it
+				self.EdgePixels.append([pix[0],pix[1]])
 
-	# the same condition that every one should use to filter out nuclei that
+				# Marching-cubes-like determine configuration of the border pixel,
+				# and guess an approximate proper length of the boundary this pixels co-establishes
+				coords = []
+
+				# legend on bits used to flag directions:
+				#
+				#           2
+				#          (y-)
+				#           |
+				#           |
+				# 1 (x-) <--+--> (x+) 4
+				#           |
+				#           |
+				#          (y+)
+				#           8
+				#
+
+				if cnt == 1:
+					# one neighbor is missing -> boundary is straight here
+					if missNeig&1 or missNeig&4:
+						# vertical boundary
+						coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] ]
+					else:
+						# horizontal boundary
+						coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] ]
+
+				if cnt == 2:
+					# two neighbors -> we're either a corner, or boundary is 1px thick
+					if missNeig&5 == 5 or missNeig&10 == 10:
+						# 1px thick boundary
+						if missNeig&5 == 5:
+							# 1px thick vertical boundary
+							coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] , [pix[0],pix[1]] , [pix[0],pix[1]-1] ]
+						else:
+							# 1px thick horizontal boundary
+							coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] , [pix[0],pix[1]] , [pix[0]-1,pix[1]] ]
+					else:
+						# missing neighbors are "neighbors" to each other too -> we're a corner
+						if missNeig&6 == 6 or missNeig&9 == 9:
+							# we're top-right corner, or bottom-left corner
+							coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+
+						if missNeig&12 == 12 or missNeig&3 == 3:
+							# we're bottom-right corner, or top-left corner
+							coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+
+				if cnt == 3:
+					# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
+					if missNeig&7 == 7:
+						# have only a neighbor below
+						coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+
+					if missNeig&11 == 11:
+						# have only a neighbor right
+						coords = [ [pix[0]+1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+
+					if missNeig&13 == 13:
+						# have only a neighbor above
+						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+
+					if missNeig&14 == 14:
+						# have only a neighbor left
+						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]-1,pix[1]+1] ]
+
+				# we gracefully ignore when cnt == 4...
+
+				# calculate the proper length of the local boundary by sweeping
+				# through a neighbor,myself,neighbor (giving us twice the required length)
+				self.EdgeLength += properLength(coords,realCoords) / 2.0
+
+				#DEBUG VLADO REMOVE
+				for c in coords:
+					print str(c[0])+" "+str(c[1])
+				print ""
+				print ""
+
+		# length of the boundary in pixel
+		self.EdgeSize = len(self.EdgePixels)
+
+		# circularity: lower value means higher circularity
+		self.Circularity = abs(self.Area - ((self.EdgeLength**2)/(4*math.pi)))/self.Area
+
 
 	# the same condition that everyone should use to filter out nuclei that
 	# do not qualify for this study
