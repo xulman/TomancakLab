@@ -68,9 +68,10 @@ def main():
 	if (not inputImageShowsNuclei):
 		backgroundPixelValue = 2 # in case of cell membranes
 
-	# obtain list of all nuclei
-	nuclei = findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"")
-	#nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+	# obtain list of all valid nuclei
+	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+	# add list of all INvalid nuclei (since only invalid are left in the input image)
+	nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
 
 	# ------- analysis starts here -------
 	circularitySum = 0
