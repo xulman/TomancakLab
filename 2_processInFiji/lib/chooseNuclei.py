@@ -1,6 +1,7 @@
 from ij import IJ
 from ij import ImagePlus
 from ij.process import ColorProcessor
+from ij.process import FloatProcessor
 
 from Nucleus import Nucleus
 
@@ -140,13 +141,13 @@ def drawChosenNucleiValue(width,height, nuclei):
 	# will place Nucleus.DrawValue into the image
 
 	#initiate output pixel buffer
-	OutputPixels = [[0 for y in range(width)] for x in range(height)]
+	OutputPixels = [[0.0 for y in range(width)] for x in range(height)]
 
 	for nucl in nuclei:
 		for pix in nucl.Pixels:
 			OutputPixels[pix[1]][pix[0]] = nucl.DrawValue
 
 	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
-	cp = ColorProcessor(width,height, OutputPixelsNew)
+	cp = FloatProcessor(width,height, OutputPixelsNew)
 	OutputImg = ImagePlus("Visualized Nuclei", cp)
 	OutputImg.show()
