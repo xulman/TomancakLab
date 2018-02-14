@@ -1,5 +1,15 @@
 import math
 
+# this section adds a folder, in which this very script is living,
+# to the current search paths so that we can import our "library script"
+import sys.path
+import os.path
+import inspect
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+
+# import our "library scripts"
+from properMeasurements import *
+
 
 class Nucleus:
 
