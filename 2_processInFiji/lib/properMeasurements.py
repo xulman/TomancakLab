@@ -70,3 +70,17 @@ def properLength(xyCoords, realCoordinates):
 
 
 # ---------- real areas ----------
+def properArea(xyCoords, realAreas):
+	# xyCoords should be a list of pairs,
+	# realAreas should be a 2D list of scalars
+	# (e.g., obtained via importsFromImSAnE.readRealSizes())
+	#
+	# xyCoords is essentially a list of pixels that represent one object/component
+
+	# overall sum
+	sum = 0.0
+
+	for xy in xyCoords:
+		sum += realAreas[xy[0]][xy[1]]
+
+	return sum
