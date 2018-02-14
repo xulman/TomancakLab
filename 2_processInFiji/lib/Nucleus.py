@@ -151,11 +151,18 @@ class Nucleus:
 				# through a neighbor,myself,neighbor (giving us twice the required length)
 				self.EdgeLength += properLength(coords,realCoords) / 2.0
 
-				#DEBUG VLADO REMOVE
-				for c in coords:
-					print str(c[0])+" "+str(c[1])
-				print ""
-				print ""
+#				#DEBUG VLADO REMOVE
+#				a = coords[0]
+#				b = coords[1]
+#				c = coords[2]
+#				for i in [0,1]:
+#					a[i] = (float(a[i])+float(b[i]))/2.0
+#					c[i] = (float(b[i])+float(c[i]))/2.0
+#
+#				print str(a[0])+" "+str(a[1])+" 1"
+#				print str(b[0])+" "+str(b[1])+" 2"
+#				print str(c[0])+" "+str(c[1])+" 1"
+#				print ""
 
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
