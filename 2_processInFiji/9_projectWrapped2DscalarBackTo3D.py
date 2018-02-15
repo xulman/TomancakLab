@@ -2,6 +2,7 @@
 #@File (label="X coordinate map:") xMapFile
 #@File (label="Y coordinate map:") yMapFile
 #@File (label="Z coordinate map:") zMapFile
+#@float (label="Pixel size (microns per 1px):") pxSize
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
@@ -45,9 +46,9 @@ for x in range(0,inImp.width):
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
 		# first, scale to pixel units
-		coord[0] = coord[0] / 0.38;
-		coord[1] = coord[1] / 0.38;
-		coord[2] = coord[2] / 0.38;
+		coord[0] = coord[0] / pxSize
+		coord[1] = coord[1] / pxSize
+		coord[2] = coord[2] / pxSize
 
 		# second, update coordinate bounds
 		if (coord[0] < min[0]):
