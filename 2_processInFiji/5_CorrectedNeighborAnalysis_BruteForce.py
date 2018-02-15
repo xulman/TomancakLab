@@ -6,11 +6,13 @@
 #@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
-#@int (label="Search radius [microns]:", value=50) R
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@File (label="Pixel areas map:") aMapFile
 #@File (label="X coordinate map:") xMapFile
 #@File (label="Y coordinate map:") yMapFile
 #@File (label="Z coordinate map:") zMapFile
+#
+#@int (label="Search radius [microns]:", value=50) R
 #@File (style="directory", label="Input directory") inputDir
 #@File (style="directory", label="Output directory") outputDir
 #@int (label="Vizu: estimated max no. of nuclei [-1 for perFrame autodetection]:", value=30) maxim1
@@ -47,10 +49,14 @@ from ij.measure import ResultsTable
 import sys.path
 import os.path
 import inspect
-sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 
 # import our "library script"
 from importsFromImSAnE import *
+
+# import the same Nucleus class to make sure the very same calculations are used
+from Nucleus import Nucleus
+from chooseNuclei import *
 
 
 InputFolder = inputDir.getAbsolutePath() + "/"
@@ -80,26 +86,35 @@ if FirstImage == None:
 	sys.exit('No images in input folder ' + InputFolder + '!')
 
 
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes(aMapFile.getAbsolutePath());
+
 #Calculate the 'real Coordinates', that take into account the different pixel sizes
 realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath());
 
+# test that sizes of realSizes and bigImg matches
+checkSize2DarrayVsImgPlus(realSizes, FirstImage);
+checkSize2DarrayVsImgPlus(realCoordinates, FirstImage)
+
 # Process the images
 for filename in os.listdir(InputFolder):
-
 	imp = IJ.openImage(InputFolder+filename)
 
 	if imp is not None:
+		# test that sizes of realSizes and imp matches
+		checkSize2DarrayVsImgPlus(realSizes, imp);
+		checkSize2DarrayVsImgPlus(realCoordinates, imp)
+
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
 			backgroundPixelValue = 2 # in case of cell membranes
 
 		# obtain list of viable nuclei
-		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax);
+		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 
 		# ------- analysis starts here -------
-
 		#Detect centers of all nuclei inside ROI (by computing the average values of the containing pixels)
-		NucleiCenters = []
+		NucleiCenters = {}
 		for nucl in nuclei:
 			Pixels = nucl.Pixels;
 			sumX = 0
@@ -113,10 +128,7 @@ for filename in os.listdir(InputFolder):
 			# the real (in micron units) 3D coordinate of nuclei centre
 			NucleiCenters[nucl.Color] = [sumX/len(Pixels),sumY/len(Pixels),sumZ/len(Pixels)]
 
-
 		#Count the neighbors of each nucleus 
-		print("Counting the neighbors...")
-		
 		neighbors = {}
 		maxim2 = 1
 		#NB: zero would make more sense but it is prone to division-by-zero
@@ -135,6 +147,7 @@ for filename in os.listdir(InputFolder):
 			if neighbors[Color] > maxim2:
 				maxim2 = neighbors[Color]
 
+		# ------- reporting starts here -------
 		#Creating the output image
 		print("Creating output image...")
 
@@ -157,8 +170,6 @@ for filename in os.listdir(InputFolder):
 		fs.saveAsTiff(OutputFolder+"CountNeighborsWithinRadius"+str(R)+'/'+filename)
 		
 		#Create output table
-		print("Creating output table...")
-
 		table = ResultsTable()
 
 		# Add values to the table
@@ -175,8 +186,7 @@ for filename in os.listdir(InputFolder):
 		tablWindow.close()
 				
 		imp.close()
-
-		print('Image "'+filename+'" successfully processed.')
+		print('Successfully processed "'+ filename+'"')
 
 	else:
 		print("Ignoring " + filename)
