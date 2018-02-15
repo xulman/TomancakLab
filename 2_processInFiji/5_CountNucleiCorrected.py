@@ -1,6 +1,19 @@
+#@int(label="A nucleus is everything  BIGGER than (um^2)") areaMin
+#@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
+#@boolean (label="Filter according to area") filterArea
+#
+#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
+#@boolean (label="Filter according to circularity") filterCirc
+#
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
 #
+#@File (style="directory", label="Input directory") inputDir
+
 # This script counts the nuclei in a given ROI over time.
 # It takes a folder of binary images and the ROI as input, and then displays a table
 # in which the number of nuclei for each timestamp is saved.
@@ -27,10 +40,14 @@ import sys
 import sys.path
 import os.path
 import inspect
-sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 
 # import our "library script"
 from importsFromImSAnE import *
+
+# import the same Nucleus class to make sure the very same calculations are used
+from Nucleus import Nucleus
+from chooseNuclei import *
 
 #Get ROI
 bigImg = IJ.getImage()
@@ -39,62 +56,61 @@ RoiD  = ij.ImagePlus.getRoi(bigImg)
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath());
 
+# read the 'real Coordinates', that take into account the different pixel sizes
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
+
 # test that sizes of realSizes and bigImg matches
 checkSize2DarrayVsImgPlus(realSizes, bigImg);
+checkSize2DarrayVsImgPlus(realCoordinates, bigImg)
 
-RoiSize = 0
+# determine the proper area of the reference ROI
+RoiSize = 0.0
 for point in RoiD:
 	RoiSize += realSizes[point.x][point.y]
 
 if RoiD != None:
 	print RoiD
-	
-	noNumbers = False
-	results = []
-	densities = []
-	numbers = []
 
-	#Let the user choose an input folder
-	dc1 = DirectoryChooser("Choose your input folder")
-	InputFolder = dc1.getDirectory()
+	#dc1 = DirectoryChooser("Choose your input folder")
+	#InputFolder = dc1.getDirectory()
+	InputFolder = inputDir.getAbsolutePath() + "/"
 
 	if (InputFolder is None):
 		sys.exit('User canceled Dialog!')
+
+	results = []
+	densities = []
+	numbers = []
+	noNumbers = False
 
 	for filename in os.listdir(InputFolder):
 		imp = IJ.openImage(InputFolder+filename)
 
 		if imp != None:
-			ip = imp.getProcessor()
+			# test that sizes of realSizes and imp matches
+			checkSize2DarrayVsImgPlus(realSizes, imp);
+			checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
 			backgroundPixelValue = 1 # in case of cell nuclei
 			if (not inputImageShowsNuclei):
 				backgroundPixelValue = 2 # in case of cell membranes
-			# fix pixel values
-			for x in range(0, imp.getWidth()):
-				for y in range(0, imp.getHeight()):
-					if (ip.getPixel(x, y) == backgroundPixelValue or ip.getPixel(x, y) == 0):
-						ip.set(x,y,0)
-					else:
-						ip.set(x,y,255)
-	
-			# detect nuclei
-			IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0");
-			labelMap = IJ.getImage()
-			labelMapProcessor = labelMap.getProcessor()
 
-			# Count number of different colors in label map = Count nuclei
-			ColorsInRoi = set()
+			# obtain list of viable nuclei
+			nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+
+			# ------- analysis starts here -------
+			# Count number of nuclei inside the ROI (actually it is nuclei centres that have to be inside)
+			numberOfNuclei = 0
+			for nucl in nuclei:
+				# extract an integer variant of the coordinate of the nucleus centre
+				# NB: float coordinate might not match exactly the point's integer coordinates
+				cx = int(nucl.CentreX)
+				cy = int(nucl.CentreY)
+				for point in RoiD:
+					if (point.x == cx and point.y == cy):
+						numberOfNuclei += 1
 		
-			for point in RoiD:
-				ColorsInRoi.add(labelMapProcessor.getPixel(point.x,point.y))
-	
-			labelMap.close()
-			numberOfNuclei = len(ColorsInRoi) - 1
-			
-			results.append((filename,numberOfNuclei))
-			densities.append((float(numberOfNuclei)/float(RoiSize))*100)
-	
+			# ------- reporting starts here -------
 			#Extract number from filename if existing (for the sorting afterwards)
 			number = ''
 			for c in filename:
@@ -107,7 +123,11 @@ if RoiD != None:
 				else:
 					number = int(number)
 					numbers.append(number)
-					
+
+			results.append((filename,numberOfNuclei))
+			densities.append(float(numberOfNuclei)/float(RoiSize))
+
+			imp.close()
 			print('Successfully processed "'+ filename+'"')
 
 		else:
@@ -115,7 +135,6 @@ if RoiD != None:
 
 		
 	# Create Results table
-	
 	table = ResultsTable()
 
 	# Add the selected Roi to the table (Just if the user forgets)
@@ -138,8 +157,13 @@ if RoiD != None:
 			table.addValue('Density', densities[i])
 
 	table.show('Results')
+	IJ.saveAs("Results", InputFolder+"/nucleiList.xls")
+	IJ.saveAs("Results", InputFolder+"/nucleiList.txt")
+	IJ.saveAs("Results", InputFolder+"/nucleiList.csv")
+
+	print
 	print('All files processed.')
-		
+
 else:
 	print("Please select your area of interest before you run this script.")
 
