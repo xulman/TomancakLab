@@ -89,8 +89,10 @@ outImp = NewImage.createRGBImage("back-projected "+inImp.getTitle(), xSize,ySize
 
 # sweep through the inImp and project pixels to outImp
 print("populating the 3D image...")
+totalStr = str(inImp.width)
 inIP = inImp.getProcessor();
 for x in range(0,inImp.width):
+	print "Doing for x="+str(x)+"/"+totalStr
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
 		# orig coords and downscale for the final output image
