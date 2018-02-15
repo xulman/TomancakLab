@@ -99,7 +99,9 @@ if RoiD != None:
 			nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 			width  = imp.getWidth()
 			height = imp.getHeight()
-			imp.close()
+			# this forces to close the image even when it was modified
+			IJ.run("Close")
+			#imp.close()
 
 			# ------- analysis starts here -------
 			# Count number of nuclei inside the ROI (is inside whenever only single pixel is inside the ROI),

@@ -1,3 +1,5 @@
+# THIS SCRIPT IS OLD AND NOT PROPERLY MAINTAINED YET!
+#
 #@boolean(label="Display horizontal change ", value=True) X_Change
 #@boolean(label="Display vertical change", value = False) Y_Change
 #@int(label="Accuracy (Number of points calculated to show the graph)", value="50") accuracy

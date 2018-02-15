@@ -124,7 +124,9 @@ for filename in os.listdir(InputFolder):
 		Images.append(filename)
 		BigNucleiPerTimestamp.append(bigNuclei)
 
-		imp.close()
+		# this forces to close the image even when it was modified
+		IJ.run("Close")
+		#imp.close()
 		print("Image "+filename+" successfully processed.")
 
 	else:
