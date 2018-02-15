@@ -3,6 +3,7 @@
 #@File (label="Y coordinate map:") yMapFile
 #@File (label="Z coordinate map:") zMapFile
 #@float (label="Pixel size (microns per 1px):") pxSize
+#@float (label="Downscale factor:") dsRatio
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
@@ -78,9 +79,10 @@ max[0]=math.ceil(max[0])
 max[1]=math.ceil(max[1])
 max[2]=math.ceil(max[2])
 
-xSize = int(max[0]-min[0]+1)
-ySize = int(max[1]-min[1]+1)
-zSize = int(max[2]-min[2]+1)
+# calc image size and downscale for the final output image
+xSize = int((max[0]-min[0]+1) /dsRatio)
+ySize = int((max[1]-min[1]+1) /dsRatio)
+zSize = int((max[2]-min[2]+1) /dsRatio)
 
 print("creating 3D of sizes: "+str(xSize)+" x "+str(ySize)+" x "+str(zSize))
 outImp = NewImage.createRGBImage("back-projected "+inImp.getTitle(), xSize,ySize,zSize, NewImage.FILL_BLACK)
@@ -91,9 +93,10 @@ inIP = inImp.getProcessor();
 for x in range(0,inImp.width):
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
-		nx = int(math.floor(coord[0] +0.5) -min[0])
-		ny = int(math.floor(coord[1] +0.5) -min[1])
-		nz = int(math.floor(coord[2] +0.5) -min[2])
+		# orig coords and downscale for the final output image
+		nx = int((math.floor(coord[0] +0.5) -min[0]) /dsRatio)
+		ny = int((math.floor(coord[1] +0.5) -min[1]) /dsRatio)
+		nz = int((math.floor(coord[2] +0.5) -min[2]) /dsRatio)
 
 		outImp.setZ(nz+1)
 		ip = outImp.getProcessor()
