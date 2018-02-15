@@ -15,7 +15,7 @@
 #@int (label="Search radius [microns]:", value=50) R
 #@File (style="directory", label="Input directory") inputDir
 #@File (style="directory", label="Output directory") outputDir
-#@int (label="Vizu: estimated max no. of nuclei [-1 for perFrame autodetection]:", value=30) maxim1
+#@int (label="Vizu: estimated max no. of nuclei [-1 for perFrame autodetection; 255 to defacto disable it]:", value=30) maxim1
 
 #This script takes a folder of segmented binary images and measures properties of neighboring objects. 
 #The Output images are stored in two folders: One contains the results of counting the neighbors in a firm radius,
@@ -73,8 +73,8 @@ print('Initializing...')
 #Create Output folders
 if not os.path.exists(OutputFolder+"CountNeighborsWithinRadius"+str(R)):
 	os.mkdir(OutputFolder+"CountNeighborsWithinRadius"+str(R))
-if not os.path.exists(OutputFolder+"OutputTables"):
-	os.mkdir(OutputFolder+"OutputTables")
+if not os.path.exists(OutputFolder+"OutputTables"+str(R)):
+	os.mkdir(OutputFolder+"OutputTables"+str(R))
 
 FirstImage = None
 for filename in os.listdir(InputFolder):
@@ -154,16 +154,17 @@ for filename in os.listdir(InputFolder):
 		if maxim1 == -1:
 			maxim1 = maxim2;
 		
-		OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
+		OutputPixels = [[0.0 for y in range(imp.width)] for x in range(imp.height)]
 		for nucl in nuclei:
 			nn = neighbors[nucl.Color]
 			if nn > maxim1:
 				nn = maxim1
-			intensityColor = float(nn)/float(maxim1))*255
+			intensityColor = 255.0*float(nn)/float(maxim1)
 			for pix in nucl.Pixels:
 				OutputPixels[pix[1]][pix[0]] = intensityColor
 		
-		fp = FloatProcessor(imp.width, imp.height, OutputPixels, None)  
+		OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
+		fp = FloatProcessor(imp.width, imp.height, OutputPixelsNew, None)
 		OutputImg = ImagePlus("Nuclei_Density_in_R="+str(R)+"_microns", fp)
 		
 		fs = FileSaver(OutputImg)
@@ -179,13 +180,15 @@ for filename in os.listdir(InputFolder):
 			table.addValue('Number of neighbors within radius '+str(R),neighbors[Color])
 
 		table.show('Results')
-		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".xls")
-		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".txt")
-		IJ.saveAs("Results", OutputFolder+"OutputTables/"+filename+".csv")
+		IJ.saveAs("Results", OutputFolder+"OutputTables"+str(R)+"/"+filename+".xls")
+		IJ.saveAs("Results", OutputFolder+"OutputTables"+str(R)+"/"+filename+".txt")
+		IJ.saveAs("Results", OutputFolder+"OutputTables"+str(R)+"/"+filename+".csv")
 		tablWindow = ij.WindowManager.getWindow("Results")
 		tablWindow.close()
 				
-		imp.close()
+		# this forces to close the image even when it was modified
+		IJ.run("Close")
+		#imp.close()
 		print('Successfully processed "'+ filename+'"')
 
 	else:
