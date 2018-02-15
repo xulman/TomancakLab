@@ -48,6 +48,9 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 	# obtain "handle" to the pixels, and impose a bgPixelValue'ed frame at the border of the image
 	ip = imp.getProcessor()
 
+	# make sure the image is always visible for this processing
+	imp.show()
+
 	# da frame :)
 	for x in range(imp.getWidth()):
 		ip.set(x,0,bgPixelValue);
