@@ -95,12 +95,35 @@ for filename in os.listdir(InputFolder):
 			else:
 				number = int(number)
 				numbers.append(number)
-	
+
+				# also calculate a histogram of witnessed nuclei sizes
+				# with 0.1 sq. micron resolution
+				#
+				# histogram will list nuclei areas from 0 till maxArea sq. microns
+				maxArea = 100
+				#
+				# how much different areas should fall into the same bin, bin "width"
+				binRes = 0.1
+				#
+				# init the histogram (with zero counts)
+				histogram = [ 0 for x in range(int(maxArea/binRes)) ]
+				for nucl in nuclei:
+					a = nucl.Area
+					if a > maxArea:
+						a = maxArea-1.0
+					b = int(a/binRes)
+					histogram[b] += 1
+
+				# and save it into the result folder
+				f = open(InputFolder+"/nucleiSqMicronSizes_histogram_"+str(number)+".dat","w")
+				for h in range(len(histogram)):
+					f.write(str(h*binRes)+"\t"+str(histogram[h])+"\n")
+				f.close()
+
 		Images.append(filename)
 		BigNucleiPerTimestamp.append(bigNuclei)
-	
+
 		imp.close()
-	
 		print("Image "+filename+" successfully processed.")
 
 	else:
