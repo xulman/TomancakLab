@@ -53,23 +53,23 @@ from chooseNuclei import *
 bigImg = IJ.getImage()
 RoiD  = ij.ImagePlus.getRoi(bigImg)
 
-# reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes(aMapFile.getAbsolutePath());
-
-# read the 'real Coordinates', that take into account the different pixel sizes
-realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
-
-# test that sizes of realSizes and bigImg matches
-checkSize2DarrayVsImgPlus(realSizes, bigImg);
-checkSize2DarrayVsImgPlus(realCoordinates, bigImg)
-
-# determine the proper area of the reference ROI
-RoiSize = 0.0
-for point in RoiD:
-	RoiSize += realSizes[point.x][point.y]
-
 if RoiD != None:
 	print RoiD
+
+	# reads the area_per_pixel information, already in squared microns
+	realSizes = readRealSizes(aMapFile.getAbsolutePath());
+
+	# read the 'real Coordinates', that take into account the different pixel sizes
+	realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
+
+	# test that sizes of realSizes and bigImg matches
+	checkSize2DarrayVsImgPlus(realSizes, bigImg);
+	checkSize2DarrayVsImgPlus(realCoordinates, bigImg)
+
+	# determine the proper area of the reference ROI
+	RoiSize = 0.0
+	for point in RoiD:
+		RoiSize += realSizes[point.x][point.y]
 
 	#dc1 = DirectoryChooser("Choose your input folder")
 	#InputFolder = dc1.getDirectory()
@@ -97,19 +97,34 @@ if RoiD != None:
 
 			# obtain list of viable nuclei
 			nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+			width  = imp.getWidth()
+			height = imp.getHeight()
+			imp.close()
 
 			# ------- analysis starts here -------
-			# Count number of nuclei inside the ROI (actually it is nuclei centres that have to be inside)
-			numberOfNuclei = 0
-			for nucl in nuclei:
-				# extract an integer variant of the coordinate of the nucleus centre
-				# NB: float coordinate might not match exactly the point's integer coordinates
-				cx = int(nucl.CentreX)
-				cy = int(nucl.CentreY)
-				for point in RoiD:
-					if (point.x == cx and point.y == cy):
-						numberOfNuclei += 1
-		
+			# Count number of nuclei inside the ROI (is inside whenever only single pixel is inside the ROI),
+			# to optimize for speed, we render all valid nuclei and detect which nuclei are touching the ROI
+
+			# assign a unique integer value to every nuclei
+			for i in range(len(nuclei)):
+				nuclei[i].DrawValue = i+1
+
+			# render the nuclei (NB: will be of the right size, ROI coords will be compatible)
+			drawChosenNucleiValue(width,height, nuclei)
+			imp = IJ.getImage()
+			ip = imp.getProcessor()
+
+			# sweep the ROI to see which nuclei are touching it
+			colorsInROI = set()
+			for point in RoiD:
+				val = ip.getf(point.x,point.y)
+				# add only non-background voxels
+				if val > 0:
+					colorsInROI.add(val)
+
+			numberOfNuclei = len(colorsInROI)
+			imp.close()
+
 			# ------- reporting starts here -------
 			#Extract number from filename if existing (for the sorting afterwards)
 			number = ''
@@ -127,7 +142,6 @@ if RoiD != None:
 			results.append((filename,numberOfNuclei))
 			densities.append(float(numberOfNuclei)/float(RoiSize))
 
-			imp.close()
 			print('Successfully processed "'+ filename+'"')
 
 		else:
