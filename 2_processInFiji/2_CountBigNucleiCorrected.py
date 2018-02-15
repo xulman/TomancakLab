@@ -8,6 +8,10 @@
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
 #@File (label="Pixel areas map:") aMapFile
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
+#
 #@File (style="directory", label="Input directory") inputDir
 
 # This script counts all the nuclei, that are nearly circular and their areas are within the given interval.
@@ -39,10 +43,14 @@ from importsFromImSAnE import *
 
 # import the same Nucleus class to make sure the very same calculations are used
 from Nucleus import Nucleus
+from chooseNuclei import *
 
 
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath());
+
+# read the 'real Coordinates', that take into account the different pixel sizes
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
 
 #Choose input folder
 
@@ -64,21 +72,17 @@ for filename in os.listdir(InputFolder):
 	if imp != None:
 		# test that sizes of realSizes and imp matches
 		checkSize2DarrayVsImgPlus(realSizes, imp);
+		checkSize2DarrayVsImgPlus(realCoordinates, imp)
 		
 		backgroundPixelValue = 1 # in case of cell nuclei
 		if (not inputImageShowsNuclei):
 			backgroundPixelValue = 2 # in case of cell membranes
 
 		# obtain list of viable nuclei
-		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax);
+		nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 
 		# ------- analysis starts here -------
 		bigNuclei = len(nuclei)
-
-#		for nucl in nuclei:
-#			if nucl.doesQualify(filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax) == True:
-#				bigNuclei += 1
-#NB: every nuclei in the list qualifies...
 
 		number = ''
 		for c in filename:
@@ -121,9 +125,9 @@ else:
 		table.addValue('Number of big Nuclei',BigNucleiPerTimestamp[i])
 
 table.show('Results')
-IJ.saveAs("Results", inputDir+"/nucleiList.xls")
-IJ.saveAs("Results", inputDir+"/nucleiList.txt")
-IJ.saveAs("Results", inputDir+"/nucleiList.csv")
+IJ.saveAs("Results", InputFolder+"/nucleiList.xls")
+IJ.saveAs("Results", InputFolder+"/nucleiList.txt")
+IJ.saveAs("Results", InputFolder+"/nucleiList.csv")
 
 print
 print("All files processed.")
