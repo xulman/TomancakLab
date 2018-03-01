@@ -124,6 +124,8 @@ classdef SurfaceOfInterest < diffgeometry.Manifold2D
             %                       are missing, the function will use the symmetric
             %                       nLayers variant; MIP and/or SIP is disabled
             %                       if this pair is used
+            %   - nSkippedLayersP:  number of skipped P layers (optional)
+            %   - nSkippedLayersM:  number of skipped M layers (optional)
 
             % We have:
             % - a chart phi: M -> R^2
@@ -155,6 +157,8 @@ classdef SurfaceOfInterest < diffgeometry.Manifold2D
                 if ~isfield(onionOpts, 'makeIP'); onionOpts.makeIP = 0; end
                 if ~isfield(onionOpts, 'IPonly'); onionOpts.IPonly = 0; end
                 if ~isfield(onionOpts, 'zEvolve'); onionOpts.zEvolve = 0; end
+                if ~isfield(onionOpts, 'nSkippedLayersP'); onionOpts.nSkippedLayersP = 0; end
+                if ~isfield(onionOpts, 'nSkippedLayersM'); onionOpts.nSkippedLayersM = 0; end
             end
 
             % store number of layers
@@ -169,6 +173,8 @@ classdef SurfaceOfInterest < diffgeometry.Manifold2D
                 this.nLayers = 1;
                 pLayers = onionOpts.nLayersP;
                 mLayers = onionOpts.nLayersM;
+                pInitialLayer = onionOpts.nSkippedLayersP +1;
+                mInitialLayer = onionOpts.nSkippedLayersM +1;
                 onionOpts.makeIP = 0;
             end
 
@@ -176,12 +182,12 @@ classdef SurfaceOfInterest < diffgeometry.Manifold2D
             PT = this.data.patchClass;
             TS = this.data.targetSpace;
             name = 'data_layer_';
-            for li = 1:pLayers;
+            for li = pInitialLayer:pLayers;
                 if this.getField([name 'p' num2str(li)]) == 0 
                     this.createField([name 'p' num2str(li)], PT, TS, true);
                 end
             end
-            for li = 1:mLayers;
+            for li = mInitialLayer:mLayers;
                 if this.getField([name 'm' num2str(li)]) == 0 
                     this.createField([name 'm' num2str(li)], PT, TS, true);
                 end
@@ -277,7 +283,7 @@ classdef SurfaceOfInterest < diffgeometry.Manifold2D
                 for ni = 1:numel(dX); dX{ni}(isnan(dX{ni})) = 0; end
 
                 % now loop through the layers
-					 for idx = [ -floor(mLayers):-1 , 0, 1:floor(pLayers) ]
+					 for idx = [ -floor(mLayers):-floor(mInitialLayer) , 0, floor(pInitialLayer):floor(pLayers) ]
 
                     % normally evolved embedding
                     def = {X{1} + idx*dX{1}, X{2} + idx*dX{2}, X{3} + idx*dX{3}};

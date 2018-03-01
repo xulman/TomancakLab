@@ -67,12 +67,12 @@ diff -u imsane_min/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m imsan
 +            PT = this.data.patchClass;
 +            TS = this.data.targetSpace;
 +            name = 'data_layer_';
-+            for li = 1:pLayers;
++            for li = pInitialLayer:pLayers;
                  if this.getField([name 'p' num2str(li)]) == 0 
                      this.createField([name 'p' num2str(li)], PT, TS, true);
 +                end
 +            end
-+            for li = 1:mLayers;
++            for li = mInitialLayer:mLayers;
 +                if this.getField([name 'm' num2str(li)]) == 0 
                      this.createField([name 'm' num2str(li)], PT, TS, true);
                  end
