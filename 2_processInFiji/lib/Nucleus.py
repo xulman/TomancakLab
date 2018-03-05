@@ -181,8 +181,8 @@ class Nucleus:
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
 
-		# circularity: lower value means higher circularity
-		self.Circularity = abs(self.Area - ((self.EdgeLength**2)/(4*math.pi)))/self.Area
+		# circularity: higher value means higher circularity
+		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
 
 	# the same condition that everyone should use to filter out nuclei that

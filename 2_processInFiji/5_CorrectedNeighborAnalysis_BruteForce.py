@@ -2,8 +2,8 @@
 #@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
 #@boolean (label="Filter according to area") filterArea
 #
-#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
-#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
+#@float(label="A nucleus has a circularity  BIGGER than (1 represents perfect circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (1 represents perfect circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei

@@ -2,8 +2,8 @@
 #@int(label="A nucleus is everything SMALLER than (um^2)") areaMax
 #@boolean (label="Filter according to area") filterArea
 #
-#@float(label="A nucleus has a circularity  BIGGER than (lower value means higher circularity)") circularityMin
-#@float(label="A nucleus has a circularity SMALLER than (lower value means higher circularity)") circularityMax
+#@float(label="A nucleus has a circularity  BIGGER than (1 represents perfect circularity)") circularityMin
+#@float(label="A nucleus has a circularity SMALLER than (1 represents perfect circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
@@ -119,8 +119,8 @@ def main():
 
 	# VLADO PIXEL CIRC DEBUG
 	for nucl in nuclei:
-		nucl.DrawValue = abs(nucl.Size - ((nucl.EdgeSize**2)/(4*math.pi)))/nucl.Size
-		nucl.DrawValue *= 1000.0
+		nucl.DrawValue = (nucl.Size * 4.0 * math.pi) / (nucl.EdgeSize * nucl.EdgeSize)
+		nucl.DrawValue *= 100.0
 	#drawChosenNucleiValue(imp.getWidth(),imp.getHeight(), nuclei)
 	# VLADO PIXEL CIRC DEBUG
 
@@ -138,7 +138,7 @@ def main():
 		for nucl in nuclei:
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
-			rt.addValue("circularity (lower more roundish)",nucl.Circularity)
+			rt.addValue("circularity (higher more roundish)",nucl.Circularity)
 			rt.addValue("circularity (pixel-based)"        ,nucl.DrawValue) # VLADO PIXEL CIRC DEBUG
 			rt.addValue("area (um^2)"                      ,nucl.Area)
 			rt.addValue("area (px)"                        ,nucl.Size)
