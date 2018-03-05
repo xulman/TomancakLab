@@ -127,7 +127,9 @@ while ps is not None:
 			table.addValue('ROI area (px^2)',len(points))
 			table.addValue('ROI proper area (um^2)',area)
 			table.addValue('ROI perimeter (px)',polygon.npoints)
-			table.addValue('ROI proper perimeter (um)',properLength(coords,realCoordinates))
+			perLen = properLength(coords,realCoordinates)
+			table.addValue('ROI proper perimeter (um)',perLen)
+			table.addValue('Circularity (lower more roundish)',abs(area - ((perLen**2)/(4*math.pi)))/area)
 
 			if rasterROIs:
 				pixels = outByteProcessor[z-1].getPixels()

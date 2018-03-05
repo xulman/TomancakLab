@@ -142,6 +142,8 @@ def main():
 			rt.addValue("circularity (pixel-based)"        ,nucl.DrawValue) # VLADO PIXEL CIRC DEBUG
 			rt.addValue("area (um^2)"                      ,nucl.Area)
 			rt.addValue("area (px)"                        ,nucl.Size)
+			rt.addValue("perimeter (px)"                   ,nucl.EdgeSize)
+			rt.addValue("perimeter (um)"                   ,nucl.EdgeLength)
 			rt.addValue("centreX (px)"                     ,nucl.CentreX)
 			rt.addValue("centreY (px)"                     ,nucl.CentreY)
 

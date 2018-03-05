@@ -47,7 +47,7 @@ class Nucleus:
 		self.EdgePixels = []
 
 		# (approximate) length of the boundary in microns
-		self.EdgeLength = 0
+		self.EdgeLength = 0.0
 
 		# determine boundary pixels
 		for pix in Pixels:
