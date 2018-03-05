@@ -2,6 +2,7 @@
 #@File (label="X coordinate map:") xMapFile
 #@File (label="Y coordinate map:") yMapFile
 #@File (label="Z coordinate map:") zMapFile
+#@boolean (label="Raster the ROIs into a new image") rasterROIs
 
 # This script does....
 
@@ -15,8 +16,9 @@
 
 from ij import IJ
 import ij.ImagePlus
+import ij.ImageStack
 from ij.measure import ResultsTable
-#from ij.process import ByteProcessor #DEBUG
+from ij.process import ByteProcessor
 import os
 import sys
 
@@ -88,6 +90,11 @@ def getROI(ps,slice):
 width = image.getWidth()
 height = image.getHeight()
 
+# a list of output (and yet empty) slices
+outByteProcessor = None
+if rasterROIs:
+	outByteProcessor = [ ByteProcessor(width,height) for z in range(image.getNSlices()) ]
+
 idx = 0
 ps = getVolume(idx)
 
@@ -122,6 +129,11 @@ while ps is not None:
 			table.addValue('ROI perimeter (px)',polygon.npoints)
 			table.addValue('ROI proper perimeter (um)',properLength(coords,realCoordinates))
 
+			if rasterROIs:
+				pixels = outByteProcessor[z-1].getPixels()
+				for p in points:
+					pixels[p.x + p.y*width] = 1+idx
+
 #			# debug:
 #			BP = ByteProcessor(width,height);
 #			pixels = BP.getPixels()
@@ -142,3 +154,12 @@ while ps is not None:
 	ps = getVolume(idx)
 
 table.show('Results')
+
+if rasterROIs:
+	stack = ij.ImageStack(width,height)
+	for bp in outByteProcessor:
+		stack.addSlice(bp)
+
+	newImg = ij.ImagePlus("rasterized ROIs from VolumeManager", stack)
+	newImg.show()
+
