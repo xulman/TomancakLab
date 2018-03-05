@@ -1,23 +1,22 @@
+#@File (label="Pixel areas map:") aMapFile
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
 
-# This script counts the nuclei in a given ROI over time.
-# It takes a folder of binary images and the ROI as input, and then displays a table
-# in which the number of nuclei for each timestamp is saved.
+# This script does....
 
 # Usage:
 # 	- Run Fiji
 #	- Make sure that the update site SCF-MPI-CBG is activated
 # 	- Open one of your images
-# 	- Select the Area of Interest
+# 	- Open SCF's VolumeManager
 #	- Run this script
-#	- Choose the folder with all your input images
 
 
 from ij import IJ
 import ij.ImagePlus
-from ij.gui import Roi
-from ij.io import DirectoryChooser
 from ij.measure import ResultsTable
-from ij.process import ByteProcessor
+#from ij.process import ByteProcessor #DEBUG
 import os
 import sys
 
@@ -30,26 +29,32 @@ sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 
 # import our "library script"
 from importsFromImSAnE import *
-
-# import the same Nucleus class to make sure the very same calculations are used
-from Nucleus import Nucleus
-from chooseNuclei import *
+from properMeasurements import *
 
 import de.mpicbg.scf.volumemanager.VolumeManager
 import de.mpicbg.scf.imgtools.geometry.data.PolylineSurface
 
-#Get ROI
-#bigImg = IJ.getImage()
-#RoiD  = ij.ImagePlus.getRoi(bigImg)
 
-#if RoiD != None:
-#	print RoiD
+# "locate" the currently processed image
+image = IJ.getImage()
 
 # TODO: prompt user to open and populate/load the Volume Manager with the correct data
 #       and wait for "ok" button to continue
 
 # current volume manager instance
 vm = de.mpicbg.scf.volumemanager.VolumeManager.getInstance()
+
+
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes(aMapFile.getAbsolutePath())
+
+# read the 'real Coordinates', that take into account the different pixel sizes
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
+
+# test that sizes of realSizes and imp matches
+checkSize2DarrayVsImgPlus(realSizes, image)
+checkSize2DarrayVsImgPlus(realCoordinates, image)
+
 
 # returns PolylineSurface for given idx (=volume inside the VolumeManager)
 def getVolume(idx):
@@ -80,7 +85,6 @@ def getROI(ps,slice):
 
 
 # scan through all slices of the image, through all volumes and process respective ROIs
-image = IJ.getImage();
 width = image.getWidth()
 height = image.getHeight()
 
@@ -97,32 +101,41 @@ while ps is not None:
 		if roi is not None:
 			# process the roi
 			print "roi at slice "+str(z)
-			points = roi.getContainedPoints()
-			# we can calc proper Area from points
 
-			# perimeter?
+			# list of coords that make up this full ROI
+			points = roi.getContainedPoints()
+			area = 0.0
+			for p in points:
+				area += realSizes[p.x][p.y]
+
+			# list of coords that make up this ROI's perimeter
 			polygon = roi.getInterpolatedPolygon()
+			coords = []
+			for i in range(0,polygon.npoints):
+				coords.append([polygon.xpoints[i],polygon.ypoints[i]])
 
 			table.incrementCounter()
 			table.addValue('Volume no.',idx)
 			table.addValue('Slice no.',z)
 			table.addValue('ROI area (px^2)',len(points))
+			table.addValue('ROI proper area (um^2)',area)
 			table.addValue('ROI perimeter (px)',polygon.npoints)
+			table.addValue('ROI proper perimeter (um)',properLength(coords,realCoordinates))
 
-			# debug:
-			BP = ByteProcessor(width,height);
-			pixels = BP.getPixels()
-			# area
-			for p in points:
-				pixels[p.x + p.y*width] = 100+idx
-			# outline (a bit below)
-			for i in range(0,polygon.npoints):
-				x = int(polygon.xpoints[i])
-				y = int(polygon.ypoints[i]) +500
-				pixels[x + y*width] = 100+idx
-			# show the image
-			newImg = ImagePlus("vol "+str(idx)+", slice "+str(z),BP)
-			newImg.show()
+#			# debug:
+#			BP = ByteProcessor(width,height);
+#			pixels = BP.getPixels()
+#			# area
+#			for p in points:
+#				pixels[p.x + p.y*width] = 100+idx
+#			# outline (a bit below)
+#			for i in range(0,polygon.npoints):
+#				x = int(polygon.xpoints[i])
+#				y = int(polygon.ypoints[i]) +500
+#				pixels[x + y*width] = 100+idx
+#			# show the image
+#			newImg = ImagePlus("vol "+str(idx)+", slice "+str(z),BP)
+#			newImg.show()
 
 	# next volume...
 	idx += 1
