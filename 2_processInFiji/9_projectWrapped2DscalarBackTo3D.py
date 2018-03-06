@@ -16,8 +16,9 @@
 #	- Run this script
 
 from ij import IJ
-from ij.gui import NewImage
-from ij import ImagePlus
+import ij.ImagePlus
+import ij.ImageStack
+from ij.process import FloatProcessor
 import math
 import os
 import sys
@@ -40,6 +41,7 @@ realCoords = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(
 checkSize2DarrayVsImgPlus(realCoords, inImp);
 
 
+print("calculating the 3D image size...")
 # search for min&max per axis, while scaling back to pixel units (from the original micron ones)
 min=[+99999999999,+99999999999,+99999999999]
 max=[-99999999999,-99999999999,-99999999999]
@@ -85,14 +87,15 @@ ySize = int((max[1]-min[1]+1) /dsRatio)
 zSize = int((max[2]-min[2]+1) /dsRatio)
 
 print("creating 3D of sizes: "+str(xSize)+" x "+str(ySize)+" x "+str(zSize))
-outImp = NewImage.createFloatImage("back-projected "+inImp.getTitle(), xSize,ySize,zSize, NewImage.FILL_BLACK)
+outFloatProcessors = [ FloatProcessor(xSize,ySize) for z in range(zSize) ]
+outFloatPixels = [ outFloatProcessors[z].getPixels() for z in range(len(outFloatProcessors)) ]
 
 # sweep through the inImp and project pixels to outImp
 print("populating the 3D image...")
-totalStr = str(inImp.width)
+totalX = float(inImp.width)
 inIP = inImp.getProcessor();
 for x in range(0,inImp.width):
-	print "Doing for x="+str(x)+"/"+totalStr
+	IJ.showProgress(float(x)/totalX)
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
 		# orig coords and downscale for the final output image
@@ -100,8 +103,14 @@ for x in range(0,inImp.width):
 		ny = int((math.floor(coord[1] +0.5) -min[1]) /dsRatio)
 		nz = int((math.floor(coord[2] +0.5) -min[2]) /dsRatio)
 
-		outImp.setZ(nz+1);
-		outImp.getProcessor().setf(nx,ny, inIP.getf(x,y))
+		outFloatPixels[nz][nx + ny*xSize] = inIP.getf(x,y)
 
-print("showing the 3D image, done")
+print("constructing the 3D image...")
+stack = ij.ImageStack(xSize,ySize)
+for fp in outFloatProcessors:
+	stack.addSlice(fp)
+
+outImp = ij.ImagePlus("back-projected "+inImp.getTitle(), stack)
+
+print("showing the 3D image, done afterwards")
 outImp.show()
