@@ -45,6 +45,7 @@ sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
 # import our "library scripts"
 from importsFromImSAnE import *
 from chooseNuclei import *
+from properMeasurements import *
 
 # import the same Nucleus class to make sure the very same calculations are used
 from Nucleus import Nucleus
@@ -162,6 +163,10 @@ def main():
 		#imgCirc = ImagePlus("circularities of nuclei",FloatProcessor(len(nuclei),1,imgCirc))
 		imgCirc = ImagePlus("nuclei_circularities",FloatProcessor(len(nuclei),1,imgCirc))
 		IJ.run(imgCirc, "Histogram", "20")
+
+		# debug: what perimeter points are considered
+		# writeCoordsToFile(nuclei[0].EdgePixels,"/Users/ulman/DATA/fp_coords_0.txt")
+		# writeCoordsToFile(nuclei[1].EdgePixels,"/Users/ulman/DATA/fp_coords_1.txt")
 
 
 	print("Done.")

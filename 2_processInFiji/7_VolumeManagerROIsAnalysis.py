@@ -121,6 +121,9 @@ while ps is not None:
 			for i in range(0,polygon.npoints):
 				coords.append([polygon.xpoints[i],polygon.ypoints[i]])
 
+			# debug: what perimeter points are considered
+			# writeCoordsToFile(coords,"/Users/ulman/DATA/7_coords_"+str(idx)+".txt")
+
 			table.incrementCounter()
 			table.addValue('Volume no.',idx)
 			table.addValue('Slice no.',z)
