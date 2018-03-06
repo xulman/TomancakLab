@@ -163,7 +163,7 @@ class Nucleus:
 
 				# calculate the proper length of the local boundary by sweeping
 				# through a neighbor,myself,neighbor (giving us twice the required length)
-				self.EdgeLength += properLength(coords,realCoords) / 2.0
+				self.EdgeLength += properLength(coords,realCoords)   # / 2.0
 
 #				#DEBUG VLADO REMOVE
 #				a = coords[0]
@@ -177,6 +177,9 @@ class Nucleus:
 #				print str(b[0])+" "+str(b[1])+" 2"
 #				print str(c[0])+" "+str(c[1])+" 1"
 #				print ""
+
+		# finish the length of the boundary in microns
+		self.EdgeLength /= 2.0
 
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)

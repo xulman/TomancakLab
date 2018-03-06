@@ -84,3 +84,11 @@ def properArea(xyCoords, realAreas):
 		sum += realAreas[xy[0]][xy[1]]
 
 	return sum
+
+
+# ---------- aux functions ----------
+def writeCoordsToFile(xyCoords, filename):
+	f = open(filename,"w")
+	for c in xyCoords:
+		f.write(str(c[0])+" "+str(c[1])+"\n")
+	f.close()
