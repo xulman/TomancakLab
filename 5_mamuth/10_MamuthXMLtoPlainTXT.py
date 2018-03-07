@@ -130,12 +130,14 @@ def main():
 		TRACKS[tID] = TRACK
 
 		# print this track
-		# NB: the order in which time points are listed is not necessary ordered :(
 		# NB: prints TIME, X,Y,Z, TRACK_ID
-		for t in TRACK:
+		for t in sorted(TRACK.keys()):
 			spot = SPOTS[TRACK[t]]
 			fo.write( str(t)+"\t"+str(spot[0])+"\t"+str(spot[1])+"\t"+str(spot[2])+"\t"+str(tID)+"\n" )
 		fo.write("\n\n")
+		#
+		# gnuplot code to display this:
+		# splot for [i = 0:2] "embryo6_tub-mamut2.txt" index i u 2:3:4:1 w lp palette pt i+1 t "track ".i
 
 		# move on to the next track
 		line = advanceFileTillLine(f,"Track name")
