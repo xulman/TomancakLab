@@ -1,16 +1,6 @@
 #@File (label="Input Mamuth XML file:") xmlFile
 #@File (label="Output plain TXT file:") txtFile
 
-from ij import IJ
-from ij import ImagePlus
-
-# this section adds a folder, in which this very script is living,
-# to the current search paths so that we can import our "library script"
-import sys.path
-import os.path
-import inspect
-sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe()))+"/lib")
-
 
 # scans the input file 'f' line by line until it finds a line that matches 'msg',
 # and returns this line, or None if end of the file is reached
@@ -48,6 +38,10 @@ def parseOutNumber(msg, idx=0):
 # the main work happens here
 def main():
 
+	# open the output file
+	fo = open(txtFile.getAbsolutePath(),"w")
+	fo.write("# TIME X Y Z TRACK_ID from file "+xmlFile.getAbsolutePath()+"\n")
+
 	# open the input file
 	f = open(xmlFile.getAbsolutePath(),"r")
 
@@ -58,7 +52,7 @@ def main():
 	nSpots = int(parseOutNumber(line))
 
 	# read out all spots definitions
-	spots = {}
+	SPOTS = {}
 	for cntSpots in range(nSpots):
 		line = advanceFileTillLine(f,"Spot ID")
 		sID = int(parseOutNumber(line))
@@ -76,14 +70,15 @@ def main():
 		sT  = parseOutNumber(line,idx)
 
 		# save the currently extracted spot
-		spots[sID] = [sX,sY,sZ,sT]
+		SPOTS[sID] = [sX,sY,sZ,sT]
 
 
 	# debug
 	# print "nSpots = "+str(nSpots)
-	# print "nSpots = "+str(len(spots))
+	# print "nSpots = "+str(len(SPOTS))
 
 	# read out all tracks definitions
+	TRACKS = {}
 	line = advanceFileTillLine(f,"Track name")
 	while line:
 		idx = line.find("TRACK_ID=")
@@ -93,9 +88,10 @@ def main():
 		tLEN = int(parseOutNumber(line,idx))
 
 		# debug
-		print "extracting track ID"+str(tID)+", len="+str(tLEN)
+		print "extracting track ID="+str(tID)+", len="+str(tLEN)
 
 		# all edges in this track
+		TRACK = {}
 		line = f.readline()
 		while line and line.find("Edge SPOT_SOURCE_ID") > -1:
 			eS = int(parseOutNumber(line))
@@ -104,16 +100,49 @@ def main():
 			eT = int(parseOutNumber(line,idx))
 
 			# debug
-			# print str(spots[eS][3])+" -> "+str(spots[eT][3])
+			# print str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3])
 			# print str(eS)+" -> "+str(eT)
 
+			# now, let's populate data structures to be able to organize the chaos
+			# we want for every track to have an time-ordered list of positions/spots
+			#
+			# edge goes from time tS to tT
+			tS = SPOTS[eS][3]
+			tT = SPOTS[eT][3]
+
+			# TRACK at timepoint tS should be referring to spot eS
+			if tS in TRACK:
+				if TRACK[tS] != eS:
+					print "CONSISTENCY PROBLEM"
+			else:
+				TRACK[tS]=eS
+
+			# TRACK at timepoint tT should be referring to spot eT
+			if tT in TRACK:
+				if TRACK[tT] != eT:
+					print "CONSISTENCY PROBLEM"
+			else:
+				TRACK[tT]=eT
+
 			line = f.readline()
+
+		# save this track
+		TRACKS[tID] = TRACK
+
+		# print this track
+		# NB: the order in which time points are listed is not necessary ordered :(
+		# NB: prints TIME, X,Y,Z, TRACK_ID
+		for t in TRACK:
+			spot = SPOTS[TRACK[t]]
+			fo.write( str(t)+"\t"+str(spot[0])+"\t"+str(spot[1])+"\t"+str(spot[2])+"\t"+str(tID)+"\n" )
+		fo.write("\n\n")
 
 		# move on to the next track
 		line = advanceFileTillLine(f,"Track name")
 
 
 	f.close()
+	fo.close()
 
 
 main()
