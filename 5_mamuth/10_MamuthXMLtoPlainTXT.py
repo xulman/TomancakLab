@@ -1,5 +1,6 @@
 #@File (label="Input Mamuth XML file:") xmlFile
 #@File (label="Output plain TXT file:") txtFile
+#@String (label="track pairs, e.g. 3-13,22-18") trackPairs
 
 
 # scans the input file 'f' line by line until it finds a line that matches 'msg',
@@ -14,6 +15,18 @@ def advanceFileTillLine(f,msg):
 		i = line.find(msg)
 
 	return line
+
+
+# for processing of trackPairs
+def parseOutRangePair(rangeStr):
+	i = rangeStr.find('-')
+	if (i == -1):
+		print "haven't find the range separator '-', returning None instead"
+		return None
+
+	q = int(rangeStr[0:i])
+	w = int(rangeStr[i+1:len(rangeStr)])
+	return [q,w]
 
 
 # scans the input string 'msg' for the first pattern "N" that occurs after position 'idx'
@@ -38,12 +51,40 @@ def parseOutNumber(msg, idx=0):
 # the main work happens here
 def main():
 
+	# establish track pairs for the output
+	PAIRS=[]
+
+	# currently processed substring is given with q,w
+	q=0
+	w=trackPairs.find(',')
+	if (w == -1):
+		w=len(trackPairs)
+
+	# iterate as long as there are non-empty substrings
+	while (q < w):
+		r = parseOutRangePair(trackPairs[q:w])
+		if (r != None):
+			PAIRS.append(r)
+
+		q=w + 1;
+		w=q + trackPairs[q:len(trackPairs)].find(',')
+		if (w == q-1):
+			w=len(trackPairs)
+
+	# debug
+	# for p in PAIRS:
+	# 	print str(p[0])+"<->"+str(p[1])
+
+
 	# open the output file
-	fo = open(txtFile.getAbsolutePath(),"w")
+	fn = txtFile.getAbsolutePath()
+	print "Writing file: "+fn
+	fo = open(fn,"w")
 	fo.write("# TIME X Y Z TRACK_ID from file "+xmlFile.getAbsolutePath()+"\n")
 
 	# open the input file
 	f = open(xmlFile.getAbsolutePath(),"r")
+
 
 	# scan the input file until it finds begining of the definitions of spots
 	line = advanceFileTillLine(f,"AllSpots nspots=")
@@ -145,6 +186,35 @@ def main():
 
 	f.close()
 	fo.close()
+
+	# print track pairs
+	for p in PAIRS:
+		# two track IDs from the pair
+		q = p[0]
+		w = p[1]
+
+		# open output file for writing
+		fm = fn[0:len(fn)-4]+"_pair_"+str(q)+"-"+str(w)+fn[len(fn)-4:len(fn)]
+		print "Writing file: "+fm
+		fp = open(fm,"w")
+		fp.write("# TIME X Y Z TRACK_ID from file "+xmlFile.getAbsolutePath()+"\n")
+
+		# all timepoints used in both tracks
+		qTimes = TRACKS[q].keys()
+		wTimes = TRACKS[w].keys()
+
+		# iterate over common timepoints
+		for t in sorted(set(qTimes) & set(wTimes)):
+			spot = SPOTS[TRACKS[q][t]]
+			fp.write( str(t)+"\t"+str(spot[0])+"\t"+str(spot[1])+"\t"+str(spot[2])+"\t"+str(q)+"\t\n" )
+
+			spot = SPOTS[TRACKS[w][t]]
+			fp.write( str(t)+"\t"+str(spot[0])+"\t"+str(spot[1])+"\t"+str(spot[2])+"\t"+str(w)+"\t\n\n\n" )
+
+		fp.close()
+	#
+	# gnuplot code to display this:
+	# splot for [i in "14-15 15-16"] "embryo6_tub-mamut2_pair_".i.".txt" u 2:3:4:1 w lp palette t "pair ".i
 
 
 main()
