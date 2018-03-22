@@ -117,3 +117,42 @@ diff -u imsane_min/+surfaceAnalysis/@SurfaceOfInterest/SurfaceOfInterest.m imsan
 -end
 \ No newline at end of file
 +end
+--- imsane_min/+diffgeometry/Manifold2D.m	2018-03-22 13:37:38.000000000 +0100
++++ imsane_Vlado/+diffgeometry/Manifold2D.m	2018-03-22 13:49:40.000000000 +0100
+@@ -269,6 +269,7 @@
+ 
+             fieldNode = fieldsNode.getFirstChild;
+ 
++            cntSkipped=0;
+             while ~isempty(fieldNode)
+ 
+                 if strcmp(fieldNode.getNodeName, 'Field')
+@@ -277,6 +278,19 @@
+                     fieldName = char(xpathText(fieldNode, 'name'));
+                     patchClass = char(xpathText(fieldNode, 'patchClass'));
+ 
++                  if (strfind(fieldName,'data_') > 0)
++                    % skip reading of all p_ and m_ onion layers
++                    %
++                    %debugMsg(2, [fieldName  ',skipped at t = ' num2str(t) '\n']);
++                    cntSkipped = cntSkipped +1;
++                  else
++                    % some non p_ and m_ layers, read it then
++                    % but only the first two time points
++                   if t > 1
++                    cntSkipped = cntSkipped +1;
++                   else
++                    % some non p_ and m_ layers for 0th and 1st time point
++						  % the following code is the original ImSAnE code
+                     debugMsg(2, [fieldName ', t = ' num2str(t) '\n']);
+                     
+                     node = xpathNode(fieldNode, 'targetSpace/Set');
+@@ -329,6 +343,8 @@
+                         patchNode = patchNode.getNextSibling;
+                     end
+ 
++                   end
++                  end
+                     % ALSO RENAME XMLNODE FUNCTION IN SET CLASS TO SAVE
+                 end
+                 fieldNode = fieldNode.getNextSibling;
