@@ -1,8 +1,17 @@
 #@File (label="Input Mamuth XML file:") xmlFile
 #@File (label="Output folder:") tifFolder
-#@int (label="Output image X size:") xSize
-#@int (label="Output image Y size:") ySize
-#@int (label="Output image Z size:") zSize
+#@int (label="Original image X size:") xSize
+#@int (label="Original image Y size:") ySize
+#@int (label="Original image Z size:") zSize
+#@int (label="Downsampling factor:") xDown
+
+import math
+
+# adjust the size of the output image immediately
+Down = float(xDown)
+xSize = int(math.ceil(xSize / Down))
+ySize = int(math.ceil(ySize / Down))
+zSize = int(math.ceil(zSize / Down))
 
 
 # scans the input file 'f' line by line until it finds a line that matches 'msg',
@@ -51,9 +60,13 @@ def parseOutNumber(msg, idx=0):
 # ------------------------------------------------------------------------------------
 # draws ball of radius R with center xC,yC,zC with colour Col into the image img[x][y][z]
 def drawBall(xC,yC,zC,R,Col,img):
-	print "SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" @ ID="+str(Col)
+	xC = int(math.ceil(xC / Down))
+	yC = int(math.ceil(yC / Down))
+	zC = int(math.ceil(zC / Down))
+	R  = int(math.ceil(R  / Down))
 
-def drawBall_REAL(xC,yC,zC,R,Col,img):
+	print "SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col)
+
 	x_min = xC-R if xC > R       else 0
 	x_max = xC+R if xC+R < xSize else xSize
 
@@ -76,7 +89,7 @@ def drawBall_REAL(xC,yC,zC,R,Col,img):
 				dx = (x-xC) * (x-xC)
 
 				if dx+dyz <= R2:
-					img[x][y][z] = col
+					img[x][y][z] = Col
 
 
 # ------------------------------------------------------------------------------------
@@ -241,7 +254,7 @@ def main():
 		lastID = followTrack(ROOTS[root],lastID+1)
 
 	# create the output image (only once cause it is slow)
-	img = [[[0 for z in range(xSize)] for y in range(ySize)] for x in range(zSize)]
+	img = [[[0 for z in range(zSize)] for y in range(ySize)] for x in range(xSize)]
 
 	# now scan over the range of time points and draw points
 	for t in range(minT,maxT+1):
@@ -250,9 +263,9 @@ def main():
 		print "Writing file: "+fn
 
 		# prepare the output image
-		for x in range(zSize):
+		for x in range(xSize):
 			for y in range(ySize):
-				for z in range(xSize):
+				for z in range(zSize):
 					img[x][y][z] = 0
 
 		# scan all tracks
