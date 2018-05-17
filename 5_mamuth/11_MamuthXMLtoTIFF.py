@@ -79,16 +79,16 @@ def drawBall(xC,yC,zC,R,Col,img):
 	R2 = R*R
 
 	# sweep the bounds and draw the ball
-	for z in range(z_min,z_max+1):
-		dz = (z-zC) * (z-zC)
+	for x in range(x_min,x_max+1):
+		dx = (x-xC) * (x-xC)
 
 		for y in range(y_min,y_max+1):
-			dyz = dz + ((y-yC) * (y-yC))
+			dxy = dx + ((y-yC) * (y-yC))
 
-			for x in range(x_min,x_max+1):
-				dx = (x-xC) * (x-xC)
+			for z in range(z_min,z_max+1):
+				dz = (z-zC) * (z-zC)
 
-				if dx+dyz <= R2:
+				if dxy+dz <= R2:
 					img[x][y][z] = Col
 
 
