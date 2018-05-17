@@ -1,5 +1,5 @@
 #@File (label="Input Mamuth XML file:") xmlFile
-#@File (label="Output TIF file:") tifFile
+#@File (label="Output folder:") tifFolder
 #@int (label="Output image X size:") xSize
 #@int (label="Output image Y size:") ySize
 #@int (label="Output image Z size:") zSize
@@ -79,23 +79,55 @@ def drawBall_REAL(xC,yC,zC,R,Col,img):
 					img[x][y][z] = col
 
 
-def createImage(xs,ys,zs):
-	img = [[[0 for z in range(xs)] for y in range(ys)] for x in range(zs)]
-	return img
+# ------------------------------------------------------------------------------------
+# map of all spots extracted from the XML
+SPOTS = {}
+
+# map of neighborhood-ships extracted from the XML, unidirectional...
+NEIG = {}
+
+# map of all tracks that will be reconstructed
+TRACKS = {}
+
+
+def followTrack(root,ID):
+	# this track we gonna populate now
+	# time -> spot_ID
+	TRACK = {}
+
+	# init the track with its root
+	spot = root
+	time = SPOTS[spot][3]
+	TRACK[time] = spot
+
+	# debug
+	print "new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root)
+
+	# follow the track...
+	while spot in NEIG and len(NEIG[spot]) == 1:
+		# add next spot/track point
+		spot = NEIG[spot][0]
+		time = SPOTS[spot][3]
+		TRACK[time] = spot
+
+	# save this track
+	TRACKS[ID] = TRACK
+
+	# if we have followers, we do follow
+	if spot in NEIG:
+		for root in NEIG[spot]:
+			ID = followTrack(root,ID+1)
+
+	# we report back the last ID used
+	return ID
 
 
 # ------------------------------------------------------------------------------------
 # the main work happens here
 def main():
 
-	#OutputPixels = [[[0 for z in range(xSize)] for y in range(ySize)] for x in range(zSize)]
-	# open the output file
-	fn = tifFile.getAbsolutePath()
-	print "Writing file: "+fn
-
 	# open the input file
 	f = open(xmlFile.getAbsolutePath(),"r")
-
 
 	# scan the input file until it finds begining of the definitions of spots
 	line = advanceFileTillLine(f,"AllSpots nspots=")
@@ -104,7 +136,6 @@ def main():
 	nSpots = int(parseOutNumber(line))
 
 	# read out all spots definitions
-	SPOTS = {}
 	for cntSpots in range(nSpots):
 		line = advanceFileTillLine(f,"Spot ID")
 		sID = int(parseOutNumber(line))
@@ -127,17 +158,18 @@ def main():
 		# save the currently extracted spot
 		SPOTS[sID] = [sX,sY,sZ,sT,sR]
 
-	# span of the time-points:
-	minTime = -9999;
-	maxTime = -9999;
-
-
 	# debug
 	# print "nSpots = "+str(nSpots)
 	# print "nSpots = "+str(len(SPOTS))
 
+	# one root per one tree from the XML
+	ROOTS = {}
+
+	# total time span over all saved trees
+	minT =  9999999999999999999
+	maxT = -9999999999999999999
+
 	# read out all tracks definitions
-	TRACKS = {}
 	line = advanceFileTillLine(f,"Track name")
 	while line:
 		idx = line.find("TRACK_ID=")
@@ -147,10 +179,12 @@ def main():
 		tLEN = int(parseOutNumber(line,idx))
 
 		# debug
-		print "extracting track ID="+str(tID)+", len="+str(tLEN)
+		print "extracting tree ID="+str(tID)+", len="+str(tLEN)
+
+		minTime = 9999999999999999999
+		minSpot = -1
 
 		# all edges in this track
-		TRACK = {}
 		line = f.readline()
 		while line and line.find("Edge SPOT_SOURCE_ID") > -1:
 			eS = int(parseOutNumber(line))
@@ -162,74 +196,75 @@ def main():
 			# print str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3])
 			# print str(eS)+" -> "+str(eT)
 
-			# now, let's populate data structures to be able to organize the chaos
-			# we want for every track to have an time-ordered list of positions/spots
-			#
-			# edge goes from time tS to tT
-			tS = SPOTS[eS][3]
-			tT = SPOTS[eT][3]
+			# can any of the two spots be a root of this tree?
+			# NB: theoretically we should consider only eS...
+			spotTime = SPOTS[eS][3]
+			if spotTime < minTime:
+				minTime = spotTime
+				minSpot = eS
 
-			# TRACK at timepoint tS should be referring to spot eS
-			if tS in TRACK:
-				if TRACK[tS] != eS:
-					print "CONSISTENCY PROBLEM, trying "+str(eS)+" but occupied with "+str(TRACK[tS])
+			# interval update...
+			minT = spotTime if spotTime < minT else minT
+			maxT = spotTime if spotTime > maxT else maxT
+
+			spotTime = SPOTS[eT][3]
+			if spotTime < minTime:
+				minTime = spotTime
+				minSpot = eT
+
+			# interval update...
+			minT = spotTime if spotTime < minT else minT
+			maxT = spotTime if spotTime > maxT else maxT
+
+			# store the edge, which goes from spot eS to eT
+			if eS in NEIG:
+				NEIG[eS].append(eT)
 			else:
-				TRACK[tS]=eS
-
-			# TRACK at timepoint tT should be referring to spot eT
-			if tT in TRACK:
-				if TRACK[tT] != eT:
-					print "CONSISTENCY PROBLEM, trying "+str(eT)+" but occupied with "+str(TRACK[tT])
-			else:
-				TRACK[tT]=eT
-
-			# first time setting the min,maxTime?
-			if minTime == -9999:
-				minTime = tS
-				maxTime = tS
-			else:
-				# check min,max vs tS
-				if tS < minTime:
-					minTime = tS
-				if tS > maxTime:
-					maxTime = tS
-
-			# check min,max vs tT
-			if tT < minTime:
-				minTime = tT
-			if tT > maxTime:
-				maxTime = tT
+				NEIG[eS] = [eT]
 
 			line = f.readline()
 
-		# save this track
-		TRACKS[tID] = TRACK
+		# this track/tree is finished
+		ROOTS[tID] = minSpot;
 
 		# move on to the next track
 		line = advanceFileTillLine(f,"Track name")
 
-
 	f.close()
 
+	# now, we have a list of roots & we have neighborhood-ships,
+	# let's reconstruct the trees from their roots,
+	# in fact we do a depth-first search...
+	lastID = 0
+	for root in ROOTS:
+		print "extracted tree ID="+str(root)
+		lastID = followTrack(ROOTS[root],lastID+1)
+
+	# create the output image (only once cause it is slow)
+	img = [[[0 for z in range(xSize)] for y in range(ySize)] for x in range(zSize)]
+
 	# now scan over the range of time points and draw points
-	for t in range(minTime,maxTime+1):
-		# image to write into...
-		img = [[[0 for z in range(xSize)] for y in range(ySize)] for x in range(zSize)]
-		print "NEW IMAGE @ time="+str(t)
+	for t in range(minT,maxT+1):
+		# filename:
+		fn = tifFolder.getAbsolutePath()+"/time{0:03d}.tif".format(t)
+		print "Writing file: "+fn
+
+		# prepare the output image
+		for x in range(zSize):
+			for y in range(ySize):
+				for z in range(xSize):
+					img[x][y][z] = 0
 
 		# scan all tracks
 		for tID in TRACKS:
 			TRACK = TRACKS[tID]
 
-			# does it track has the current timepoint?
+			# does this track has the current timepoint?
 			if t in TRACK:
 				spot = SPOTS[TRACK[t]]
 				drawBall(spot[0],spot[1],spot[2],spot[4],tID,img)
 
 		# now write the image onto harddrive...
-		# filename:
-
-		# save it actually
 
 
 main()
