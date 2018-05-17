@@ -5,6 +5,10 @@
 #@int (label="Original image Z size:") zSize
 #@int (label="Downsampling factor:") xDown
 
+from ij import IJ
+import ij.ImagePlus
+import ij.ImageStack
+from ij.process import ShortProcessor
 import math
 
 # adjust the size of the output image immediately
@@ -58,7 +62,7 @@ def parseOutNumber(msg, idx=0):
 
 
 # ------------------------------------------------------------------------------------
-# draws ball of radius R with center xC,yC,zC with colour Col into the image img[x][y][z]
+# draws ball of radius R with center xC,yC,zC with colour Col into the image
 def drawBall(xC,yC,zC,R,Col,img):
 	xC = int(math.ceil(xC / Down))
 	yC = int(math.ceil(yC / Down))
@@ -89,7 +93,7 @@ def drawBall(xC,yC,zC,R,Col,img):
 				dz = (z-zC) * (z-zC)
 
 				if dxy+dz <= R2:
-					img[x][y][z] = Col
+					img[z][x + y*xSize] = Col
 
 
 # ------------------------------------------------------------------------------------
@@ -254,7 +258,16 @@ def main():
 		lastID = followTrack(ROOTS[root],lastID+1)
 
 	# create the output image (only once cause it is slow)
-	img = [[[0 for z in range(zSize)] for y in range(ySize)] for x in range(xSize)]
+	outShortProcessors = [ ShortProcessor(xSize,ySize) for z in range(zSize) ]
+	img = [ outShortProcessors[z].getPixels() for z in range(len(outShortProcessors)) ]
+
+	stack = ij.ImageStack(xSize,ySize)
+	for sp in outShortProcessors:
+		stack.addSlice(sp)
+
+	outImp = ij.ImagePlus("markers preview", stack)
+	outImp.show()
+	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
 
 	# now scan over the range of time points and draw points
 	for t in range(minT,maxT+1):
@@ -262,11 +275,10 @@ def main():
 		fn = tifFolder.getAbsolutePath()+"/time{0:03d}.tif".format(t)
 		print "Writing file: "+fn
 
-		# prepare the output image
-		for x in range(xSize):
-			for y in range(ySize):
-				for z in range(zSize):
-					img[x][y][z] = 0
+		# prepare -> reset -> zero the output image
+		for plane in img:
+			for i in range(len(plane)):
+				plane[i] = 0
 
 		# scan all tracks
 		for tID in TRACKS:
@@ -278,6 +290,7 @@ def main():
 				drawBall(spot[0],spot[1],spot[2],spot[4],tID,img)
 
 		# now write the image onto harddrive...
+		IJ.save(outImp,fn)
 
 
 main()
