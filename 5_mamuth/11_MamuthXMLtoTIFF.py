@@ -102,7 +102,7 @@ def drawBall(xC,yC,zC,R,Col,img):
 # map of all spots extracted from the XML
 SPOTS = {}
 
-# map of neighborhood-ships extracted from the XML, unidirectional...
+# map of neighborhood-ships extracted from the XML, unidirectional (from older to newer timepoint)
 NEIG = {}
 
 # map of all tracks that will be reconstructed
@@ -227,25 +227,28 @@ def main():
 			# print str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3])
 			# print str(eS)+" -> "+str(eT)
 
-			# can any of the two spots be a root of this tree?
-			# NB: theoretically we should consider only eS...
-			spotTime = SPOTS[eS][3]
-			if spotTime < minTime:
-				minTime = spotTime
+			# note that SOURCE_ID and TARGET_ID can actually contain
+			# both an edge from SOURCE to TARGET and also from TARGET to SOURCE
+
+			# determine their associated time points
+			spotTimeS = SPOTS[eS][3]
+			spotTimeT = SPOTS[eT][3]
+
+			# assure that eS is the earlier time point
+			if spotTimeS > spotTimeT:
+				tmp = eT
+				eT = eS
+				eS = tmp
+				spotTimeS = spotTimeT
+
+			# can the earlier of the two spots be a root of this tree?
+			if spotTimeS < minTime:
+				minTime = spotTimeS
 				minSpot = eS
 
 			# interval update...
-			minT = spotTime if spotTime < minT else minT
-			maxT = spotTime if spotTime > maxT else maxT
-
-			spotTime = SPOTS[eT][3]
-			if spotTime < minTime:
-				minTime = spotTime
-				minSpot = eT
-
-			# interval update...
-			minT = spotTime if spotTime < minT else minT
-			maxT = spotTime if spotTime > maxT else maxT
+			minT = spotTimeS if spotTimeS < minT else minT
+			maxT = spotTimeS if spotTimeS > maxT else maxT
 
 			# store the edge, which goes from spot eS to eT
 			if eS in NEIG:
