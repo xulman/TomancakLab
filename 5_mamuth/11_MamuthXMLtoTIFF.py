@@ -109,7 +109,7 @@ NEIG = {}
 TRACKS = {}
 
 
-def followTrack(root,ID):
+def followTrack(root,ID,gen=0):
 	# this track we gonna populate now
 	# time -> spot_ID
 	TRACK = {}
@@ -122,6 +122,11 @@ def followTrack(root,ID):
 	# debug
 	print("new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root))
 
+	#prefix tree writing
+	for q in range(gen):
+		print("\t",end='')
+	print("|-\t"+str(root)+"\t",end='')
+
 	# follow the track...
 	while spot in NEIG and len(NEIG[spot]) == 1:
 		# add next spot/track point
@@ -129,13 +134,20 @@ def followTrack(root,ID):
 		time = SPOTS[spot][3]
 		TRACK[time] = spot
 
+		#infix tree writing
+		gen += 1
+		print(str(spot)+"\t",end='')
+
+	#suffix tree writing
+	print()
+
 	# save this track
 	TRACKS[ID] = TRACK
 
 	# if we have followers, we do follow
 	if spot in NEIG:
 		for root in NEIG[spot]:
-			ID = followTrack(root,ID+1)
+			ID = followTrack(root,ID+1,gen+1)
 
 	# we report back the last ID used
 	return ID
