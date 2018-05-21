@@ -1,3 +1,4 @@
+from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
 #@File (label="Output folder:") tifFolder
 #@int (label="Original image X size:") xSize
@@ -10,6 +11,7 @@ import ij.ImagePlus
 import ij.ImageStack
 from ij.process import ShortProcessor
 import math
+
 
 # adjust the size of the output image immediately
 Down = float(xDown)
@@ -36,7 +38,7 @@ def advanceFileTillLine(f,msg):
 def parseOutRangePair(rangeStr):
 	i = rangeStr.find('-')
 	if (i == -1):
-		print "haven't find the range separator '-', returning None instead"
+		print("haven't find the range separator '-', returning None instead")
 		return None
 
 	q = int(rangeStr[0:i])
@@ -69,7 +71,7 @@ def drawBall(xC,yC,zC,R,Col,img):
 	zC = int(math.ceil(zC / Down))
 	R  = int(math.ceil(R  / Down))
 
-	print "SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col)
+	print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
 
 	x_min = xC-R if xC > R       else 0
 	x_max = xC+R if xC+R < xSize else xSize
@@ -118,7 +120,7 @@ def followTrack(root,ID):
 	TRACK[time] = spot
 
 	# debug
-	print "new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root)
+	print("new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root))
 
 	# follow the track...
 	while spot in NEIG and len(NEIG[spot]) == 1:
@@ -196,7 +198,7 @@ def main():
 		tLEN = int(parseOutNumber(line,idx))
 
 		# debug
-		print "extracting tree ID="+str(tID)+", len="+str(tLEN)
+		print("extracting tree ID="+str(tID)+", len="+str(tLEN))
 
 		minTime = 9999999999999999999
 		minSpot = -1
@@ -254,7 +256,7 @@ def main():
 	# in fact we do a depth-first search...
 	lastID = 0
 	for root in ROOTS:
-		print "extracted tree ID="+str(root)
+		print("extracted tree ID="+str(root))
 		lastID = followTrack(ROOTS[root],lastID+1)
 
 	# create the output image (only once cause it is slow)
@@ -273,7 +275,7 @@ def main():
 	for t in range(minT,maxT+1):
 		# filename:
 		fn = tifFolder.getAbsolutePath()+"/time{0:03d}.tif".format(t)
-		print "Writing file: "+fn
+		print("Writing file: "+fn)
 
 		# prepare -> reset -> zero the output image
 		for plane in img:
