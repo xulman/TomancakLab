@@ -5,6 +5,7 @@ from __future__ import print_function
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
 #@int (label="Downsampling factor:") xDown
+#@boolean (label="Write also CTC tracks.txt:") shouldWriteCTCTRACKS
 
 from ij import IJ
 import ij.ImagePlus
@@ -108,8 +109,11 @@ NEIG = {}
 # map of all tracks that will be reconstructed
 TRACKS = {}
 
+# a CellTrackingChallenge.org format of tracks.txt
+CTCTRACKS = {}
 
-def followTrack(root,ID,gen=0):
+
+def followTrack(root,ID,parent=-1,gen=0):
 	# this track we gonna populate now
 	# time -> spot_ID
 	TRACK = {}
@@ -121,6 +125,9 @@ def followTrack(root,ID,gen=0):
 
 	# debug
 	print("new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root))
+
+	# initiate the CTCTRACKS record
+	CTCTRACKS[ID]=[ID,time,-10,parent]
 
 	#prefix tree writing
 	for q in range(gen):
@@ -143,14 +150,26 @@ def followTrack(root,ID,gen=0):
 
 	# save this track
 	TRACKS[ID] = TRACK
+	CTCTRACKS[ID][2] = time
 
 	# if we have followers, we do follow
+	oldID = ID
 	if spot in NEIG:
 		for root in NEIG[spot]:
-			ID = followTrack(root,ID+1,gen+1)
+			ID = followTrack(root,ID+1,oldID,gen+1)
 
 	# we report back the last ID used
 	return ID
+
+
+def writeCTCTRACKS(fileName):
+	fo = open(fileName,"w")
+
+	for t in CTCTRACKS:
+		T = CTCTRACKS[t]
+		fo.write(str(T[0])+" "+str(T[1])+" "+str(T[2])+" "+str(T[3])+"\n")
+
+	fo.close()
 
 
 # ------------------------------------------------------------------------------------
@@ -308,6 +327,12 @@ def main():
 
 		# now write the image onto harddrive...
 		IJ.save(outImp,fn)
+
+	# lastly, save also the CTC tracks.txt if requested so
+	if shouldWriteCTCTRACKS:
+		fn = tifFolder.getAbsolutePath()+"/tracks.txt"
+		print("Writing file: "+fn)
+		writeCTCTRACKS(fn)
 
 
 main()
