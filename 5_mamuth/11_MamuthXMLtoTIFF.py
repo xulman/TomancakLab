@@ -1,6 +1,6 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@File (label="Output folder:") tifFolder
+#@File (style="directory", label="Output folder:") tifFolder
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
