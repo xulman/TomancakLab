@@ -262,7 +262,10 @@ def main():
 				tmp = eT
 				eT = eS
 				eS = tmp
-				spotTimeS = spotTimeT
+
+				tmp = spotTimeT
+				spotTimeT = spotTimeS
+				spotTimeS = tmp
 
 			# can the earlier of the two spots be a root of this tree?
 			if spotTimeS < minTime:
@@ -271,7 +274,7 @@ def main():
 
 			# interval update...
 			minT = spotTimeS if spotTimeS < minT else minT
-			maxT = spotTimeS if spotTimeS > maxT else maxT
+			maxT = spotTimeT if spotTimeT > maxT else maxT
 
 			# store the edge, which goes from spot eS to eT
 			if eS in NEIG:
@@ -308,6 +311,8 @@ def main():
 	outImp = ij.ImagePlus("markers preview", stack)
 	outImp.show()
 	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
+
+	print("detected interval of time points ["+str(minT)+","+str(maxT)+"]")
 
 	# now scan over the range of time points and draw points
 	for t in range(minT,maxT+1):
