@@ -112,6 +112,7 @@ TRACKS = {}
 # a CellTrackingChallenge.org format of tracks.txt
 CTCTRACKS = {}
 
+debugTrees = False
 
 def followTrack(root,ID,parent=-1,gen=0):
 	# this track we gonna populate now
@@ -129,10 +130,11 @@ def followTrack(root,ID,parent=-1,gen=0):
 	# initiate the CTCTRACKS record
 	CTCTRACKS[ID]=[ID,time,-10,parent]
 
-	#prefix tree writing
-	for q in range(gen):
-		print("\t",end='')
-	print("|-\t"+str(root)+"\t",end='')
+	if debugTrees:
+		#prefix tree writing
+		for q in range(gen):
+			print("\t",end='')
+		print("|-\t"+str(root)+"\t",end='')
 
 	# follow the track...
 	while spot in NEIG and len(NEIG[spot]) == 1:
@@ -141,12 +143,14 @@ def followTrack(root,ID,parent=-1,gen=0):
 		time = SPOTS[spot][3]
 		TRACK[time] = spot
 
-		#infix tree writing
-		gen += 1
-		print(str(spot)+"\t",end='')
+		if debugTrees:
+			#infix tree writing
+			gen += 1
+			print(str(spot)+"\t",end='')
 
-	#suffix tree writing
-	print()
+	if debugTrees:
+		#suffix tree writing
+		print()
 
 	# save this track
 	TRACKS[ID] = TRACK
