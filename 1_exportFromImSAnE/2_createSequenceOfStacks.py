@@ -46,7 +46,7 @@ def main():
 
 	zFrom = -1
 	for i in range(len(orderDict)):
-		if (orderDict[i].find(pat) > -1):
+		if (len(pat) == len(orderDict[i]) and orderDict[i].find(pat) > -1):
 			#print "Matching pattern "+pat+" against "+orderDict[i]+" (i="+str(i)+")"
 			zFrom = i;
 
@@ -70,7 +70,7 @@ def main():
 
 	zTo = -1
 	for ii in range(len(orderDict)):
-		if (orderDict[ii].find(pat) > -1):
+		if (len(pat) == len(orderDict[ii]) and orderDict[ii].find(pat) > -1):
 			#print "Matching pattern "+pat+" against "+orderDict[ii]+" (ii="+str(ii)+")"
 			zTo = ii;
 
