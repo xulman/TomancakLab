@@ -35,7 +35,9 @@ def main():
 		print "haven't find 'data_layer_' in the path of inputDirFrom"
 		return
 
-	pat = s[i+11] + s[i+12]
+	pat = s[i+11]
+	if (i+12 < len(s)):
+		pat += s[i+12]
 	if (i+13 < len(s)):
 		pat += s[i+13]
 	pat += '/'
@@ -59,7 +61,9 @@ def main():
 		print "haven't find 'data_layer_' in the path of inputDirTo"
 		return
 
-	pat = s[i+11] + s[i+12]
+	pat = s[i+11]
+	if (i+12 < len(s)):
+		pat += s[i+12]
 	if (i+13 < len(s)):
 		pat += s[i+13]
 	pat += '/'
