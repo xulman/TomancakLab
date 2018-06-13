@@ -114,7 +114,7 @@ CTCTRACKS = {}
 
 debugTrees = False
 
-def followTrack(root,ID,parent=-1,gen=0):
+def followTrack(root,ID,parent=0,gen=0):
 	# this track we gonna populate now
 	# time -> spot_ID
 	TRACK = {}
