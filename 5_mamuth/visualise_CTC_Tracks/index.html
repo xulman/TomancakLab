@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+	<head>
+		<meta charset="utf-8">
+		<title>Celllineage Visualisation</title>
+		<script src="js/d3.js"></script>
+		<script src="js/math.min.js"></script> 
+                <script src="js/jquery-1.12.2.min.js"></script>
+                <script src="js/jquery-ui.min.js"></script>                  
+                <script src="js/bootstrap.min.js"></script>        
+		<link rel="stylesheet" href="css/styl.css" />   
+                <link rel="stylesheet" href="css/jquery-ui.min.css" />
+                <link rel="stylesheet" href="css/jquery-ui.structure.min.css" />
+                <link rel="stylesheet" href="css/jquery-ui.theme.min.css" />
+                <link rel="stylesheet" href="css/bootstrap.min.css" />
+
+                
+
+
+	</head>
+
+	<body>
+
+		<div class="option">  
+                        <div class="buttons"> 
+                                <span class="btn btn-default btn-sm btn-file">
+                                        Load File<input type="file" id="file-input">                                        
+                                </span> 
+                                <div class="btn-group">
+                                        <button type="button" id="displayOptions" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                                        Display <span class="caret"></span></button>
+                                        <ul class="dropdown-menu" role="menu">
+                                                <li class="dropdown-header">Orientation of graph</li>
+                                                <li><a href="#" onclick="horizontal()">Horizontal</a></li>
+                                                <li><a href="#" onclick="vertical()">Vertical</a></li>
+                                                <li class="divider"></li>
+                                                <li class="dropdown-header">Additional options</li>
+                                                <li><a href="#" onclick="changeScales()">Toggle Miniature Visualisation</a></li>
+                                                <li><a href="#" onclick="axisEverywhere()">Toggle Axis/Axes</a></li>
+                                        </ul>
+                                </div> 
+                                <div class="btn-group">
+                                        <button type="button" id="sortcells" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                                        Sort Cells <span class="caret"></span></button>
+                                        <ul class="dropdown-menu" role="menu">
+                                                <li><a href="#" onclick="sortById()">By ID</a></li>
+                                                <li><a href="#" onclick="sortByTime()">By BEGIN time</a></li>
+                                        </ul>
+                                </div> 
+                                <div class="btn-group">
+                                        <button type="button" id="fontchanger" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                                        Font <span class="caret"></span></button>
+                                        <ul class="dropdown-menu" >
+                                                <li class="dropdown-header">Size of ID</li>
+                                                <li><a href="#" onclick="changeFontId(0)">12px</a></li>
+                                                <li><a href="#" onclick="changeFontId(1)">14px</a></li>
+                                                <li><a href="#" onclick="changeFontId(2)">16px</a></li>
+                                                <li><a href="#" onclick="changeFontId(3)">18px</a></li>
+                                                <li><a href="#" onclick="changeFontId(4)">20px</a></li>    
+                                                <li class="dropdown-header">Size of Length of Life</li>
+                                                <li><a href="#" onclick="changeFontLife(0)">12px</a></li>
+                                                <li><a href="#" onclick="changeFontLife(1)">14px</a></li>
+                                                <li><a href="#" onclick="changeFontLife(2)">16px</a></li>
+                                                <li><a href="#" onclick="changeFontLife(3)">18px</a></li>
+                                                       
+                                                
+                                        </ul>
+                                </div> 
+
+
+                                <div class="btn-group">
+                                        <button type="button" id="disable" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                                        Disable <span class="caret"></span></button>
+                                        <ul class="dropdown-menu" role="menu">
+                                                <div class="toggleBox">
+                                                <li><div class="checkbox"><label><input type="checkbox" onclick="toggleID()" id="idCheck" value="">ID</label></div></li>
+                                                <li><div class="checkbox"><label><input type="checkbox" onclick="toggleLife()" value="">Length of Life</label></div></li>
+                                                <li><div class="checkbox"><label><input type="checkbox" onclick="toggleLine()" value="">Red Line</label></div></li></a>
+                                                </div>                                          
+                                        </ul>
+                                </div>                           
+                                                              
+                                        <a class="downloadLink" id="downloadLink" download="cellVisualisation.svg"><button class="btn btn-default btn-sm" id="svgSaver">Save as SVG</button></a>
+                                
+                                <div class="btn-group">
+                                        <button type="button" id="help" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+                                        HELP <span class="caret"></span></button>
+                                        <ul class="dropdown-menu" role="menu">
+                                                <li class="dropdown-header">MENU</li>  
+                                                <li><a href="#" onclick="helpLoadButton()">Load File</a></li>
+                                                <li><a href="#" onclick="helpDisplayButton()">Display</a></li>
+                                                <li><a href="#" onclick="helpSortButton()">Sort Cells</a></li>
+                                                <li><a href="#" onclick="helpFontButton()">Font</a></li>
+                                                <li><a href="#" onclick="helpDisableButton()">Disable</a></li>
+                                                <li><a href="#" onclick="helpSVGButton()">Save as SVG</a></li>
+                                                <li class="divider"></li>
+                                                <li class="dropdown-header">GRAPHS</li> 
+                                                <li><a href="#" onclick="helpCells()">Graph of Cell Population</a></li>
+                                                <li><a href="#" onclick="helpStates()">Graph of States</a></li>
+                                                <li><a href="#" onclick="helpInterphaseButton()">Graph of Cells in Interphase</a></li>
+                                                <li class="divider"></li>
+                                                <li class="dropdown-header">INTERACTIVITY</li> 
+                                                <li><a href="#" onclick="helpSliderButton()">Slider</a></li>
+                                                <li><a href="#" onclick="helpAxesButton()">Axes</a></li>
+                                        </ul>
+                                </div>
+
+        	        </div>  
+                        <div class="sliderText">
+                                <label for= "textMin" id="textMin"></label> 
+                        </div>
+                        <div class="slider" id="slider-range"></div>   
+                        <div class="sliderText2">
+                                <label for= "textMax" id="textMax"></label>
+                        </div>
+                                 
+                        
+                </div>       	                        		
+
+		<div class="graphBox"></div>
+		<div class="description">
+			<div class="cellInfo" id="cellInfo"></div>                         
+                        <div class="interestingInfo" id="interestingInfoText"></div> 
+			                     
+                        <div class="lifeGraph"></div>
+
+                        <div id="warningDialog" title="Error when loading data!">
+                                <p id="p1"></p>                        
+                        </div>  
+                        <div id="divisionDialog" title="High abnormal division detected!">
+                                <p id="p2"></p>                        
+                        </div>
+                        <div id="dialog" title="Cell Visualisation - HELP"><p id="helpText"></p></div>  
+
+
+
+                        			
+		</div>
+
+		<script src="js/main.js"></script>		
+	</body>
+</html>

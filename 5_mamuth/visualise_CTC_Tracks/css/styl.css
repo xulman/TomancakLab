@@ -1,0 +1,148 @@
+.buttons{
+	float:left;
+	width: 550px;
+	height: 40px;
+	margin-right: 5px;
+	margin-left: 5px;
+	margin-top: 5px;
+}
+.option{
+	position: fixed;
+	z-index: 1000;
+}
+
+.slider{
+	width: 300px;
+	height: 21px;
+	float: left;
+	margin-top: 15px;
+}
+
+.sliderText{
+	width: 65px;
+	margin-top: 10px;
+	float:left;
+	margin-right: 10px;
+	font-weight:normal;
+	font-family: sans-serif;
+	font-size: 15px;	
+	text-align: right;
+}
+.sliderText2{
+	width: 65px;
+	margin-top: 10px;
+	float:left;
+	margin-left: 15px;
+	font-family: sans-serif;
+	font-weight: normal;
+	font-size: 15px;
+	
+}
+
+.svgAxis{
+	position: fixed;
+	top: 40px;
+	left: 0px;
+}
+
+.svgYAxis{
+	position: fixed;
+	top: 40px;
+	left: 0px;
+}
+
+.description{
+	float:left;
+	width:450px;
+	height: 900px;
+	left: 1040px;
+	top: 35px;
+	position: fixed;
+}
+.graphBox{
+	clear:both;
+	float:left;
+	width: 1025px;
+	height: 870px;
+	position: relative;
+	top: 40px;
+	overflow-x: scroll;
+	overflow-y: scroll;
+	overflow: auto;
+}
+
+.cellInfo{
+	width: 450px;
+	height: 90px;
+}
+
+.graphOfStatesInfo{
+	position: relative;
+	height: 90px;
+	text-align: left;
+}
+
+.interestingInfo{
+	top: 90px;
+	width: 450px;
+	height: 140px;
+}
+
+.lifeGraph{
+	margin-top: 10px;
+	top: 280px;
+	width: 460px;
+	height: 600px;
+	overflow-y: scroll;
+	overflow: auto;
+}
+
+.bar {
+    display: inline-block;
+    width: 20px;
+}
+
+.megaLine{
+	position:fixed;
+	width: 1px;
+	height: 1000px;
+}
+
+.graphBoxSVG{
+	float:left;
+}
+
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
+}
+
+.btn-group{
+	position: fixed;
+}
+
+.toggleBox{
+	margin-left: 10px;
+}
+
+html, body {
+    
+}
+
+
+
