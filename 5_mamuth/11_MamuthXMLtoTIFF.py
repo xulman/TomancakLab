@@ -112,6 +112,28 @@ TRACKS = {}
 # a CellTrackingChallenge.org format of tracks.txt
 CTCTRACKS = {}
 
+# one root per one tree from the XML
+ROOTS = {}
+
+# here's the layout:
+#
+# [minT,maxT] = readInputXMLfile() populates:
+#
+# SPOTS[sid] = [sX,sY,sZ,sT,sR]
+# NEIG[sidFrom] = [sidTo1,...,sidToN]
+# [minT,maxT] is total time span over all saved trees
+#
+#
+# followTrack() then builds:
+#
+# TRACKS[tid] = TRACK
+# TRACK[time] = sid
+#
+# CTCTRACKS[id][param], where param=0 for ID, 1 for timeStart, 2 for timeEnd, 3 for parentID
+#
+# sid = spot id, tid = track id
+
+
 debugTrees = False
 
 def followTrack(root,ID,parent=0,gen=0):
@@ -176,12 +198,10 @@ def writeCTCTRACKS(fileName):
 	fo.close()
 
 
-# ------------------------------------------------------------------------------------
-# the main work happens here
-def main():
+def readInputXMLfile(filePath):
 
 	# open the input file
-	f = open(xmlFile.getAbsolutePath(),"r")
+	f = open(filePath,"r")
 
 	# scan the input file until it finds begining of the definitions of spots
 	line = advanceFileTillLine(f,"AllSpots nspots=")
@@ -215,9 +235,6 @@ def main():
 	# debug
 	# print "nSpots = "+str(nSpots)
 	# print "nSpots = "+str(len(SPOTS))
-
-	# one root per one tree from the XML
-	ROOTS = {}
 
 	# total time span over all saved trees
 	minT =  9999999999999999999
@@ -291,6 +308,15 @@ def main():
 		line = advanceFileTillLine(f,"Track name")
 
 	f.close()
+	return [minT,maxT]
+
+
+# ------------------------------------------------------------------------------------
+# the main work happens here
+def main():
+
+	# --- this parses the data in ---
+	[minT,maxT] = readInputXMLfile(xmlFile.getAbsolutePath())
 
 	# now, we have a list of roots & we have neighborhood-ships,
 	# let's reconstruct the trees from their roots,
@@ -299,6 +325,8 @@ def main():
 	for root in ROOTS:
 		print("extracted tree ID="+str(root))
 		lastID = followTrack(ROOTS[root],lastID+1)
+	# --- this parses the data in ---
+
 
 	# create the output image (only once cause it is slow)
 	outShortProcessors = [ ShortProcessor(xSize,ySize) for z in range(zSize) ]
