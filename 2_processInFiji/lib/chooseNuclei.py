@@ -84,6 +84,7 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 		else:
 			areThereSomeObjectsLeft = True
 
+	areThereSomeObjectsLeft = False
 	if areThereSomeObjectsLeft:
 		# close (and slightly dilate) the original image
 		# NB: the sense of what is BG and FG is switched, hence we start with erosion...
