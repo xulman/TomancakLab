@@ -101,7 +101,7 @@ for filename in os.listdir(InputFolder):
 				# with 0.1 sq. micron resolution
 				#
 				# histogram will list nuclei areas from 0 till maxArea sq. microns
-				maxArea = 100
+				maxArea = 200
 				#
 				# how much different areas should fall into the same bin, bin "width"
 				binRes = 0.1
