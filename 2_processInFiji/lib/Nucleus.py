@@ -159,7 +159,9 @@ class Nucleus:
 						# have only a neighbor left
 						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]-1,pix[1]+1] ]
 
-				# we gracefully ignore when cnt == 4...
+				if cnt == 4:
+					# four neighbors -> we're an isolated pixel
+					coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]+1] , [pix[0]+1,pix[1]] , [pix[0],pix[1]-1] , [pix[0]-1,pix[1]] ]
 
 				# calculate the proper length of the local boundary by sweeping
 				# through a neighbor,myself,neighbor (giving us twice the required length)
