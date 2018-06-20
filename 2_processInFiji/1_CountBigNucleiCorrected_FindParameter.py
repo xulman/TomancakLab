@@ -13,6 +13,8 @@
 #@File (label="Z coordinate map:") zMapFile
 #
 #@boolean (label="Show sheet with analysis data") showRawData
+#@boolean (label="Show image with areas") showAreaImage
+#@boolean (label="Show image with circularities") showCircImage
 
 # This script should be used to find suitable parameters for CountBigNucleiCorrected.py
 # You'll see nuclei of various colors:
@@ -112,18 +114,15 @@ def main():
 	OutputImg.show()
 
 
-	# VLADO PROPER CIRC DEBUG
-	for nucl in nuclei:
-		nucl.DrawValue = nucl.Circularity*1000.0
-	#drawChosenNucleiValue(imp.getWidth(),imp.getHeight(), nuclei)
-	# VLADO PROPER CIRC DEBUG
+	if showCircImage:
+		for nucl in nuclei:
+			nucl.DrawValue = nucl.Circularity
+		drawChosenNucleiValue("Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
 
-	# VLADO PIXEL CIRC DEBUG
-	for nucl in nuclei:
-		nucl.DrawValue = (nucl.Size * 4.0 * math.pi) / (nucl.EdgeSize * nucl.EdgeSize)
-		nucl.DrawValue *= 100.0
-	#drawChosenNucleiValue(imp.getWidth(),imp.getHeight(), nuclei)
-	# VLADO PIXEL CIRC DEBUG
+	if showAreaImage:
+		for nucl in nuclei:
+			nucl.DrawValue = nucl.Area;
+		drawChosenNucleiValue("Real areas", imp.getWidth(),imp.getHeight(), nuclei)
 
 
 	if (showRawData):
