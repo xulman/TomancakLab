@@ -142,6 +142,9 @@ def drawChosenNuclei(width,height, nuclei):
 
 
 def drawChosenNucleiValue(width,height, nuclei):
+	drawChosenNucleiValue("Visualized Nuclei",width,height, nuclei)
+
+def drawChosenNucleiValue(title, width,height, nuclei):
 	# will place Nucleus.DrawValue into the image
 
 	#initiate output pixel buffer
@@ -153,5 +156,5 @@ def drawChosenNucleiValue(width,height, nuclei):
 
 	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
 	cp = FloatProcessor(width,height, OutputPixelsNew)
-	OutputImg = ImagePlus("Visualized Nuclei", cp)
+	OutputImg = ImagePlus(title, cp)
 	OutputImg.show()
