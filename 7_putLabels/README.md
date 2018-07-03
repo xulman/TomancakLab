@@ -30,3 +30,17 @@ Considering the image shown below, one needs to secure the following steps:
   * Define the fixed annotation text, or leave empty
 
 ![How to use figure](https://github.com/xulman/ImSAnE-Fiji/raw/master/7_putLabels/README_figure.png)
+
+
+# Example of text file with time values and frame indices
+
+```
+first line is ignored
+\t3.5\t1\t
+\t3.9\t2\t
+\t4.6\t3\t
+```
+
+This text file would annotate 3 frames in the image stack, in particular the 1st, 2nd and 3rd slice of the stack.
+The stack may, however, contain more slices -- they'd be left untouched. The time values inserted would be `03.50`, `03.90`
+and `04.60`. The `\t` denotes a tab-space. Note that the lines (except for the first one) must end with tab-space.
