@@ -1,15 +1,15 @@
 #@ boolean (label="Double click 'TextTool' icon to choose font.",     description="This checkbox is ignored.") notUsed1
 #@ boolean (label="Double click 'ColorPicker' icon to choose color.", description="This checkbox is ignored.") notUsed2
 
-#@ int (label="X position of Time [pixels], X=", description="Should fit into the image.") X
-#@ int (label="Y position of Time [pixels], Y=", description="Should fit into the image.") Y
+#@ int (label="X position of Time [pixels], X=", description="Bottom left corner, should fit into the image.") X
+#@ int (label="Y position of Time [pixels], Y=", description="Bottom left corner, should fit into the image.") Y
 #@ String (label="Time prefix", required=False,  description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsPrefix
 #@ File (label="file with Time stamps",           description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsFile
 #@ String (label="Time separator", value=".",     description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsSep
 #@ String (label="Time postfix", required=False, description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsPostfix
 
-#@ int (label="X position of Annotation [pixels], X=", description="Should fit into the image.") Xt
-#@ int (label="Y position of Annotation [pixels], Y=", description="Should fit into the image.") Yt
+#@ int (label="X position of Annotation [pixels], X=", description="Bottom left corner, should fit into the image.") Xt
+#@ int (label="Y position of Annotation [pixels], Y=", description="Bottom left corner, should fit into the image.") Yt
 #@ String (label="Annotation text", required=False, description="This text will appear in every slice of the stack.") textMsg
 
 labelsFile = labelsFile.getAbsolutePath()
