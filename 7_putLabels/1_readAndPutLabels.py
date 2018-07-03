@@ -5,6 +5,7 @@
 #@ int (label="Y position of Time [pixels], Y=", description="Should fit into the image.") Y
 #@ String (label="Time prefix", required=False,  description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsPrefix
 #@ File (label="file with Time stamps",           description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsFile
+#@ String (label="Time separator", value=".",     description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsSep
 #@ String (label="Time postfix", required=False, description="Time information is composed from prefix, timestamp with the given separator and postfix.") labelsPostfix
 
 #@ int (label="X position of Annotation [pixels], X=", description="Should fit into the image.") Xt
@@ -21,6 +22,7 @@ from ij import IJ
 from ij.gui import Toolbar
 from ij.gui import TextRoi
 from java.awt import Font
+import math
 
 
 def readLabelsTxtFile(fn):
@@ -85,10 +87,19 @@ def main():
 			ip.setFont(font)
 			ip.setColor(color)
 
+			# extract decimal part of the time
+			timeA = int(math.floor(labels[l][1]))
+
+			# extract fractional part of the time (and avoid rounding effect by printing out the original number)
+			timeSTR = "{:.02f}".format(labels[l][1])
+			timeB = timeSTR[len(timeSTR)-2:len(timeSTR)]
+
+			# compose the output string
+			timeSTR = "{:0>2}{}{}".format(timeA,labelsSep,timeB)
+			msg = labelsPrefix+timeSTR+labelsPostfix
+
 			# render the text to the current slice
 			ip.moveTo(X, Y)
-			msg = labelsPrefix+str(labels[l][1])+labelsPostfix
-
 			ip.drawString(msg)
 			print "drawing >"+msg+"< into slice >"+str(z)+"<"
 
