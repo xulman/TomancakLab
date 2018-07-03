@@ -25,6 +25,17 @@ from java.awt import Font
 import math
 
 
+# the input file has to has the following format:
+# first complete line is ignored
+# second and every next line has to comply with this pattern:
+# \TAB\REALNUMBER\TAB\INTEGER\TAB
+#
+# where \TAB denotes the tabulator sign, 0x09 according to ASCII
+# where \REALNUMBER denotes a comma or period decimal point positive real number
+# where \INTEGER denotes positive integer number
+#
+# \REALNUMBER should represent time stamp in seconds
+# \INTEGER    should represent 1-based number of the frame
 def readLabelsTxtFile(fn):
 	# output list (yet empty)
 	labels = []
@@ -37,18 +48,20 @@ def readLabelsTxtFile(fn):
 		# read next line (and replace ',' with '.')
 		line = f.readline().replace(",",".")
 
+		# stop if the line is not complete...
 		if len(line) < 3:
 			return labels
 
-		# remove all odd positions (which happen to zero-valued char)
-		cleanline = ""
-		odd = True
-		for l in line:
-			odd ^= True
-			if odd:
-				cleanline += l
-
-		line = cleanline
+		# does the line contain "crippled" chars at every odd byte?
+		if line[0] == '\x00' and line[2] == '\x00':
+			# remove all odd positions (which happen to zero-valued char)
+			cleanline = ""
+			even = True
+			for l in line:
+				even ^= True
+				if even:
+					cleanline += l
+			line = cleanline
 
 		# find "separators" between the columns
 		ws1 = line.find("\t",2)
