@@ -22,11 +22,11 @@ Considering the image shown below, one needs to secure the following steps:
 * Choose font color with the ColorPicker icon
 * Open the script with Fiji and run it
 * The script will open a dialog (denoted as *step 4.*):
-  * The position of bottom-left corner the time stamp must be defined
+  * Define the position of the time stamp
   * Define prefix that is printed always before the time stamp itself, or leave empty
-  * Choose the text file with time stamps and separator of digits
+  * Choose the text file with time stamps, and separator of digits
   * Define postfix that is printed always behind the time stamp itself, or leave empty
-  * The position of bottom-left corner the annotation may be defined
+  * Define the position of the annotation
   * Define the fixed annotation text, or leave empty
 
 ![How to use figure](https://github.com/xulman/ImSAnE-Fiji/raw/master/7_putLabels/README_figure.png)
