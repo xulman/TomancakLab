@@ -52,6 +52,7 @@ and `04.60`. The `\t` denotes a tab-space. Note that the lines (except for the f
 # Download the script
 
 You can directly [open the script here](https://raw.githubusercontent.com/xulman/TomancakLab/master/7_putLabels/1_readAndPutLabels.py),
-and download it by clicking *Save page as* from your browser menu.
+and download it by clicking *Save page as* from your browser menu. Choose *Format: Page Source* to save the script in the right format,
+which is the `.py` extension.
 
 Alternatively, you can [download the whole repository](https://github.com/xulman/TomancakLab/archive/master.zip) and unzip it. The script is in the `7_putLabels` folder.
