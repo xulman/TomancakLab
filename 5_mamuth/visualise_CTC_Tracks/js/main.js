@@ -120,6 +120,11 @@ var helpAxes = "<h4><b>AXES</b></h4>"
 						+ " Based on that the <i>Graph of States</i> and <i>Graph of Cells in Interphase</i> will be displayd."
 						+ "<br><br>The position of the red line can be changed also by pressing the <b>left</b> and <b>right</b> arrow keys.";
 
+var aboutTXT = "This CellLineage Visualisation tool was developed originally by Antonín Holík at Masaryk University, Brno, Czech Republic.<br/><br/>"
+               + "HOLÍK, Antonín. <i>Vizualizace rodokmenu v buněčných populacích</i> [online]. Brno, 2016 [cit. 2018-07-16]. Available from: &lt;<a href=\"https://is.muni.cz/th/wwm19/?lang=en\">https://is.muni.cz/th/wwm19/?lang=en</a>&gt;. Bachelor's thesis. Masaryk University, Faculty of Informatics. Thesis supervisor Barbora Kozlíková.<br/><br/>"
+               + "The tool reads a <u><a href=\"http://www.celltrackingchallenge.net\">Cell Tracking Challenge</a></u> lineage datafile (often called as <tt>tracks.txt</tt> or alike), visualize it, and offers to export the view on the lineage as an SVG file. "
+					+ "The details on <u><a href=\"http://public.celltrackingchallenge.net/documents/Naming%20and%20file%20content%20conventions.pdf\">the input data format are explained here.</a></u>";
+
 var interestingInfoText = "<br><b>Actual frame: </b>";
 
 
@@ -157,6 +162,21 @@ $(document).keydown(function(e) {
 
 //Prepare dialog for HELP
 $( "#dialog" ).dialog({
+    autoOpen: false,
+    width:700,
+    height:500,
+    show: {
+        effect: "blind",
+        duration: 500
+    },
+    hide: {
+        effect: "blind",
+        duration: 500
+    }
+});
+
+//Prepare dialog for ABOUT
+$( "#dialogA" ).dialog({
     autoOpen: false,
     width:700,
     height:500,
@@ -684,6 +704,11 @@ function sortByIdSmth(cells){
 function lifeText(){
 	showLifeLengthText = !showLifeLengthText;
 	display();
+}
+
+function about(){
+	document.getElementById("aboutText").innerHTML = aboutTXT;
+    $( "#dialogA" ).dialog( "open" );
 }
 
 
