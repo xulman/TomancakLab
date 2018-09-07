@@ -47,13 +47,13 @@ def drawBall(xC,yC,zC,R,Col,img):
 	print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
 
 	x_min = xC-R if xC > R       else 0
-	x_max = xC+R if xC+R < xSize else xSize
+	x_max = xC+R if xC+R < xSize else xSize-1
 
 	y_min = yC-R if yC > R       else 0
-	y_max = yC+R if yC+R < ySize else ySize
+	y_max = yC+R if yC+R < ySize else ySize-1
 
 	z_min = zC-R if zC > R       else 0
-	z_max = zC+R if zC+R < zSize else zSize
+	z_max = zC+R if zC+R < zSize else zSize-1
 
 	R2 = R*R
 
