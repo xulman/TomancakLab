@@ -4,6 +4,7 @@ from __future__ import print_function
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
+#@boolean (label="Squash everything to 2D:") shouldDoTwoD
 #@int (label="Downsampling factor:") xDown
 #@boolean (label="Write also CTC tracks.txt:") shouldWriteCTCTRACKS
 
@@ -28,6 +29,9 @@ xSize = int(math.ceil(xSize / Down))
 ySize = int(math.ceil(ySize / Down))
 zSize = int(math.ceil(zSize / Down))
 
+if shouldDoTwoD:
+	zSize = 1
+
 
 # ------------------------------------------------------------------------------------
 # draws ball of radius R with center xC,yC,zC with colour Col into the image
@@ -36,6 +40,9 @@ def drawBall(xC,yC,zC,R,Col,img):
 	yC = int(math.ceil(yC / Down))
 	zC = int(math.ceil(zC / Down))
 	R  = int(math.ceil(R  / Down))
+
+	if shouldDoTwoD:
+		zC = 0
 
 	print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
 
