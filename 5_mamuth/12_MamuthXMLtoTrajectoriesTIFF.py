@@ -19,7 +19,10 @@ import math
 import sys.path
 import os.path
 import inspect
-sys.path.append(os.path.dirname(inspect.getfile(inspect.currentframe())))
+ScriptsRoot = os.path.dirname(os.path.dirname(sys.path[0]))+os.sep+"scripts"
+ThisFile    = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.append(ScriptsRoot+ThisFile)
+sys.path.append(ThisFile)
 from MamutXMLreader import *
 
 
