@@ -1,6 +1,6 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@int  (label="Don't draw beyond this time:") noDrawBeyondTime
+#@String (label="Draw only up to these time points:") drawAtTheseTimepoints
 #@File (label="Output trajectories TIFF file:") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
@@ -35,6 +35,60 @@ zSize = int(math.ceil(zSize / Down))
 
 if shouldDoTwoD:
 	zSize = 1
+
+# ------------------------------------------------------------------------------------
+def parseOutTimes(tps):
+	out = []
+
+	while len(tps) > 0:
+
+		# find the next ',' or '-'
+		ic = tps.find(',')
+		ih = tps.find('-')
+
+		#print "found , @ " + str(ic) + " and - @ " + str(ih)
+
+		# -1 means 'not found'
+		if ic == -1:
+			# processing for sure the last term
+			ic = len(tps)
+
+		# make sure if hyphen is not found to go to the "comma branch"
+		if ih == -1:
+			ih = ic+1
+
+
+		# take the one that is closer to the beginning
+		if ic < ih:
+			# we're parsing out N,
+			N = int(tps[0:ic])
+
+			out.append(N)
+			tps = tps[ic+1:]
+
+			print("parsed out: single timepoint "+str(N))
+		else:
+			# we're parsing out N-M,
+			N = int(tps[0:ih])
+			M = int(tps[ih+1:ic])
+
+			for i in range(N,M+1):
+				out.append(i)
+
+			tps = tps[ic+1:]
+
+			print("parsed out: timepoint interval "+str(N)+" to "+str(M))
+
+	out.sort()
+
+	# ww = out.unique()
+	ww = []
+	for i in range(len(out)):
+		if i == 0 or out[i-1] != out[i]:
+			ww.append(out[i])
+
+	return ww
+# ------------------------------------------------------------------------------------
 
 
 # labels are of this form: trackID*SEPARATOR + (timePoint-TSHIFT)
@@ -149,7 +203,7 @@ def drawBall(xC,yC,zC,R,Col,img):
 
 # ------------------------------------------------------------------------------------
 # the main work happens here
-def main():
+def main(timePointList):
 
 	# --- this parses the data in ---
 	[minT,maxT] = readInputXMLfile(xmlFile.getAbsolutePath())
@@ -179,29 +233,39 @@ def main():
 	print("detected interval of time points ["+str(minT)+","+str(maxT)+"]")
 
 
-	# scan all tracks
-	for tID in TRACKS:
-		TRACK = TRACKS[tID]
+	for maxDrawTime in timePointList:
+		# scan all tracks
+		for tID in TRACKS:
+			TRACK = TRACKS[tID]
 
-		# create consecutive pairs of time points
-		tA = minT-1
-		for tB in sorted(TRACK.keys()):
-			if tA >= minT:
-				# consecutive pair (tA,tB)
+			# create consecutive pairs of time points
+			tA = minT-1
+			for tB in sorted(TRACK.keys()):
+				if tA >= minT:
+					# consecutive pair (tA,tB)
 
-				#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
+					#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
 
-				spotA = SPOTS[TRACK[tA]]
-				if spotA[3] < noDrawBeyondTime:
-					spotB = SPOTS[TRACK[tB]]
-					drawLine(spotA,spotB,noDrawBeyondTime, trackThickness, tID,minT, img)
+					spotA = SPOTS[TRACK[tA]]
+					if spotA[3] < maxDrawTime:
+						spotB = SPOTS[TRACK[tB]]
+						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, img)
 
-			tA = tB
-
-
-	# now write the image onto harddrive...
-	print("Writing trajectory image: "+tifFile.getAbsolutePath())
-	IJ.save(outImp,tifFile.getAbsolutePath())
+				tA = tB
 
 
-main()
+		# now write the image onto harddrive...
+		fn = tifFile.getAbsolutePath()
+		i = fn.rfind('.')
+		fn = fn[0:i]+str(maxDrawTime)+fn[i:len(fn)]
+
+		print("Writing trajectory image: "+fn)
+		IJ.save(outImp,fn)
+
+
+try:
+	tpList = parseOutTimes(drawAtTheseTimepoints);
+	main(tpList)
+except ValueError as ve:
+	print(ve)
+
