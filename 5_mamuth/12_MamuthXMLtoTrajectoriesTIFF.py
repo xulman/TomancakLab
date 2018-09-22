@@ -98,7 +98,7 @@ def parseOutTimes(tps):
 
 # dividing by SEPARATOR (e.g. via Image->Math) one can strip away time information/coordinate;
 # thresholding by 1, one can strip away all tracking information (track ID, time coordinate)
-SEPARATOR = 100
+SEPARATOR = 0
 
 # ------------------------------------------------------------------------------------
 # draws a line made of many (overlapping) balls, of width R from
