@@ -1,5 +1,6 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
+#@int  (label="Don't draw beyond this time:") noDrawBeyondTime
 #@File (label="Output trajectories TIFF file:") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
@@ -47,8 +48,10 @@ SEPARATOR = 100
 
 # ------------------------------------------------------------------------------------
 # draws a line made of many (overlapping) balls, of width R from
-# spotA to spotB that belongs to track ID, into the image
-def drawLine(spotA,spotB, R,ID,TSHIFT,img):
+# spotA to spotB that belongs to track ID, into the image, but
+# don't draw no further than given stopTime; the TSHIFT is a helping
+# parameter connected to the SEPARATOR
+def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 	# the coordinates will get divided by Down, and R as well;
 	# in this function, however, we want R to represent already the final
 	# width (radius), so we multiply by Down (to get divided later...)
@@ -90,8 +93,15 @@ def drawLine(spotA,spotB, R,ID,TSHIFT,img):
 	# similarily for time
 	deltaT = float(spotB[3]-spotA[3]) / SN
 
+	# shortcut... makes stopTime relative to the time of the spotA
+	stopTime = stopTime - spotA[3]
+
 	SN = int(SN)
 	for i in range(0,SN+1):
+		# don't draw beyond the stopTime
+		if i*deltaT > stopTime:
+			return
+
 		x = xC  +  float(i)*xSV
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
@@ -179,11 +189,12 @@ def main():
 			if tA >= minT:
 				# consecutive pair (tA,tB)
 
-				print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
+				#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
 
 				spotA = SPOTS[TRACK[tA]]
-				spotB = SPOTS[TRACK[tB]]
-				drawLine(spotA,spotB, trackThickness, tID,minT, img)
+				if spotA[3] < noDrawBeyondTime:
+					spotB = SPOTS[TRACK[tB]]
+					drawLine(spotA,spotB,noDrawBeyondTime, trackThickness, tID,minT, img)
 
 			tA = tB
 
