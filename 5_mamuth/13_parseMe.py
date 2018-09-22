@@ -25,18 +25,15 @@ def parseOutTimes(tps):
 		# take the one that is closer to the beginning
 		if ic < ih:
 			# we're parsing out N,
-			# TODO: add try-catch clause and report incorrect input
 			N = int(tps[0:ic])
 
 			out.append(N)
 			tps = tps[ic+1:]
 
-			#print "N,  :" + str(N)
+			print "will process single timepoint "+str(N)
 		else:
 			# we're parsing out N-M,
-			# TODO: add try-catch clause and report incorrect input
 			N = int(tps[0:ih])
-			# TODO: add try-catch clause and report incorrect input
 			M = int(tps[ih+1:ic])
 
 			for i in range(N,M+1):
@@ -44,14 +41,24 @@ def parseOutTimes(tps):
 
 			tps = tps[ic+1:]
 
-			#print "N-M,:" + str(N) + "<->" + str(M)
+			print "will process timepoint interval between "+str(N)+" and "+str(M)
 
 	return out
 
 
 def main():
-	# sort the output as well TODO
-	qq = parseOutTimes(timePoints);
-	print qq
+	try:
+		qq = parseOutTimes(timePoints);
+		qq.sort()
+
+		# ww = qq.unique()
+		ww = []
+		for i in range(len(qq)):
+			if i == 0 or qq[i-1] != qq[i]:
+				ww.append(qq[i])
+
+		print ww
+	except ValueError as VE:
+		print VE
 
 main()
