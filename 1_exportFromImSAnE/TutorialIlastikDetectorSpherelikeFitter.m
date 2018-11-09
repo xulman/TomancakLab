@@ -32,7 +32,7 @@ clear all; close all;
 %
 [scriptPath,~,ext] = fileparts(matlab.desktop.editor.getActiveFilename);
 
-dataDir    = '/mnt/projects/ulman/p_Mangal/imsane/'; %fullfile(scriptPath, 'rawData');
+dataDir    = '/mnt/projects/ulman/p_Mangal/imsane/s1e2'; %fullfile(scriptPath, 'rawData');
 projectDir = fullfile(scriptPath, 'projectFiles');
 
 
@@ -41,10 +41,11 @@ cd(dataDir)
 
 fileMeta                 = struct();
 fileMeta.dataDir         = dataDir;
-fileMeta.filenameFormat  = 's2e1_High-0.4xDownScaled.tif'; %'Time%06d_8bit_bin2.tif'; % for full data sample use Time000000.tif
+fileMeta.filenameFormat  = 't%02d.tif'; %'Time%06d_8bit_bin2.tif'; % for full data sample use Time000000.tif
 fileMeta.nChannels       = 1; % number of channels must be specified for matlab reader to function.
-fileMeta.timePoints      = 1; 
-fileMeta.stackResolution = [0.38 0.38 0.38]; 
+fileMeta.timePoints      = [1:2]; 
+fileMeta.stackResolution = [0.38 0.38 0.38];
+%fileMeta.stackResolution = [1.0 1.0 1.0];
 fileMeta.swapZT          = 0;
 
 expMeta                  = struct();
@@ -67,23 +68,23 @@ xp.initNew();
 %% Load data for surface detection and rescale to unit aspect ratio
 
 xp.loadTime(1);
-
 xp.rescaleStackToUnitAspect();
 
 %% Detect the surface
 
 myDetectOpts = struct('channel', 1, 'sigma', 2, 'ssfactor', 4,...
             'rmRadialOutliers', 1.5,'thresh',.6,'amin',50,'dildisc',5,...
-            'fileName',[xp.fileMeta.dataDir,'/s2'],...
-            'foreGroundChannel',1,'zdim',2); 
+            'fileName',[xp.fileMeta.dataDir,'/forIlastik'],...
+            'foreGroundChannel',2,'zdim',2); 
 xp.setDetectOptions(myDetectOpts);
 % fileName is the (final) full output name (not a prefix s2* or alike),
 % will give out in this case: ...dataDir/s2.h5
 
-%%
+%% KEEP PROCESSING SECTIONS UP TO THIS SECTION (INCLUDING THIS SECTION)
 xp.detector.prepareIlastik(xp.stack);
 
-%%
+%% AFTER ILASTIK, START FROM THIS SECTION BASICALLY ALL THE WAY DOWN,
+% CHECK FIT!
 % only once the surface has been processed in ilastik can it be identified
 % by the detector, which then extracts a point Cloud based on the above
 % settings. Do train a classifier, open Ilastik, and follow the
@@ -97,9 +98,10 @@ xp.detector.prepareIlastik(xp.stack);
 xp.detectSurface();
 
 
-%% Inspect the point cloud in a cross section
+%% Inspect the point cloud in a cross section,
+% RUN SEVERAL TIMES WITH DIFFERENT 'x' and '800'
 
-inspectOptions= struct('dimension', 'x', 'value', 200, 'pointCloud', 'b')
+inspectOptions= struct('dimension', 'x', 'value', 800, 'pointCloud', 'b')
 xp.detector.inspectQuality(inspectOptions, xp.stack);
 % plane cuts the volume at 'dimension'='value', e.g. x=200, z=120
 % (original, not-downsampled, coordinates are used!)
@@ -126,12 +128,15 @@ xp.setFitOptions(fitOptions);
 xp.fitSurface();
 %
 %% Inspect the fit in a cross section
+% RUN SEVERAL TIMES WITH DIFFERENT 'x' and '800'
 
-zval = 200;
+zval = 600;
 Options = struct('dimension','z','value',zval,'pointCloud','b');
 xp.fitter.inspectQuality(inspectOptions, xp.detector, xp.stack);
 
 %% Inspect the could point of fitted points in 3D (in red)
+% THIS IS NICE COMPARISON OF THE DETECTED AND FITTED SURFACES
+
 fittedPointsCoords = xp.fitter.fittedPoints;
 Xcoords=reshape(fittedPointsCoords{1},[],1);
 Ycoords=reshape(fittedPointsCoords{2},[],1);
@@ -145,8 +150,8 @@ hold
 
 % Inspect the could point of detected points in 3D (in blue)
 % Boths plots will be overlaid over each other.
-sparsity2 = floor( size(detectedPointsCoords,1)/howMuch*sparsity );
 detectedPointsCoords = xp.detector.pointCloud.points;
+sparsity2 = floor( size(detectedPointsCoords,1)/howMuch*sparsity );
 plot3(detectedPointsCoords(1:sparsity2:end,1), detectedPointsCoords(1:sparsity2:end,2), detectedPointsCoords(1:sparsity2:end,3), 'b.');
 
 hold off
@@ -182,6 +187,7 @@ xp.detector.pointCloud.ROI.drawAxes(view_sec, scale);
 xp.detector.pointCloud.ROI.drawROI(view_sec);
 
 %% Normally evolve the fitted surface by shift in pixels
+% ONLY IF NECCESARY
 %
 % Depending on the part of the dataset we want to extract, we may want to 
 % displace the surface by shift in the direction of the surface normal.
@@ -190,6 +196,7 @@ shift = 5;
 xp.normallyEvolve(shift);
 
 %% Set desired charts and generate generate pullbacks
+% KEEP GOING FROM THIS ONWARDS, EVERY SECTION
 %
 % Now we have the surface in a region of the data we would like to extract,
 % and next we want to pullback the data to the various available charts. 
@@ -294,3 +301,19 @@ xp.SOI.save(options)
 % this tutorial. We can reload a surface of interest with
 % SOI.load(directory)
 %
+
+%% batch mode, embedding:
+%%
+for t = 2 :  length(fileMeta.timePoints)  % index into fileMeta.timePoints, actual time will be fileMeta.timePoints(t)
+    ['doing timepoint: ',int2str(t)]
+    
+    % load the data
+    xp.loadTime(fileMeta.timePoints(t));
+    xp.rescaleStackToUnitAspect();
+
+    %    xp.fitter.populateSOI(xp.SOI);
+
+    xp.SOI.pullbackStack(xp.stack, xp.currentROI, xp.currentTime, onionOpts);
+    xp.SOI.save(options)
+
+end
