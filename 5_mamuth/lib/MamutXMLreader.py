@@ -82,7 +82,7 @@ def followTrack(root,ID,parent=0,gen=0):
 	print("new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root))
 
 	# initiate the CTCTRACKS record
-	CTCTRACKS[ID]=[ID,time,-10,parent]
+	CTCTRACKS[ID]=[ID,time,-10,parent,gen]
 
 	if debugTrees:
 		#prefix tree writing
