@@ -145,7 +145,7 @@ def writeGenTRACKS(fileName,duration):
 
 	for t in CTCTRACKS:
 		T = CTCTRACKS[t]
-		fo.write(str(T[0])+" "+str(T[4]*duration)+" "+str(T[4]*duration +duration-1)+" "+str(T[3])+"\n")
+		fo.write(str(T[0])+" "+str(T[4]*duration)+" "+str(T[4]*duration +duration)+" "+str(T[3])+"\n")
 
 	fo.close()
 
