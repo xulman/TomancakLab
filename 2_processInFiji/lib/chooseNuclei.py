@@ -10,12 +10,18 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	ip = imp.getProcessor()
 
 	# fix pixel values
+	countFG = 0
 	for x in range(imp.getWidth()):
 		for y in range(imp.getHeight()):
 			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
 				ip.set(x,y,0)
 			else:
 				ip.set(x,y,255)
+				countFG = countFG+1
+
+	if countFG == 0:
+		print "empty input image detected, returning with no components"
+		return []
 
 	#Detect Nuclei
 	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
