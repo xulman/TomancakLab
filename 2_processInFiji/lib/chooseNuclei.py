@@ -40,7 +40,12 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 				else:
 					#print "detected (1st run): "+str(MyColor)
 					pixelPerColor[MyColor] = [[x,y]]
-	labelMap.close()
+
+	# leave the connected components map opened
+	#labelMap.close()
+
+	# make sure the input image is always visible for further processing
+	imp.show()
 
 	# a list of detected objects (connected components)
 	components = []
