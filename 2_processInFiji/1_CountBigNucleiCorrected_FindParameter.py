@@ -81,7 +81,7 @@ def main():
 	# obtain list of all valid nuclei
 	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
-	nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
+	#nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
 
 	# ------- analysis starts here -------
 	circularitySum = 0

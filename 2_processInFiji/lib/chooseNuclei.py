@@ -5,6 +5,9 @@ from ij.process import FloatProcessor
 
 from Nucleus import Nucleus
 
+from testPseudoClosing import pseudoClosing
+from testPseudoClosing import pseudoDilation
+
 def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
@@ -14,22 +17,55 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	for x in range(imp.getWidth()):
 		for y in range(imp.getHeight()):
 			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
-				ip.set(x,y,0)
-			else:
 				ip.set(x,y,255)
+			else:
+				ip.set(x,y,0)
 				countFG = countFG+1
 
 	if countFG == 0:
 		print "empty input image detected, returning with no components"
 		return []
 
-	#Detect Nuclei
-	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
+	# remove small components -- which is typically holes inside the nuclei
+	IJ.run("3D Objects Counter", "threshold=128 slice=1 min.=500 max.=9999999 objects")
+	IJ.getImage().setTitle("membranes")
+
+	# skeletonize!
+	IJ.run("32-bit")
+	IJ.run("8-bit")
+	IJ.run("Invert")
+	IJ.run("Skeletonize","BlackBackground=false")
+	IJ.run("Dilate")
+
+	# da frame :)
+	ii = IJ.getImage()
+	for x in range(ii.getWidth()):
+		ip.set(x,0,0);
+		ip.set(x,1,0);
+	for y in range(ii.getHeight()):
+		ip.set(0,               y,0);
+		ip.set(1,               y,0);
+		ip.set(ii.getWidth()-2,y,0);
+		ip.set(ii.getWidth()-1,y,0);
+	for x in range(ii.getWidth()):
+		ip.set(x,ii.getHeight()-2,0);
+		ip.set(x,ii.getHeight()-1,0);
+
+	#Detect connected components (aka Nuclei)
+	IJ.run("Threshold to label map (2D, 3D)", "threshold=20")
 	labelMap = IJ.getImage()
-	LPP = labelMap.getProcessor()
+	labelMap.setTitle("labelled_image")
+
+	#IJ.getImage().duplicate().show()
+
+	pseudoDilation(labelMap)
+	labelMap.updateAndRepaintWindow()
+	pseudoClosing(labelMap)
+	labelMap.updateAndRepaintWindow()
 
 	#Detect all pixels belonging to one Color
 	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
+	LPP = labelMap.getProcessor()
 	pixelPerColor = {}
 	for x in range(labelMap.width):
 		for y in range(labelMap.height):

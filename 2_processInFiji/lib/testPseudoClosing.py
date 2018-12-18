@@ -121,6 +121,9 @@ def testing():
 def pluginCode():
 	imp = IJ.getImage()
 
+	maxRounds = 30
+	minPixelChanges = 5
+
 	for i in range(maxRounds):
 		cnt = pseudoClosing(imp)
 		imp.updateAndRepaintWindow()
