@@ -17,7 +17,7 @@ from properMeasurements import *
 class Nucleus:
 
 	def __init__(self,Color,Pixels,ip,realSizes,realCoords):
-		# label of the nuclei
+		# stringy label of the nuclei
 		self.Color = Color
 
 		# a scalar value to be used in chooseNuclei.drawChosenNucleiValue(),
@@ -52,29 +52,47 @@ class Nucleus:
 		# (approximate) length of the boundary in microns
 		self.EdgeLength = 0.0
 
+		# shortcut to the pixel values
+		i = ip.getPixels()
+		w = ip.getWidth()
+
+		# integer label of the nuclei
+		self.Label = i[w*Pixels[0][1] + Pixels[0][0]]
+		thisColor = self.Label
+
+		# offsets of pixels just outside this nucleus
+		self.outterBgEdge = set()
+
+		# set of labels touching this nuclei (component),
+		# initially empty -> use setNeighborsList() to have it filled
+		self.NeighIDs = set()
+
 		# determine boundary pixels
 		for pix in Pixels:
-			try:
-				ColorLeft = ip.getPixel(pix[0]-1,pix[1])
-			except:
-				ColorLeft = - 1
+			# pixel offset within the image
+			o = w*pix[1] + pix[0]
 
 			try:
-				ColorAbove = ip.getPixel(pix[0],pix[1]-1)
+				ColorAbove = i[ o-w ]
 			except:
 				ColorAbove = -1
 
-			thisColor = ip.getPixel(pix[0],pix[1])
-
 			try:
-				ColorBelow = ip.getPixel(pix[0],pix[1]+1)
+				ColorLeft = i[ o-1 ]
 			except:
-				ColorBelow = -1
+				ColorLeft = - 1
+
+			#thisColor = i[o]
 
 			try:
-				ColorRight = ip.getPixel(pix[0]+1,pix[1])
+				ColorRight = i[ o+1 ]
 			except:
 				ColorRight = -1
+
+			try:
+				ColorBelow = i[ o+w ]
+			except:
+				ColorBelow = -1
 
 			# mimics 2D 4-neighbor erosion:
 			# encode which neighbors are missing, and how many of them
@@ -183,6 +201,11 @@ class Nucleus:
 #				print str(c[0])+" "+str(c[1])+" 1"
 #				print ""
 
+				# enlist background pixels surrounding this edge/border pixel
+				for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
+					if i[o+x] == 0:
+						self.outterBgEdge.add(o+x)
+
 		# finish the length of the boundary in microns
 		self.EdgeLength /= 2.0
 
@@ -191,6 +214,21 @@ class Nucleus:
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
+
+
+	def setNeighborsList(self, img):
+		setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
+
+	def setNeighborsList(self, i,w):
+		self.NeighIDs = set([self.Label])
+
+		# iterate over all just-outside-boundary pixels,
+		# and check their surrounding values
+		for oo in self.outterBgEdge:
+			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
+				if i[oo+x] > 0:
+					self.NeighIDs.add(i[oo+x])
+		self.NeighIDs.remove(self.Label)
 
 
 	# the same condition that everyone should use to filter out nuclei that

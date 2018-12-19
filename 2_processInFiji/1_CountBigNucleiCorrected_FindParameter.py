@@ -15,6 +15,7 @@
 #@boolean (label="Show sheet with analysis data") showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
+#@boolean (label="Show image with neighbor counts") showNeigImage
 
 # This script should be used to find suitable parameters for CountBigNucleiCorrected.py
 # You'll see nuclei of various colors:
@@ -87,9 +88,13 @@ def main():
 	circularitySum = 0
 	sizesum = 0
 
+	i = IJ.getImage().getProcessor().getPixels()
+	w = IJ.getImage().getWidth()
+
 	for nucl in nuclei:
 		circularitySum += nucl.Circularity
 		sizesum += nucl.Area
+		nucl.setNeighborsList(i,w)
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
@@ -105,6 +110,11 @@ def main():
 			nucl.DrawValue = nucl.Area;
 		drawChosenNucleiValue("Real areas", imp.getWidth(),imp.getHeight(), nuclei)
 
+	if showNeigImage:
+		for nucl in nuclei:
+			nucl.DrawValue = len(nucl.NeighIDs);
+		drawChosenNucleiValue("Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
+
 
 	if (showRawData):
 		print("Populating table...")
@@ -115,6 +125,7 @@ def main():
 		# also create two hidden 1D images (arrays essentially) and ask to display their histograms later
 		imgArea = []
 		imgCirc = []
+		imgNeig = []
 
 		for nucl in nuclei:
 			rt.incrementCounter()
@@ -125,11 +136,13 @@ def main():
 			rt.addValue("area (px)"                        ,nucl.Size)
 			rt.addValue("perimeter (px)"                   ,nucl.EdgeSize)
 			rt.addValue("perimeter (um)"                   ,nucl.EdgeLength)
+			rt.addValue("neigbor count"                    ,len(nucl.NeighIDs))
 			rt.addValue("centreX (px)"                     ,nucl.CentreX)
 			rt.addValue("centreY (px)"                     ,nucl.CentreY)
 
 			imgArea.append(nucl.Area)
 			imgCirc.append(nucl.Circularity)
+			imgNeig.append(len(nucl.NeighIDs))
 
 		# show the image
 		rt.showRowNumbers(False)
@@ -143,6 +156,9 @@ def main():
 		#imgCirc = ImagePlus("circularities of nuclei",FloatProcessor(len(nuclei),1,imgCirc))
 		imgCirc = ImagePlus("nuclei_circularities",FloatProcessor(len(nuclei),1,imgCirc))
 		IJ.run(imgCirc, "Histogram", "20")
+
+		imgNeig = ImagePlus("nuclei_neigborCount",FloatProcessor(len(nuclei),1,imgNeig))
+		IJ.run(imgNeig, "Histogram", "10")
 
 		# debug: what perimeter points are considered
 		# writeCoordsToFile(nuclei[0].EdgePixels,"/Users/ulman/DATA/fp_coords_0.txt")

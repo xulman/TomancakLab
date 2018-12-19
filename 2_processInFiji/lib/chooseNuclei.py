@@ -117,6 +117,10 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 	# obtain list of all components that are found initially in the image
 	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
 
+	# reference on the image in the currently active window
+	# (which is the 'labelled_image')
+	lip = IJ.getImage().getProcessor();
+
 	# output list of nuclei
 	nuclei = []
 	areThereSomeObjectsLeft = False
@@ -132,7 +136,13 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 			for pix in comp.Pixels:
 				ip.setf(pix[0],pix[1], 0)
 		else:
+			#erase from 'labelled_image'
+			for pix in comp.Pixels:
+				lip.setf(pix[0],pix[1], 0)
 			areThereSomeObjectsLeft = True
+
+	# update the 'labelled_image'
+	IJ.getImage().updateAndRepaintWindow()
 
 	areThereSomeObjectsLeft = False
 	if areThereSomeObjectsLeft:
