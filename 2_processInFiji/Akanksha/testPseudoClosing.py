@@ -135,4 +135,14 @@ def pluginCode():
 	print "finito with final dilation, saw "+str(cnt)+" changes"
 
 
-pluginCode()
+def experimenting():
+	IJ.run("32-bit");
+	IJ.run("8-bit");
+	IJ.run("Invert");
+	IJ.run("Skeletonize","BlackBackground=false");
+
+	#here CCA!
+
+	imp = IJ.getImage()
+	pseudoClosing(imp)
+	imp.updateAndRepaintWindow()
