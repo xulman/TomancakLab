@@ -27,18 +27,21 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 		return []
 
 	# remove small components -- which is typically holes inside the nuclei
-	IJ.run("3D Objects Counter", "threshold=128 slice=1 min.=500 max.=9999999 objects")
+	IJ.run("3D Objects Counter", "threshold=128 slice=1 min.=50 max.=9999999 objects")
 	IJ.getImage().setTitle("membranes")
 
 	# skeletonize!
-	IJ.run("32-bit")
-	IJ.run("8-bit")
-	IJ.run("Invert")
+	IJ.setThreshold(0,0)
+	IJ.run("Convert to Mask")
+	IJ.run("Grays");
 	IJ.run("Skeletonize","BlackBackground=false")
 	IJ.run("Dilate")
 
-	# da frame :)
+	# update variables pointing on the currently processed image
 	ii = IJ.getImage()
+	ip = ii.getProcessor()
+
+	# da frame :)
 	for x in range(ii.getWidth()):
 		ip.set(x,0,0);
 		ip.set(x,1,0);
@@ -56,16 +59,27 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	labelMap = IJ.getImage()
 	labelMap.setTitle("labelled_image")
 
-	#IJ.getImage().duplicate().show()
-
 	pseudoDilation(labelMap)
 	labelMap.updateAndRepaintWindow()
 	pseudoClosing(labelMap)
 	labelMap.updateAndRepaintWindow()
 
+	# restore da frame (pseudoDilation could have damaged it)
+	LPP = labelMap.getProcessor()
+	for x in range(labelMap.getWidth()):
+		LPP.set(x,0,0);
+		LPP.set(x,1,0);
+	for y in range(labelMap.getHeight()):
+		LPP.set(0,               y,0);
+		LPP.set(1,               y,0);
+		LPP.set(labelMap.getWidth()-2,y,0);
+		LPP.set(labelMap.getWidth()-1,y,0);
+	for x in range(labelMap.getWidth()):
+		LPP.set(x,labelMap.getHeight()-2,0);
+		LPP.set(x,labelMap.getHeight()-1,0);
+
 	#Detect all pixels belonging to one Color
 	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
-	LPP = labelMap.getProcessor()
 	pixelPerColor = {}
 	for x in range(labelMap.width):
 		for y in range(labelMap.height):
@@ -86,7 +100,7 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	# a list of detected objects (connected components)
 	components = []
 	for Color in pixelPerColor:
-		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],ip,realSizes,realCoords))
+		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],LPP,realSizes,realCoords))
 
 	return components
 
@@ -97,19 +111,6 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 
 	# make sure the image is always visible for this processing
 	imp.show()
-
-	# da frame :)
-	for x in range(imp.getWidth()):
-		ip.set(x,0,bgPixelValue);
-		ip.set(x,1,bgPixelValue);
-	for y in range(imp.getHeight()):
-		ip.set(0,               y,bgPixelValue);
-		ip.set(1,               y,bgPixelValue);
-		ip.set(imp.getWidth()-2,y,bgPixelValue);
-		ip.set(imp.getWidth()-1,y,bgPixelValue);
-	for x in range(imp.getWidth()):
-		ip.set(x,imp.getHeight()-2,bgPixelValue);
-		ip.set(x,imp.getHeight()-1,bgPixelValue);
 
 	# obtain list of all components that are found initially in the image
 	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
@@ -141,19 +142,6 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 		IJ.run("Dilate")
 		IJ.run("Dilate")
 		IJ.run("Dilate")
-
-		# da frame :)
-		for x in range(imp.getWidth()):
-			ip.set(x,0,bgPixelValue);
-			ip.set(x,1,bgPixelValue);
-		for y in range(imp.getHeight()):
-			ip.set(0,               y,bgPixelValue);
-			ip.set(1,               y,bgPixelValue);
-			ip.set(imp.getWidth()-2,y,bgPixelValue);
-			ip.set(imp.getWidth()-1,y,bgPixelValue);
-		for x in range(imp.getWidth()):
-			ip.set(x,imp.getHeight()-2,bgPixelValue);
-			ip.set(x,imp.getHeight()-1,bgPixelValue);
 
 		# find again the new components
 		components = findComponents(imp,bgPixelValue,realSizes,realCoords,"2_")
