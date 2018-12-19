@@ -28,7 +28,6 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 
 	# remove small components -- which is typically holes inside the nuclei
 	IJ.run("3D Objects Counter", "threshold=128 slice=1 min.=50 max.=9999999 objects")
-	IJ.getImage().setTitle("membranes")
 
 	# skeletonize!
 	IJ.setThreshold(0,0)
@@ -58,6 +57,9 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	IJ.run("Threshold to label map (2D, 3D)", "threshold=20")
 	labelMap = IJ.getImage()
 	labelMap.setTitle("labelled_image")
+
+	ii.changes = False
+	ii.close()
 
 	pseudoDilation(labelMap)
 	labelMap.updateAndRepaintWindow()

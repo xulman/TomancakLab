@@ -94,28 +94,6 @@ def main():
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
 
-	print("Creating output image ...")
-	OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
-	# green - fit both conditions
-	# blue - does not fit area
-	# white - does not fit circularity
-	# red - fails both conditions
-	#
-	for nucl in nuclei:
-		errCnt = 0
-		if (filterCirc == True and (nucl.Circularity < circularityMin or nucl.Circularity > circularityMax)):
-			errCnt += 1
-		if (filterArea == True and (nucl.Area < areaMin or nucl.Area > areaMax)):
-			errCnt += 2
-
-		for pix in nucl.Pixels:
-			OutputPixels[pix[1]][pix[0]] = colors[errCnt]
-
-	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
-	cp = ColorProcessor(imp.getWidth(),imp.getHeight(), OutputPixelsNew)
-	OutputImg = ImagePlus("OutputImg", cp)
-	OutputImg.show()
-
 
 	if showCircImage:
 		for nucl in nuclei:
