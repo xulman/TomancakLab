@@ -215,6 +215,9 @@ class Nucleus:
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
+		# shape factor: perimeter / sqrt(area)
+		self.ShapeFactor = self.EdgeLength / math.sqrt(self.Area)
+
 
 	def setNeighborsList(self, img):
 		setNeighborsList(img.getProcessor().getPixels(), img.getWidth())

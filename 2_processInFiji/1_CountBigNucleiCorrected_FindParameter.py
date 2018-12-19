@@ -15,6 +15,7 @@
 #@boolean (label="Show sheet with analysis data") showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
+#@boolean (label="Show image with shape factors") showShapeFactorImage
 #@boolean (label="Show image with neighbor counts") showNeigImage
 
 # This script should be used to find suitable parameters for CountBigNucleiCorrected.py
@@ -105,6 +106,11 @@ def main():
 			nucl.DrawValue = nucl.Circularity
 		drawChosenNucleiValue("Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
 
+	if showShapeFactorImage:
+		for nucl in nuclei:
+			nucl.DrawValue = nucl.ShapeFactor
+		drawChosenNucleiValue("Real shape factors", imp.getWidth(),imp.getHeight(), nuclei)
+
 	if showAreaImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Area;
@@ -132,6 +138,7 @@ def main():
 			rt.addValue("label"                            ,nucl.Color)
 			rt.addValue("circularity (higher more roundish)",nucl.Circularity)
 			rt.addValue("circularity (pixel-based)"        ,nucl.DrawValue) # VLADO PIXEL CIRC DEBUG
+			rt.addValue("shape factor"                     ,nucl.ShapeFactor)
 			rt.addValue("area (um^2)"                      ,nucl.Area)
 			rt.addValue("area (px)"                        ,nucl.Size)
 			rt.addValue("perimeter (px)"                   ,nucl.EdgeSize)
