@@ -17,7 +17,7 @@ from properMeasurements import *
 class Nucleus:
 
 	def __init__(self,Color,Pixels,ip,realSizes,realCoords):
-		# label of the nuclei
+		# stringy label of the nuclei
 		self.Color = Color
 
 		# a scalar value to be used in chooseNuclei.drawChosenNucleiValue(),
@@ -55,6 +55,9 @@ class Nucleus:
 		# shortcut to the pixel values
 		i = ip.getPixels()
 		w = ip.getWidth()
+
+		# integer label of the nuclei
+		self.Label = i[w*Pixels[0][1] + Pixels[0][0]]
 
 		# determine boundary pixels
 		for pix in Pixels:
