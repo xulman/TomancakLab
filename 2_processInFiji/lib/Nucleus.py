@@ -52,29 +52,36 @@ class Nucleus:
 		# (approximate) length of the boundary in microns
 		self.EdgeLength = 0.0
 
+		# shortcut to the pixel values
+		i = ip.getPixels()
+		w = ip.getWidth()
+
 		# determine boundary pixels
 		for pix in Pixels:
-			try:
-				ColorLeft = ip.getPixel(pix[0]-1,pix[1])
-			except:
-				ColorLeft = - 1
+			# pixel offset within the image
+			o = w*pix[1] + pix[0]
 
 			try:
-				ColorAbove = ip.getPixel(pix[0],pix[1]-1)
+				ColorAbove = i[ o-w ]
 			except:
 				ColorAbove = -1
 
-			thisColor = ip.getPixel(pix[0],pix[1])
-
 			try:
-				ColorBelow = ip.getPixel(pix[0],pix[1]+1)
+				ColorLeft = i[ o-1 ]
 			except:
-				ColorBelow = -1
+				ColorLeft = - 1
+
+			thisColor = i[o]
 
 			try:
-				ColorRight = ip.getPixel(pix[0]+1,pix[1])
+				ColorRight = i[ o+1 ]
 			except:
 				ColorRight = -1
+
+			try:
+				ColorBelow = i[ o+w ]
+			except:
+				ColorBelow = -1
 
 			# mimics 2D 4-neighbor erosion:
 			# encode which neighbors are missing, and how many of them
