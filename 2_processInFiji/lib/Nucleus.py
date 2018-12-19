@@ -61,7 +61,11 @@ class Nucleus:
 		thisColor = self.Label
 
 		# offsets of pixels just outside this nucleus
-		outterBgEdge = set()
+		self.outterBgEdge = set()
+
+		# set of labels touching this nuclei (component),
+		# initially empty -> use setNeighborsList() to have it filled
+		self.NeighIDs = set()
 
 		# determine boundary pixels
 		for pix in Pixels:
@@ -200,7 +204,7 @@ class Nucleus:
 				# enlist background pixels surrounding this edge/border pixel
 				for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
 					if i[o+x] == 0:
-						outterBgEdge.add(o+x)
+						self.outterBgEdge.add(o+x)
 
 		# finish the length of the boundary in microns
 		self.EdgeLength /= 2.0
@@ -211,16 +215,20 @@ class Nucleus:
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
-		# set of labels touching this nuclei (component)
-		self.NeighIDs = set([thisColor])
+
+	def setNeighborsList(self, img):
+		setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
+
+	def setNeighborsList(self, i,w):
+		self.NeighIDs = set([self.Label])
 
 		# iterate over all just-outside-boundary pixels,
 		# and check their surrounding values
-		for oo in outterBgEdge:
+		for oo in self.outterBgEdge:
 			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
 				if i[oo+x] > 0:
 					self.NeighIDs.add(i[oo+x])
-		self.NeighIDs.remove(thisColor)
+		self.NeighIDs.remove(self.Label)
 
 
 	# the same condition that everyone should use to filter out nuclei that
