@@ -9,16 +9,9 @@ from ij import IJ
 # whose width is 'w' and height is 'h'; the output map is actually
 # a histogram of pixels in 8-neighborhood around the input pixel
 def findUniqueNeighbors(i,o,w,h):
-	values = []
-	for x in [-1,0,1]:
-		values.append( i[o-w+x] )
-	for x in [-1,1]:
-		values.append( i[o  +x] )
-	for x in [-1,0,1]:
-		values.append( i[o+w+x] )
-
 	h = {}
-	for v in values:
+	for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
+		v = i[o+x]
 		if v in h:
 			h[v] = h[v]+1
 		else:
