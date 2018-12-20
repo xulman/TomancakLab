@@ -7,10 +7,18 @@
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
-#@File (label="Pixel areas map:") aMapFile
-#@File (label="X coordinate map:") xMapFile
-#@File (label="Y coordinate map:") yMapFile
-#@File (label="Z coordinate map:") zMapFile
+#@File (style="directory", label="Folder with maps:") mapFolder
+class SimpleFile:
+	def __init__(self,path):
+		self.path = path
+	def getAbsolutePath(self):
+		return self.path
+
+aMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2_area.txt")
+xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_X.txt")
+yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_Y.txt")
+zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_Z.txt")
+
 #
 #@boolean (label="Show sheet with analysis data") showRawData
 #@boolean (label="Show image with areas") showAreaImage
