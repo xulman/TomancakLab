@@ -34,6 +34,7 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	IJ.run("Convert to Mask")
 	IJ.run("Grays");
 	IJ.run("Skeletonize","BlackBackground=false")
+	IJ.getImage().duplicate().show()
 	IJ.run("Dilate")
 
 	# update variables pointing on the currently processed image
@@ -57,11 +58,13 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	IJ.run("Threshold to label map (2D, 3D)", "threshold=20")
 	labelMap = IJ.getImage()
 	labelMap.setTitle("labelled_image")
+	labelMap.duplicate().show()
 
 	ii.changes = False
 	ii.close()
 
 	pseudoDilation(labelMap)
+	labelMap.duplicate().show()
 	labelMap.updateAndRepaintWindow()
 	pseudoClosing(labelMap)
 	labelMap.updateAndRepaintWindow()
