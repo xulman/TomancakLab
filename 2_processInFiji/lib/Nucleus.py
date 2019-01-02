@@ -135,12 +135,18 @@ class Nucleus:
 
 				if cnt == 1:
 					# one neighbor is missing -> boundary is straight here
-					if missNeig&1 or missNeig&4:
+					if missNeig&1:
 						# vertical boundary
-						coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] ]
+						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+					elif missNeig&4:
+						# vertical boundary
+						coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					elif missNeig&2:
+						# horizontal boundary
+						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
 					else:
 						# horizontal boundary
-						coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] ]
+						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
 
 				if cnt == 2:
 					# two neighbors -> we're either a corner, or boundary is 1px thick
@@ -148,45 +154,49 @@ class Nucleus:
 						# 1px thick boundary
 						if missNeig&5 == 5:
 							# 1px thick vertical boundary
-							coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] , [pix[0],pix[1]] , [pix[0],pix[1]-1] ]
+							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+							self.EdgeLength += properLength(coords,realCoords)
+							coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 						else:
 							# 1px thick horizontal boundary
-							coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] , [pix[0],pix[1]] , [pix[0]-1,pix[1]] ]
+							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
+							self.EdgeLength += properLength(coords,realCoords)
+							coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
 					else:
 						# missing neighbors are "neighbors" to each other too -> we're a corner
 						if missNeig&6 == 6 or missNeig&9 == 9:
 							# we're top-right corner, or bottom-left corner
-							coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
 						if missNeig&12 == 12 or missNeig&3 == 3:
 							# we're bottom-right corner, or top-left corner
-							coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+							coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
 
 				if cnt == 3:
 					# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
 					if missNeig&7 == 7:
 						# have only a neighbor below
-						coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
 					if missNeig&11 == 11:
 						# have only a neighbor right
-						coords = [ [pix[0]+1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+						coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
 					if missNeig&13 == 13:
 						# have only a neighbor above
-						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
 
 					if missNeig&14 == 14:
 						# have only a neighbor left
-						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]-1,pix[1]+1] ]
+						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
 
 				if cnt == 4:
 					# four neighbors -> we're an isolated pixel
-					coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]+1] , [pix[0]+1,pix[1]] , [pix[0],pix[1]-1] , [pix[0]-1,pix[1]] ]
+					coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 
 				# calculate the proper length of the local boundary by sweeping
-				# through a neighbor,myself,neighbor (giving us twice the required length)
-				self.EdgeLength += properLength(coords,realCoords)   # / 2.0
+				# typically through a neighbor,myself,neighbor
+				self.EdgeLength += properLength(coords,realCoords)
 
 #				#DEBUG VLADO REMOVE
 #				a = coords[0]
@@ -205,9 +215,6 @@ class Nucleus:
 				for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
 					if i[o+x] == 0:
 						self.outterBgEdge.add(o+x)
-
-		# finish the length of the boundary in microns
-		self.EdgeLength /= 2.0
 
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
