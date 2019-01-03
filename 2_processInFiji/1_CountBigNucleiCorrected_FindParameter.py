@@ -6,7 +6,9 @@
 #@float(label="A nucleus has a circularity SMALLER than (1 represents perfect circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
-#@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
+#@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection") postprocessNucleiImageFlag
+#@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned") preprocessMembraneImageFlag
 #@File (style="directory", label="Folder with maps:") mapFolder
 class SimpleFile:
 	def __init__(self,path):
@@ -76,24 +78,30 @@ realSizes = readRealSizes(aMapFile.getAbsolutePath())
 # read the 'real Coordinates', that take into account the different pixel sizes
 realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
 
-imp = IJ.getImage()
-
 
 def main():
+	backgroundPixelValue = 1 # in case of cell nuclei
+	if (not inputImageShowsNuclei):
+		backgroundPixelValue = 2 # in case of cell membranes
+		if preprocessMembraneImageFlag == True:
+			preprocessMembraneImage(realSizes)
+
+	imp = IJ.getImage()
+
 	# test that sizes of realSizes and imp matches
 	checkSize2DarrayVsImgPlus(realSizes, imp)
 	checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
-	backgroundPixelValue = 1 # in case of cell nuclei
-	if (not inputImageShowsNuclei):
-		backgroundPixelValue = 2 # in case of cell membranes
-
 	# obtain list of all valid nuclei
-	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
+	nuclei = chooseNucleiNew(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, postprocessNucleiImageFlag)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
-	#nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
+	#nuclei += findComponents(imp,255,realSizes,realCoordinates,"n_")
 
 	# ------- analysis starts here -------
+	if len(nuclei) == 0:
+		print("No components found, quiting...")
+		return
+
 	circularitySum = 0
 	sizesum = 0
 
@@ -103,10 +111,14 @@ def main():
 	for nucl in nuclei:
 		circularitySum += nucl.Circularity
 		sizesum += nucl.Area
-		nucl.setNeighborsList(i,w)
+		if (not inputImageShowsNuclei):
+			nucl.setNeighborsList(i,w)
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
+
+	if inputImageShowsNuclei:
+		print("No. of neighborhood was not counted, works only with membrane images.")
 
 
 	if showCircImage:
@@ -180,7 +192,5 @@ def main():
 		# writeCoordsToFile(nuclei[1].EdgePixels,"/Users/ulman/DATA/fp_coords_1.txt")
 
 
-	print("Done.")
-
-
 main()
+print("Done.")
