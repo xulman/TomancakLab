@@ -207,3 +207,67 @@ def drawChosenNucleiValue(title, width,height, nuclei):
 	cp = FloatProcessor(width,height, OutputPixelsNew)
 	OutputImg = ImagePlus(title, cp)
 	OutputImg.show()
+
+
+def preprocessMembraneImage(realSizes):
+	# obtain "handles"...
+	imp = IJ.getImage()
+	ip = imp.getProcessor()
+
+	# are there any membrane pixels at all?
+	# (aka: avoid troubles when processing an empty image later)
+	if getCurrentMaxPixelValue(ip) > 1:
+		# remove small components -- which is typically holes inside the nuclei
+		IJ.run("3D Objects Counter", "threshold=2 slice=1 min.=20 max.=9999999 objects")
+		sizeFilteredImg = IJ.getImage()
+
+		# skeletonize (at the input resolution)
+		IJ.setThreshold(0,0)
+		IJ.run("Convert to Mask")
+		IJ.run("Grays");
+		IJ.run("Skeletonize","BlackBackground=false")
+
+		# upscale to the desired resolution, now skeleton gets fatter
+		IJ.run("Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+		upScaledSkeleton = IJ.getImage()
+
+		# close the previous image
+		sizeFilteredImg.changes = False
+		sizeFilteredImg.close()
+
+		# thin it again (by skeletonizing again)
+		IJ.run("Skeletonize","BlackBackground=false")
+		# must dilate because "Threshold to label map (2D, 3D)" (which is used
+		# in findComponents()) uses 8-neigborhood and would leak through the skeleton
+		IJ.run("Dilate")
+		# BTW: now the 'upScaledSkeleton' is up-scaled and ready for finding components
+
+		# also up-scale the input image
+		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+
+		# and replace all 'old 2' (upscaled input membranes) with 'new 2' (upscaled skeleton)
+		imp = IJ.getImage()
+		ip = imp.getProcessor()
+		sp = upScaledSkeleton.getProcessor()
+
+		for x in range(imp.getWidth()):
+			for y in range(imp.getHeight()):
+				if ip.getPixel(x,y) == 2:
+					ip.set(x,y,0)
+				if sp.getPixel(x,y) == 0:
+					ip.set(x,y,2)
+
+		# close also the solo-skeleton image
+		upScaledSkeleton.changes = False
+		upScaledSkeleton.close()
+	else:
+		print "empty input image detected, no membrane preprocessing"
+		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+
+
+def getCurrentMaxPixelValue(ip):
+	maxVal = 0
+	for i in ip.getPixels():
+		maxVal = maxVal if maxVal >= i else i
+
+	return maxVal
