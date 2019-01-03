@@ -78,12 +78,6 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 					#print "detected (1st run): "+str(MyColor)
 					pixelPerColor[MyColor] = [[x,y]]
 
-	# leave the connected components map opened
-	#labelMap.close()
-
-	# make sure the input image is always visible for further processing
-	imp.show()
-
 	# a list of detected objects (connected components)
 	components = []
 	for Color in pixelPerColor:
@@ -98,9 +92,6 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, reDetectNuclei):
 	# obtain "handle" to the pixels, and impose a bgPixelValue'ed frame at the border of the image
 	ip = imp.getProcessor()
-
-	# make sure the image is always visible for this processing
-	imp.show()
 
 	# obtain list of all components that are found initially in the image
 	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
@@ -129,8 +120,9 @@ def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,ar
 				lip.setf(pix[0],pix[1], 0)
 			areThereSomeObjectsLeft = True
 
-	# update the 'labelled_image'
+	# update the 'labelled_image' and the input image (with left-out components)
 	IJ.getImage().updateAndRepaintWindow()
+	imp.updateAndRepaintWindow()
 
 	if areThereSomeObjectsLeft and reDetectNuclei:
 		# bring the input image into forefront... (so that we can work on it)
