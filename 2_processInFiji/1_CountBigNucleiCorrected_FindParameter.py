@@ -7,6 +7,7 @@
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned") preprocessMembraneImageFlag
 #@File (style="directory", label="Folder with maps:") mapFolder
 class SimpleFile:
 	def __init__(self,path):
@@ -76,22 +77,24 @@ realSizes = readRealSizes(aMapFile.getAbsolutePath())
 # read the 'real Coordinates', that take into account the different pixel sizes
 realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
 
-imp = IJ.getImage()
-
 
 def main():
+	backgroundPixelValue = 1 # in case of cell nuclei
+	if (not inputImageShowsNuclei):
+		backgroundPixelValue = 2 # in case of cell membranes
+		if preprocessMembraneImageFlag == True:
+			preprocessMembraneImage(realSizes)
+
+	imp = IJ.getImage()
+
 	# test that sizes of realSizes and imp matches
 	checkSize2DarrayVsImgPlus(realSizes, imp)
 	checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
-	backgroundPixelValue = 1 # in case of cell nuclei
-	if (not inputImageShowsNuclei):
-		backgroundPixelValue = 2 # in case of cell membranes
-
 	# obtain list of all valid nuclei
 	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
-	#nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
+	#nuclei += findComponents(imp,255,realSizes,realCoordinates,"n_")
 
 	# ------- analysis starts here -------
 	circularitySum = 0

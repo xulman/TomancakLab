@@ -13,58 +13,40 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	ip = imp.getProcessor()
 
 	# fix pixel values
-	countFG = 0
+	valueOnBG = 0 if bgPixelValue == 2 else 255
+	valueOnFG = 255 - valueOnBG
+
 	for x in range(imp.getWidth()):
 		for y in range(imp.getHeight()):
-			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
-				ip.set(x,y,255)
+			if ip.getPixel(x, y) == bgPixelValue:
+				ip.set(x,y,valueOnBG)
 			else:
-				ip.set(x,y,0)
-				countFG = countFG+1
-
-	if countFG == 0:
-		print "empty input image detected, returning with no components"
-		return []
-
-	# remove small components -- which is typically holes inside the nuclei
-	IJ.run("3D Objects Counter", "threshold=128 slice=1 min.=50 max.=9999999 objects")
-
-	# skeletonize!
-	IJ.setThreshold(0,0)
-	IJ.run("Convert to Mask")
-	IJ.run("Grays");
-	IJ.run("Skeletonize","BlackBackground=false")
-	IJ.getImage().duplicate().show()
-	IJ.run("Dilate")
-
-	# update variables pointing on the currently processed image
-	ii = IJ.getImage()
-	ip = ii.getProcessor()
+				ip.set(x,y,valueOnFG)
 
 	# da frame :)
-	for x in range(ii.getWidth()):
+	for x in range(imp.getWidth()):
 		ip.set(x,0,0);
 		ip.set(x,1,0);
-	for y in range(ii.getHeight()):
+	for y in range(imp.getHeight()):
 		ip.set(0,               y,0);
 		ip.set(1,               y,0);
-		ip.set(ii.getWidth()-2,y,0);
-		ip.set(ii.getWidth()-1,y,0);
-	for x in range(ii.getWidth()):
-		ip.set(x,ii.getHeight()-2,0);
-		ip.set(x,ii.getHeight()-1,0);
+		ip.set(imp.getWidth()-2,y,0);
+		ip.set(imp.getWidth()-1,y,0);
+	for x in range(imp.getWidth()):
+		ip.set(x,imp.getHeight()-2,0);
+		ip.set(x,imp.getHeight()-1,0);
 
 	#Detect connected components (aka Nuclei)
 	IJ.run("Threshold to label map (2D, 3D)", "threshold=20")
 	labelMap = IJ.getImage()
-	labelMap.setTitle("labelled_image")
-	labelMap.duplicate().show()
+	labelMap.setTitle(prefix+"labelled_image")
 
-	ii.changes = False
-	ii.close()
+	# test and fail iff 'labelMap' contains no components
+	if getCurrentMaxPixelValue(labelMap.getProcessor()) == 1:
+		print "empty input image detected, returning with no components"
+		return []
 
 	pseudoDilation(labelMap)
-	labelMap.duplicate().show()
 	labelMap.updateAndRepaintWindow()
 	pseudoClosing(labelMap)
 	labelMap.updateAndRepaintWindow()
@@ -151,7 +133,9 @@ def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,ar
 	IJ.getImage().updateAndRepaintWindow()
 
 	if areThereSomeObjectsLeft and reDetectNuclei:
-		# close the original image
+		# bring the input image into forefront... (so that we can work on it)
+		IJ.selectWindow(imp.getTitle())
+
 		# NB: the sense of what is BG and FG is switched, hence we start with erosion...
 		IJ.run("Erode")
 		IJ.run("Erode")
@@ -161,7 +145,7 @@ def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,ar
 		IJ.run("Dilate")
 
 		# find again the new components
-		components = findComponents(imp,bgPixelValue,realSizes,realCoords,"2_")
+		components = findComponents(imp,255,realSizes,realCoords,"2_")
 
 		# and filter again this new components
 		for comp in components:
