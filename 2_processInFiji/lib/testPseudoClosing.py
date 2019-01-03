@@ -114,9 +114,6 @@ def testing():
 def pluginCode():
 	imp = IJ.getImage()
 
-	maxRounds = 30
-	minPixelChanges = 5
-
 	for i in range(maxRounds):
 		cnt = pseudoClosing(imp)
 		imp.updateAndRepaintWindow()
@@ -142,3 +139,12 @@ def experimenting():
 	imp = IJ.getImage()
 	pseudoClosing(imp)
 	imp.updateAndRepaintWindow()
+
+
+# if running the function fails, it's likely because maxRounds and minPixelChanges
+# are not defined, which happens when this script is not called as a Fiji plugin --
+# in which case we don't want this function to be executed...
+try:
+	pluginCode()
+except NameError:
+	useLess = True
