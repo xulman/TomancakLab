@@ -108,6 +108,9 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 
 
 def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
+	return chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, False)
+
+def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, reDetectNuclei):
 	# obtain "handle" to the pixels, and impose a bgPixelValue'ed frame at the border of the image
 	ip = imp.getProcessor()
 
@@ -144,9 +147,8 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 	# update the 'labelled_image'
 	IJ.getImage().updateAndRepaintWindow()
 
-	areThereSomeObjectsLeft = False
-	if areThereSomeObjectsLeft:
-		# close (and slightly dilate) the original image
+	if areThereSomeObjectsLeft and reDetectNuclei:
+		# close the original image
 		# NB: the sense of what is BG and FG is switched, hence we start with erosion...
 		IJ.run("Erode")
 		IJ.run("Erode")
