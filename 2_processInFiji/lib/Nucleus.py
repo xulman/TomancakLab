@@ -121,7 +121,16 @@ class Nucleus:
 		ppo = o
 		pix = [0,0]             # aux coordinate buffer
 
-		for cnt in range(self.EdgeSize):
+
+		# stop criterion: backup the starting point
+		veryO = o
+
+		# stop criterion: emergency stop counter
+		cntr = 0
+		cntrStop = self.EdgeSize
+
+		keepSweeping = True
+		while keepSweeping:
 			# pixel coords within the image (opposite to: o = w*pix[1] + pix[0])
 			pix[1] = int(o/w)
 			pix[0] = o - w*pix[1]
@@ -131,11 +140,11 @@ class Nucleus:
 			missNeig = 0
 			cnt = 0;
 
-			if thisColor != i[ o-1 ]:
-				missNeig += 1
-				cnt += 1
 			if thisColor != i[ o-w ]:
 				missNeig += 2
+				cnt += 1
+			if thisColor != i[ o-1 ]:
+				missNeig += 1
 				cnt += 1
 			if thisColor != i[ o+1 ]:
 				missNeig += 4
@@ -189,6 +198,10 @@ class Nucleus:
 						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
 						self.EdgeLength += properLength(coords,realCoords)
 						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
+
+					# will return to this pixel again (on the way back),
+					# need therefore more steps (this cycle iterations)...
+					cntrStop = cntrStop+1
 				else:
 					# missing neighbors are "neighbors" to each other too -> we're a corner
 					if missNeig&6 == 6 or missNeig&9 == 9:
@@ -218,8 +231,11 @@ class Nucleus:
 					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
 
 			if cnt == 4:
-				# four neighbors -> we're an isolated pixel
-				coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
+				# four neighbors -> we're an isolated pixel.. should not happen! as we did CCA to
+				# obtain this patches, so one patch/nucleus is one connected component
+				#
+				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
+				cntrStop = cntrStop-1
 
 			# calculate the proper length of the local boundary by sweeping
 			# typically through a neighbor,myself,neighbor
@@ -239,6 +255,10 @@ class Nucleus:
 					o = no
 					break
 
+			# test if enough has been swept....
+			cntr = cntr+1
+			if o == veryO or cntr >= cntrStop:
+				keepSweeping = False
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
