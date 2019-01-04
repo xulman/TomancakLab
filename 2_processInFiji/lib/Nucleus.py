@@ -67,8 +67,56 @@ class Nucleus:
 		# initially empty -> use setNeighborsList() to have it filled
 		self.NeighIDs = set()
 
-		# determine boundary pixels
+		# sequential scan through the boundary pixels:
+		# (to be able to smooth out the boundary line consequently)
+		#
+		# 1) determine boundary pixels and store them apart
+		#    (now in self.EdgePixels)
+		# 2) replace the "for" cycle just below with this pattern:
+		#    - consider only self.EdgePixels
+		#    - for current pixel, scan its 4-neig for next pixel
+		#      and choose the one that is not the previous pixel
+		#    - if none found, scan 8-neig for next pixel
+		#      and choose the one that is not the previous pixel
+		#    - make the chosen one the current pixel and do cycle body
+
+		# determine boundary pixels first
 		for pix in Pixels:
+			# pixel offset within the image
+			o = w*pix[1] + pix[0]
+
+			try:
+				ColorAbove = i[ o-w ]
+			except:
+				ColorAbove = -1
+
+			try:
+				ColorLeft = i[ o-1 ]
+			except:
+				ColorLeft = - 1
+
+			#thisColor = i[o]
+
+			try:
+				ColorRight = i[ o+1 ]
+			except:
+				ColorRight = -1
+
+			try:
+				ColorBelow = i[ o+w ]
+			except:
+				ColorBelow = -1
+
+			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorRight or thisColor != ColorBelow:
+				# found border-forming pixel, enlist it
+				self.EdgePixels.append([pix[0],pix[1]])
+
+		# length of the boundary in pixel
+		self.EdgeSize = len(self.EdgePixels)
+
+
+		# calculate the polygon boundary, should scan sequentially
+		for pix in self.EdgePixels:
 			# pixel offset within the image
 			o = w*pix[1] + pix[0]
 
@@ -113,9 +161,6 @@ class Nucleus:
 				cnt += 1
 
 			if missNeig != 0:
-				# found border-forming pixel, enlist it
-				self.EdgePixels.append([pix[0],pix[1]])
-
 				# Marching-cubes-like determine configuration of the border pixel,
 				# and guess an approximate proper length of the boundary this pixels co-establishes
 				coords = []
@@ -216,8 +261,6 @@ class Nucleus:
 					if i[o+x] == 0:
 						self.outterBgEdge.add(o+x)
 
-		# length of the boundary in pixel
-		self.EdgeSize = len(self.EdgePixels)
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
