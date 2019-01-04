@@ -114,13 +114,13 @@ class Nucleus:
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
 
-
 		# 2) establish the polygon boundary by scanning edge pixels sequentially
 		o = self.EdgePixels[0]  # offset of the currently examined pixel
 		po = o                  # offsets of the two previously examined pixels
 		ppo = o
 		pix = [0,0]             # aux coordinate buffer
 
+		coords = []             # list of polygon vertices that encloses the nucleus
 
 		# stop criterion: backup the starting point
 		veryO = o
@@ -173,16 +173,20 @@ class Nucleus:
 				# one neighbor is missing -> boundary is straight here
 				if missNeig&1:
 					# vertical boundary
-					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]-0.5,pix[1]-0.5] )
+					coords.append( [pix[0]-0.5,pix[1]] )
 				elif missNeig&4:
 					# vertical boundary
-					coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]+0.5,pix[1]+0.5] )
+					coords.append( [pix[0]+0.5,pix[1]] )
 				elif missNeig&2:
 					# horizontal boundary
-					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
+					coords.append( [pix[0]+0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]-0.5] )
 				else:
 					# horizontal boundary
-					coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]-0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]+0.5] )
 
 			if cnt == 2:
 				# two neighbors -> we're either a corner, or boundary is 1px thick
@@ -190,45 +194,66 @@ class Nucleus:
 					# 1px thick boundary
 					if missNeig&5 == 5:
 						# 1px thick vertical boundary
-						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
-						self.EdgeLength += properLength(coords,realCoords)
-						coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+						if po < o:
+							coords.append( [pix[0]-0.5,pix[1]-0.5] )
+							coords.append( [pix[0]-0.5,pix[1]] )
+						else:
+							coords.append( [pix[0]+0.5,pix[1]+0.5] )
+							coords.append( [pix[0]+0.5,pix[1]] )
 					else:
 						# 1px thick horizontal boundary
-						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
-						self.EdgeLength += properLength(coords,realCoords)
-						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
+						# po % w is position on x-axis
+						if po%w > o%w:
+							coords.append( [pix[0]+0.5,pix[1]+0.5] )
+							coords.append( [pix[0]    ,pix[1]+0.5] )
+						else:
+							coords.append( [pix[0]-0.5,pix[1]-0.5] )
+							coords.append( [pix[0]    ,pix[1]-0.5] )
 
 					# will return to this pixel again (on the way back),
 					# need therefore more steps (this cycle iterations)...
 					cntrStop = cntrStop+1
 				else:
 					# missing neighbors are "neighbors" to each other too -> we're a corner
-					if missNeig&6 == 6 or missNeig&9 == 9:
-						# we're top-right corner, or bottom-left corner
-						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					if missNeig&6 == 6:
+						# we're top-right corner
+						coords.append( [pix[0]+0.5,pix[1]+0.5] )
+						coords.append( [pix[0],pix[1]] )
+					elif missNeig&9 == 9:
+						# we're bottom-left corner
+						coords.append( [pix[0]-0.5,pix[1]-0.5] )
+						coords.append( [pix[0],pix[1]] )
 
-					if missNeig&12 == 12 or missNeig&3 == 3:
-						# we're bottom-right corner, or top-left corner
-						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
+					if missNeig&12 == 12:
+						# we're bottom-right corner
+						coords.append( [pix[0]-0.5,pix[1]+0.5] )
+						coords.append( [pix[0],pix[1]] )
+					elif missNeig&3 == 3:
+						# we're top-left corner
+						coords.append( [pix[0]+0.5,pix[1]-0.5] )
+						coords.append( [pix[0],pix[1]] )
 
 			if cnt == 3:
 				# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
 				if missNeig&7 == 7:
 					# have only a neighbor below
-					coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]+0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]] )
 
 				if missNeig&11 == 11:
 					# have only a neighbor right
-					coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]+0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]] )
 
 				if missNeig&13 == 13:
 					# have only a neighbor above
-					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
+					coords.append( [pix[0]-0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]] )
 
 				if missNeig&14 == 14:
 					# have only a neighbor left
-					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+					coords.append( [pix[0]-0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]] )
 
 			if cnt == 4:
 				# four neighbors -> we're an isolated pixel.. should not happen! as we did CCA to
@@ -237,28 +262,61 @@ class Nucleus:
 				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 				cntrStop = cntrStop-1
 
-			# calculate the proper length of the local boundary by sweeping
-			# typically through a neighbor,myself,neighbor
-			self.EdgeLength += properLength(coords,realCoords)
-
 			# enlist background pixels surrounding this edge/border pixel
 			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
 				if i[o+x] == 0:
 					self.outterBgEdge.add(o+x)
 
 			# find adjacent edge pixel
-			for n in [ -w, -1,1, w, -w-1, -w+1, w-1, w+1 ]:
-				no = n+o # new examined pixel
-				if no in self.EdgePixels and no != po and no != ppo:
-					ppo = po
-					po = o
-					o = no
-					break
+			if cntr == 0:
+				# first run, find neighbor in CCW direction
+				# first: vector from o towards nuclei interior
+				# second: search neighbor pixels that are CCW from the first vector
+
+				# first vector:
+				fvx = 0
+				fvy = 0
+				do = [ -w, -1, 1, w, -w-1, -w+1, w-1, w+1 ]
+				dx = [  0, -1, 1, 0,   -1,    1,  -1,   1 ]
+				dy = [ -1,  0, 0, 1,   -1,   -1,   1,   1 ]
+				for n in range(len(do)):
+					if thisColor == i[ do[n]+o ]:
+						fvx += dx[n]
+						fvy += dy[n]
+				# (fvx, fvy) points inward nuclei
+				# (fvy,-fvx) is CCW rotated -- for angular inspection w.r.t. (svx,svy)
+
+				# examine second vectors:
+				for n in do:
+					no = n+o # new examined pixel
+					svx =     no%w  -     o%w
+					svy = int(no/w) - int(o/w)
+					ang = fvy*svx - fvx*svy
+
+					if no in self.EdgePixels and ang < 0:
+						o = no
+						break
+			else:
+				# any next run, find neighbor not the same as the previous one(s)
+				for n in [ -w, -1,1, w, -w-1, -w+1, w-1, w+1 ]:
+					no = n+o # new examined pixel
+					if no in self.EdgePixels and no != po and no != ppo:
+						ppo = po
+						po = o
+						o = no
+						break
 
 			# test if enough has been swept....
 			cntr = cntr+1
 			if o == veryO or cntr >= cntrStop:
 				keepSweeping = False
+
+		# finish the loop...
+		coords.append( coords[0] )
+
+		# calculate the proper length of the local boundary by sweeping
+		# typically through a neighbor,myself,neighbor
+		self.EdgeLength += properLength(coords,realCoords)
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
