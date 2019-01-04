@@ -1,4 +1,5 @@
 import math
+import copy
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -46,7 +47,7 @@ class Nucleus:
 		self.CentreX /= len(Pixels)
 		self.CentreY /= len(Pixels)
 
-		# list of pixels that make up boundary of this nuclei (nuclei mask)
+		# list of offsets of pixels that make up boundary of this nuclei (nuclei mask)
 		self.EdgePixels = []
 
 		# (approximate) length of the boundary in microns
@@ -67,7 +68,20 @@ class Nucleus:
 		# initially empty -> use setNeighborsList() to have it filled
 		self.NeighIDs = set()
 
-		# determine boundary pixels
+		# sequential scan through the boundary pixels:
+		# (to be able to smooth out the boundary line consequently)
+		#
+		# 1) determine boundary pixels and store them apart
+		#    (now in self.EdgePixels)
+		# 2) replace the "for" cycle just below with this pattern:
+		#    - consider only self.EdgePixels
+		#    - for current pixel, scan its 4-neig for next pixel
+		#      and choose the one that is not the previous pixel
+		#    - if none found, scan 8-neig for next pixel
+		#      and choose the one that is not the previous pixel
+		#    - make the chosen one the current pixel and do cycle body
+
+		# 1) determine boundary pixels first
 		for pix in Pixels:
 			# pixel offset within the image
 			o = w*pix[1] + pix[0]
@@ -94,123 +108,224 @@ class Nucleus:
 			except:
 				ColorBelow = -1
 
+			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorRight or thisColor != ColorBelow:
+				# found border-forming pixel, enlist it
+				self.EdgePixels.append(o)
+
+		# length of the boundary in pixel
+		self.EdgeSize = len(self.EdgePixels)
+
+		# 2) establish the polygon boundary by scanning edge pixels sequentially
+		o = self.EdgePixels[0]  # offset of the currently examined pixel
+		po = o                  # offsets of the two previously examined pixels
+		ppo = o
+		pix = [0,0]             # aux coordinate buffer
+
+		coords = []             # list of polygon vertices that encloses the nucleus
+
+		# stop criterion: backup the starting point
+		veryO = o
+
+		# stop criterion: emergency stop counter
+		cntr = 0
+		cntrStop = self.EdgeSize
+
+		keepSweeping = True
+		while keepSweeping:
+			# pixel coords within the image (opposite to: o = w*pix[1] + pix[0])
+			pix[1] = int(o/w)
+			pix[0] = o - w*pix[1]
+
 			# mimics 2D 4-neighbor erosion:
 			# encode which neighbors are missing, and how many of them
 			missNeig = 0
 			cnt = 0;
 
-			if thisColor != ColorLeft:
-				missNeig += 1
-				cnt += 1
-			if thisColor != ColorAbove:
+			if thisColor != i[ o-w ]:
 				missNeig += 2
 				cnt += 1
-			if thisColor != ColorRight:
+			if thisColor != i[ o-1 ]:
+				missNeig += 1
+				cnt += 1
+			if thisColor != i[ o+1 ]:
 				missNeig += 4
 				cnt += 1
-			if thisColor != ColorBelow:
+			if thisColor != i[ o+w ]:
 				missNeig += 8
 				cnt += 1
 
-			if missNeig != 0:
-				# found border-forming pixel, enlist it
-				self.EdgePixels.append([pix[0],pix[1]])
+			# Marching-cubes-like determine configuration of the border pixel,
+			# and guess an approximate proper length of the boundary this pixels co-establishes
 
-				# Marching-cubes-like determine configuration of the border pixel,
-				# and guess an approximate proper length of the boundary this pixels co-establishes
-				coords = []
+			# legend on bits used to flag directions:
+			#
+			#           2
+			#          (y-)
+			#           |
+			#           |
+			# 1 (x-) <--+--> (x+) 4
+			#           |
+			#           |
+			#          (y+)
+			#           8
+			#
 
-				# legend on bits used to flag directions:
-				#
-				#           2
-				#          (y-)
-				#           |
-				#           |
-				# 1 (x-) <--+--> (x+) 4
-				#           |
-				#           |
-				#          (y+)
-				#           8
-				#
+			if cnt == 1:
+				# one neighbor is missing -> boundary is straight here
+				if missNeig&1:
+					# vertical boundary
+					coords.append( [pix[0]-0.5,pix[1]-0.5] )
+					coords.append( [pix[0]-0.5,pix[1]] )
+				elif missNeig&4:
+					# vertical boundary
+					coords.append( [pix[0]+0.5,pix[1]+0.5] )
+					coords.append( [pix[0]+0.5,pix[1]] )
+				elif missNeig&2:
+					# horizontal boundary
+					coords.append( [pix[0]+0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]-0.5] )
+				else:
+					# horizontal boundary
+					coords.append( [pix[0]-0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]+0.5] )
 
-				if cnt == 1:
-					# one neighbor is missing -> boundary is straight here
-					if missNeig&1 or missNeig&4:
-						# vertical boundary
-						coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] ]
-					else:
-						# horizontal boundary
-						coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] ]
-
-				if cnt == 2:
-					# two neighbors -> we're either a corner, or boundary is 1px thick
-					if missNeig&5 == 5 or missNeig&10 == 10:
-						# 1px thick boundary
-						if missNeig&5 == 5:
-							# 1px thick vertical boundary
-							coords = [ [pix[0],pix[1]-1] , [pix[0],pix[1]] , [pix[0],pix[1]+1] , [pix[0],pix[1]] , [pix[0],pix[1]-1] ]
+			if cnt == 2:
+				# two neighbors -> we're either a corner, or boundary is 1px thick
+				if missNeig&5 == 5 or missNeig&10 == 10:
+					# 1px thick boundary
+					if missNeig&5 == 5:
+						# 1px thick vertical boundary
+						if po < o:
+							coords.append( [pix[0]-0.5,pix[1]-0.5] )
+							coords.append( [pix[0]-0.5,pix[1]] )
 						else:
-							# 1px thick horizontal boundary
-							coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]] , [pix[0]+1,pix[1]] , [pix[0],pix[1]] , [pix[0]-1,pix[1]] ]
+							coords.append( [pix[0]+0.5,pix[1]+0.5] )
+							coords.append( [pix[0]+0.5,pix[1]] )
 					else:
-						# missing neighbors are "neighbors" to each other too -> we're a corner
-						if missNeig&6 == 6 or missNeig&9 == 9:
-							# we're top-right corner, or bottom-left corner
-							coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+						# 1px thick horizontal boundary
+						# po % w is position on x-axis
+						if po%w > o%w:
+							coords.append( [pix[0]+0.5,pix[1]+0.5] )
+							coords.append( [pix[0]    ,pix[1]+0.5] )
+						else:
+							coords.append( [pix[0]-0.5,pix[1]-0.5] )
+							coords.append( [pix[0]    ,pix[1]-0.5] )
 
-						if missNeig&12 == 12 or missNeig&3 == 3:
-							# we're bottom-right corner, or top-left corner
-							coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+					# will return to this pixel again (on the way back),
+					# need therefore more steps (this cycle iterations)...
+					cntrStop = cntrStop+1
+				else:
+					# missing neighbors are "neighbors" to each other too -> we're a corner
+					if missNeig&6 == 6:
+						# we're top-right corner
+						coords.append( [pix[0]+0.5,pix[1]+0.5] )
+						coords.append( [pix[0],pix[1]] )
+					elif missNeig&9 == 9:
+						# we're bottom-left corner
+						coords.append( [pix[0]-0.5,pix[1]-0.5] )
+						coords.append( [pix[0],pix[1]] )
 
-				if cnt == 3:
-					# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
-					if missNeig&7 == 7:
-						# have only a neighbor below
-						coords = [ [pix[0]-1,pix[1]+1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+					if missNeig&12 == 12:
+						# we're bottom-right corner
+						coords.append( [pix[0]-0.5,pix[1]+0.5] )
+						coords.append( [pix[0],pix[1]] )
+					elif missNeig&3 == 3:
+						# we're top-left corner
+						coords.append( [pix[0]+0.5,pix[1]-0.5] )
+						coords.append( [pix[0],pix[1]] )
 
-					if missNeig&11 == 11:
-						# have only a neighbor right
-						coords = [ [pix[0]+1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]+1] ]
+			if cnt == 3:
+				# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
+				if missNeig&7 == 7:
+					# have only a neighbor below
+					coords.append( [pix[0]+0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]] )
 
-					if missNeig&13 == 13:
-						# have only a neighbor above
-						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]+1,pix[1]-1] ]
+				if missNeig&11 == 11:
+					# have only a neighbor right
+					coords.append( [pix[0]+0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]] )
 
-					if missNeig&14 == 14:
-						# have only a neighbor left
-						coords = [ [pix[0]-1,pix[1]-1] , [pix[0],pix[1]] , [pix[0]-1,pix[1]+1] ]
+				if missNeig&13 == 13:
+					# have only a neighbor above
+					coords.append( [pix[0]-0.5,pix[1]-0.5] )
+					coords.append( [pix[0],pix[1]] )
 
-				if cnt == 4:
-					# four neighbors -> we're an isolated pixel
-					coords = [ [pix[0]-1,pix[1]] , [pix[0],pix[1]+1] , [pix[0]+1,pix[1]] , [pix[0],pix[1]-1] , [pix[0]-1,pix[1]] ]
+				if missNeig&14 == 14:
+					# have only a neighbor left
+					coords.append( [pix[0]-0.5,pix[1]+0.5] )
+					coords.append( [pix[0],pix[1]] )
 
-				# calculate the proper length of the local boundary by sweeping
-				# through a neighbor,myself,neighbor (giving us twice the required length)
-				self.EdgeLength += properLength(coords,realCoords)   # / 2.0
+			if cnt == 4:
+				# four neighbors -> we're an isolated pixel.. should not happen! as we did CCA to
+				# obtain this patches, so one patch/nucleus is one connected component
+				#
+				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
+				cntrStop = cntrStop-1
 
-#				#DEBUG VLADO REMOVE
-#				a = coords[0]
-#				b = coords[1]
-#				c = coords[2]
-#				for i in [0,1]:
-#					a[i] = (float(a[i])+float(b[i]))/2.0
-#					c[i] = (float(b[i])+float(c[i]))/2.0
-#
-#				print str(a[0])+" "+str(a[1])+" 1"
-#				print str(b[0])+" "+str(b[1])+" 2"
-#				print str(c[0])+" "+str(c[1])+" 1"
-#				print ""
+			# enlist background pixels surrounding this edge/border pixel
+			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
+				if i[o+x] == 0:
+					self.outterBgEdge.add(o+x)
 
-				# enlist background pixels surrounding this edge/border pixel
-				for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
-					if i[o+x] == 0:
-						self.outterBgEdge.add(o+x)
+			# find adjacent edge pixel
+			if cntr == 0:
+				# first run, find neighbor in CCW direction
+				# first: vector from o towards nuclei interior
+				# second: search neighbor pixels that are CCW from the first vector
 
-		# finish the length of the boundary in microns
-		self.EdgeLength /= 2.0
+				# first vector:
+				fvx = 0
+				fvy = 0
+				do = [ -w, -1, 1, w, -w-1, -w+1, w-1, w+1 ]
+				dx = [  0, -1, 1, 0,   -1,    1,  -1,   1 ]
+				dy = [ -1,  0, 0, 1,   -1,   -1,   1,   1 ]
+				for n in range(len(do)):
+					if thisColor == i[ do[n]+o ]:
+						fvx += dx[n]
+						fvy += dy[n]
+				# (fvx, fvy) points inward nuclei
+				# (fvy,-fvx) is CCW rotated -- for angular inspection w.r.t. (svx,svy)
 
-		# length of the boundary in pixel
-		self.EdgeSize = len(self.EdgePixels)
+				# examine second vectors:
+				for n in do:
+					no = n+o # new examined pixel
+					svx =     no%w  -     o%w
+					svy = int(no/w) - int(o/w)
+					ang = fvy*svx - fvx*svy
+
+					if no in self.EdgePixels and ang < 0:
+						o = no
+						break
+			else:
+				# any next run, find neighbor not the same as the previous one(s)
+				for n in [ -w, -1,1, w, -w-1, -w+1, w-1, w+1 ]:
+					no = n+o # new examined pixel
+					if no in self.EdgePixels and no != po and no != ppo:
+						ppo = po
+						po = o
+						o = no
+						break
+
+			# test if enough has been swept....
+			cntr = cntr+1
+			if o == veryO or cntr >= cntrStop:
+				keepSweeping = False
+
+		# finish the loop...
+		coords.append( coords[0] )
+		self.Coords = coords
+
+		# calculate the proper length of the local boundary by sweeping
+		# typically through a neighbor,myself,neighbor
+		self.EdgeLength += properLength(coords,realCoords)
+
+		if len(coords) < 20:
+			print("nucleus #"+str(thisColor)+" has suspiciously short circumference polygon ("+str(len(coords))+" vertices)")
+
+		if len(coords) != 2*self.EdgeSize+1:
+			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be"+str(2*self.EdgeSize+1)+")")
+
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
@@ -232,6 +347,31 @@ class Nucleus:
 				if i[oo+x] > 0:
 					self.NeighIDs.add(i[oo+x])
 		self.NeighIDs.remove(self.Label)
+
+
+	def smoothPolygonBoundary(self, smoothSpan, smoothSigma):
+		if smoothSpan < 1 or smoothSigma <= 0:
+			return
+
+		weights = [ math.exp(-0.5 * i*i / (smoothSigma*smoothSigma)) for i in range(smoothSpan+1) ]
+
+		wSum = -weights[0]
+		for w in weights:
+			wSum += 2.0 * w
+
+		coordsOrig = copy.copy(self.Coords)
+		coordsLen = len(self.Coords)
+
+		for i in range(coordsLen):
+			x = weights[0] * coordsOrig[i][0]
+			y = weights[0] * coordsOrig[i][1]
+
+			for j in range(1,smoothSpan+1):
+				x += weights[j] * ( coordsOrig[(i-j) %coordsLen][0] + coordsOrig[(i+j) %coordsLen][0] )
+				y += weights[j] * ( coordsOrig[(i-j) %coordsLen][1] + coordsOrig[(i+j) %coordsLen][1] )
+
+			self.Coords[i][0] = x / wSum
+			self.Coords[i][1] = y / wSum
 
 
 	# the same condition that everyone should use to filter out nuclei that
