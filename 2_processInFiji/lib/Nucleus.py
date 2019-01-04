@@ -68,6 +68,11 @@ class Nucleus:
 		# initially empty -> use setNeighborsList() to have it filled
 		self.NeighIDs = set()
 
+		# if thisColor == exportID:
+		periFile = open("/Users/ulman/DATA/perimeter"+str(int(thisColor))+".txt","w")
+		areaFile = open("/Users/ulman/DATA/area"+str(int(thisColor))+".txt","w")
+		exportLineNo = 1
+
 		# sequential scan through the boundary pixels:
 		# (to be able to smooth out the boundary line consequently)
 		#
@@ -263,6 +268,17 @@ class Nucleus:
 				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 				cntrStop = cntrStop-1
 
+			#DEBUG VLADO REMOVE
+			# if thisColor == exportID:
+			if self.EdgeSize < 5000:
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]+0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]+0.4)+" "+str(pix[1]+0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]+0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write("\n")
+			exportLineNo = exportLineNo+1
+
 			# enlist background pixels surrounding this edge/border pixel
 			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
 				if i[o+x] == 0:
@@ -326,12 +342,23 @@ class Nucleus:
 		if len(coords) != 2*self.EdgeSize+1:
 			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be"+str(2*self.EdgeSize+1)+")")
 
+		#DEBUG VLADO REMOVE
+		# if thisColor == exportID:
+		exportLineNo = 1
+		for c in coords:
+			periFile.write( str(c[0])+" "+str(c[1])+" "+str(exportLineNo)+"\n" )
+			exportLineNo = exportLineNo+1
+		periFile.write("\n")
 
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
 		# shape factor: perimeter / sqrt(area)
 		self.ShapeFactor = self.EdgeLength / math.sqrt(self.Area)
+
+		# if thisColor == exportID:
+		periFile.close()
+		areaFile.close()
 
 
 	def setNeighborsList(self, img):
