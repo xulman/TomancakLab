@@ -318,6 +318,13 @@ class Nucleus:
 		# typically through a neighbor,myself,neighbor
 		self.EdgeLength += properLength(coords,realCoords)
 
+		if len(coords) < 20:
+			print("nucleus #"+str(thisColor)+" has suspiciously short circumference polygon ("+str(len(coords))+" vertices)")
+
+		if len(coords) != 2*self.EdgeSize+1:
+			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be"+str(2*self.EdgeSize+1)+")")
+
+
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
