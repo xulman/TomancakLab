@@ -1,4 +1,5 @@
 import math
+import copy
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -313,6 +314,7 @@ class Nucleus:
 
 		# finish the loop...
 		coords.append( coords[0] )
+		self.Coords = coords
 
 		# calculate the proper length of the local boundary by sweeping
 		# typically through a neighbor,myself,neighbor
@@ -345,6 +347,31 @@ class Nucleus:
 				if i[oo+x] > 0:
 					self.NeighIDs.add(i[oo+x])
 		self.NeighIDs.remove(self.Label)
+
+
+	def smoothPolygonBoundary(self, smoothSpan, smoothSigma):
+		if smoothSpan < 1 or smoothSigma <= 0:
+			return
+
+		weights = [ math.exp(-0.5 * i*i / (smoothSigma*smoothSigma)) for i in range(smoothSpan+1) ]
+
+		wSum = -weights[0]
+		for w in weights:
+			wSum += 2.0 * w
+
+		coordsOrig = copy.copy(self.Coords)
+		coordsLen = len(self.Coords)
+
+		for i in range(coordsLen):
+			x = weights[0] * coordsOrig[i][0]
+			y = weights[0] * coordsOrig[i][1]
+
+			for j in range(1,smoothSpan+1):
+				x += weights[j] * ( coordsOrig[(i-j) %coordsLen][0] + coordsOrig[(i+j) %coordsLen][0] )
+				y += weights[j] * ( coordsOrig[(i-j) %coordsLen][1] + coordsOrig[(i+j) %coordsLen][1] )
+
+			self.Coords[i][0] = x / wSum
+			self.Coords[i][1] = y / wSum
 
 
 	# the same condition that everyone should use to filter out nuclei that

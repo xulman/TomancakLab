@@ -9,6 +9,11 @@
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
 #@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection") postprocessNucleiImageFlag
 #@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned") preprocessMembraneImageFlag
+#
+#@boolean (label="Polygon boundary smoothing: should do") polySmoothDo
+#@int     (label="Polygon boundary smoothing: smooth span in half-pixel units") polySmoothSpan
+#@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units") polySmoothSigma
+#
 #@File (style="directory", label="Folder with maps:") mapFolder
 class SimpleFile:
 	def __init__(self,path):
@@ -113,6 +118,19 @@ def main():
 		sizesum += nucl.Area
 		if (not inputImageShowsNuclei):
 			nucl.setNeighborsList(i,w)
+
+		if polySmoothDo == True:
+			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
+			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
+
+			periFile = open("/Users/ulman/DATA/perymeter"+str(int(nucl.Label))+".txt","w")
+			exportLineNo = 1
+			for c in nucl.Coords:
+				periFile.write( str(c[0])+" "+str(c[1])+" "+str(exportLineNo)+"\n" )
+				exportLineNo = exportLineNo+1
+			periFile.write("\n")
+			periFile.close()
+
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
