@@ -46,7 +46,7 @@ class Nucleus:
 		self.CentreX /= len(Pixels)
 		self.CentreY /= len(Pixels)
 
-		# list of pixels that make up boundary of this nuclei (nuclei mask)
+		# list of offsets of pixels that make up boundary of this nuclei (nuclei mask)
 		self.EdgePixels = []
 
 		# (approximate) length of the boundary in microns
@@ -80,7 +80,7 @@ class Nucleus:
 		#      and choose the one that is not the previous pixel
 		#    - make the chosen one the current pixel and do cycle body
 
-		# determine boundary pixels first
+		# 1) determine boundary pixels first
 		for pix in Pixels:
 			# pixel offset within the image
 			o = w*pix[1] + pix[0]
@@ -109,157 +109,135 @@ class Nucleus:
 
 			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorRight or thisColor != ColorBelow:
 				# found border-forming pixel, enlist it
-				self.EdgePixels.append([pix[0],pix[1]])
+				self.EdgePixels.append(o)
 
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
 
 
-		# calculate the polygon boundary, should scan sequentially
-		for pix in self.EdgePixels:
-			# pixel offset within the image
-			o = w*pix[1] + pix[0]
+		# 2) establish the polygon boundary by scanning edge pixels sequentially
+		o = self.EdgePixels[0]  # offset of the currently examined pixel
+		po = o                  # offsets of the two previously examined pixels
+		ppo = o
+		pix = [0,0]             # aux coordinate buffer
 
-			try:
-				ColorAbove = i[ o-w ]
-			except:
-				ColorAbove = -1
-
-			try:
-				ColorLeft = i[ o-1 ]
-			except:
-				ColorLeft = - 1
-
-			#thisColor = i[o]
-
-			try:
-				ColorRight = i[ o+1 ]
-			except:
-				ColorRight = -1
-
-			try:
-				ColorBelow = i[ o+w ]
-			except:
-				ColorBelow = -1
+		for cnt in range(self.EdgeSize):
+			# pixel coords within the image (opposite to: o = w*pix[1] + pix[0])
+			pix[1] = int(o/w)
+			pix[0] = o - w*pix[1]
 
 			# mimics 2D 4-neighbor erosion:
 			# encode which neighbors are missing, and how many of them
 			missNeig = 0
 			cnt = 0;
 
-			if thisColor != ColorLeft:
+			if thisColor != i[ o-1 ]:
 				missNeig += 1
 				cnt += 1
-			if thisColor != ColorAbove:
+			if thisColor != i[ o-w ]:
 				missNeig += 2
 				cnt += 1
-			if thisColor != ColorRight:
+			if thisColor != i[ o+1 ]:
 				missNeig += 4
 				cnt += 1
-			if thisColor != ColorBelow:
+			if thisColor != i[ o+w ]:
 				missNeig += 8
 				cnt += 1
 
-			if missNeig != 0:
-				# Marching-cubes-like determine configuration of the border pixel,
-				# and guess an approximate proper length of the boundary this pixels co-establishes
-				coords = []
+			# Marching-cubes-like determine configuration of the border pixel,
+			# and guess an approximate proper length of the boundary this pixels co-establishes
 
-				# legend on bits used to flag directions:
-				#
-				#           2
-				#          (y-)
-				#           |
-				#           |
-				# 1 (x-) <--+--> (x+) 4
-				#           |
-				#           |
-				#          (y+)
-				#           8
-				#
+			# legend on bits used to flag directions:
+			#
+			#           2
+			#          (y-)
+			#           |
+			#           |
+			# 1 (x-) <--+--> (x+) 4
+			#           |
+			#           |
+			#          (y+)
+			#           8
+			#
 
-				if cnt == 1:
-					# one neighbor is missing -> boundary is straight here
-					if missNeig&1:
-						# vertical boundary
+			if cnt == 1:
+				# one neighbor is missing -> boundary is straight here
+				if missNeig&1:
+					# vertical boundary
+					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+				elif missNeig&4:
+					# vertical boundary
+					coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+				elif missNeig&2:
+					# horizontal boundary
+					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
+				else:
+					# horizontal boundary
+					coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
+
+			if cnt == 2:
+				# two neighbors -> we're either a corner, or boundary is 1px thick
+				if missNeig&5 == 5 or missNeig&10 == 10:
+					# 1px thick boundary
+					if missNeig&5 == 5:
+						# 1px thick vertical boundary
 						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
-					elif missNeig&4:
-						# vertical boundary
+						self.EdgeLength += properLength(coords,realCoords)
 						coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
-					elif missNeig&2:
-						# horizontal boundary
+					else:
+						# 1px thick horizontal boundary
 						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
-					else:
-						# horizontal boundary
+						self.EdgeLength += properLength(coords,realCoords)
 						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
+				else:
+					# missing neighbors are "neighbors" to each other too -> we're a corner
+					if missNeig&6 == 6 or missNeig&9 == 9:
+						# we're top-right corner, or bottom-left corner
+						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
-				if cnt == 2:
-					# two neighbors -> we're either a corner, or boundary is 1px thick
-					if missNeig&5 == 5 or missNeig&10 == 10:
-						# 1px thick boundary
-						if missNeig&5 == 5:
-							# 1px thick vertical boundary
-							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0]-0.5,pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
-							self.EdgeLength += properLength(coords,realCoords)
-							coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0]+0.5,pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
-						else:
-							# 1px thick horizontal boundary
-							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]-0.5] , [pix[0]+0.5,pix[1]-0.5] ]
-							self.EdgeLength += properLength(coords,realCoords)
-							coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]+0.5] ]
-					else:
-						# missing neighbors are "neighbors" to each other too -> we're a corner
-						if missNeig&6 == 6 or missNeig&9 == 9:
-							# we're top-right corner, or bottom-left corner
-							coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+					if missNeig&12 == 12 or missNeig&3 == 3:
+						# we're bottom-right corner, or top-left corner
+						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
 
-						if missNeig&12 == 12 or missNeig&3 == 3:
-							# we're bottom-right corner, or top-left corner
-							coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
+			if cnt == 3:
+				# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
+				if missNeig&7 == 7:
+					# have only a neighbor below
+					coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
-				if cnt == 3:
-					# three neighbors -> we're "a blob or a spike" popping out from a straight boundary...
-					if missNeig&7 == 7:
-						# have only a neighbor below
-						coords = [ [pix[0]-0.5,pix[1]+0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+				if missNeig&11 == 11:
+					# have only a neighbor right
+					coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
 
-					if missNeig&11 == 11:
-						# have only a neighbor right
-						coords = [ [pix[0]+0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]+0.5] ]
+				if missNeig&13 == 13:
+					# have only a neighbor above
+					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
 
-					if missNeig&13 == 13:
-						# have only a neighbor above
-						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]+0.5,pix[1]-0.5] ]
+				if missNeig&14 == 14:
+					# have only a neighbor left
+					coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
 
-					if missNeig&14 == 14:
-						# have only a neighbor left
-						coords = [ [pix[0]-0.5,pix[1]-0.5] , [pix[0],pix[1]] , [pix[0]-0.5,pix[1]+0.5] ]
+			if cnt == 4:
+				# four neighbors -> we're an isolated pixel
+				coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 
-				if cnt == 4:
-					# four neighbors -> we're an isolated pixel
-					coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
+			# calculate the proper length of the local boundary by sweeping
+			# typically through a neighbor,myself,neighbor
+			self.EdgeLength += properLength(coords,realCoords)
 
-				# calculate the proper length of the local boundary by sweeping
-				# typically through a neighbor,myself,neighbor
-				self.EdgeLength += properLength(coords,realCoords)
+			# enlist background pixels surrounding this edge/border pixel
+			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
+				if i[o+x] == 0:
+					self.outterBgEdge.add(o+x)
 
-#				#DEBUG VLADO REMOVE
-#				a = coords[0]
-#				b = coords[1]
-#				c = coords[2]
-#				for i in [0,1]:
-#					a[i] = (float(a[i])+float(b[i]))/2.0
-#					c[i] = (float(b[i])+float(c[i]))/2.0
-#
-#				print str(a[0])+" "+str(a[1])+" 1"
-#				print str(b[0])+" "+str(b[1])+" 2"
-#				print str(c[0])+" "+str(c[1])+" 1"
-#				print ""
-
-				# enlist background pixels surrounding this edge/border pixel
-				for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
-					if i[o+x] == 0:
-						self.outterBgEdge.add(o+x)
+			# find adjacent edge pixel
+			for n in [ -w, -1,1, w, -w-1, -w+1, w-1, w+1 ]:
+				no = n+o # new examined pixel
+				if no in self.EdgePixels and no != po and no != ppo:
+					ppo = po
+					po = o
+					o = no
+					break
 
 
 		# circularity: higher value means higher circularity
