@@ -326,7 +326,10 @@ class Nucleus:
 		if len(coords) != 2*self.EdgeSize+1:
 			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be"+str(2*self.EdgeSize+1)+")")
 
+		self.updateCircularityAndSA()
 
+
+	def updateCircularityAndSA(self):
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
 
