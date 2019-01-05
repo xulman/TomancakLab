@@ -114,22 +114,17 @@ def main():
 	w = IJ.getImage().getWidth()
 
 	for nucl in nuclei:
-		circularitySum += nucl.Circularity
-		sizesum += nucl.Area
-		if (not inputImageShowsNuclei):
-			nucl.setNeighborsList(i,w)
-
 		if polySmoothDo == True:
 			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
 			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
 
-			periFile = open("/Users/ulman/DATA/perymeter"+str(int(nucl.Label))+".txt","w")
-			exportLineNo = 1
-			for c in nucl.Coords:
-				periFile.write( str(c[0])+" "+str(c[1])+" "+str(exportLineNo)+"\n" )
-				exportLineNo = exportLineNo+1
-			periFile.write("\n")
-			periFile.close()
+			# update everything that depends on a corrected perimeter length
+			nucl.updateCircularityAndSA()
+
+		circularitySum += nucl.Circularity
+		sizesum += nucl.Area
+		if (not inputImageShowsNuclei):
+			nucl.setNeighborsList(i,w)
 
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
