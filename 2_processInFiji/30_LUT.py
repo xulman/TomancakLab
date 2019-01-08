@@ -30,7 +30,7 @@ def parseBinBoundaries(valString):
 		return outVals
 
 	while a < b:
-		v = int(valString[a:b])
+		v = float(valString[a:b])
 		outVals.append(v)
 
 		a = b+1
@@ -48,7 +48,7 @@ def parseBinValues(valString):
 		b = len(valString)
 
 	while a < b:
-		v = int(valString[a:b])
+		v = float(valString[a:b])
 		outVals.append(v)
 
 		a = b+1
