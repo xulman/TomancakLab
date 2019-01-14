@@ -250,3 +250,13 @@ def getCurrentMaxPixelValue(ip):
 		maxVal = maxVal if maxVal >= i else i
 
 	return maxVal
+
+
+def collectROIInnerPoints(roi):
+	if roi is not None:
+		coords = []
+		for p in roi.getContainedPoints():
+			coords.append( [p.x,p.y] )
+		return coords
+	else:
+		return []
