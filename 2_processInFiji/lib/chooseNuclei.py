@@ -260,3 +260,19 @@ def collectROIInnerPoints(roi):
 		return coords
 	else:
 		return []
+
+
+def filterOutNucleiIfNotTouchingROI(nuclei,roiPixels):
+	if nuclei is None or roiPixels is None:
+		return
+
+	for n in nuclei:
+		found = False
+
+		for px in n.Pixels:
+			if px in roiPixels:
+				found = True
+				break
+
+		if found == False:
+			nuclei.remove(n)
