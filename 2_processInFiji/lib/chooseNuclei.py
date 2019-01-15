@@ -207,7 +207,7 @@ def preprocessMembraneImage(realSizes):
 		IJ.run("Skeletonize","BlackBackground=false")
 
 		# upscale to the desired resolution, now skeleton gets fatter
-		IJ.run("Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+		IJ.run("Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledSkeleton.tif");
 		upScaledSkeleton = IJ.getImage()
 
 		# close the previous image
@@ -222,7 +222,7 @@ def preprocessMembraneImage(realSizes):
 		# BTW: now the 'upScaledSkeleton' is up-scaled and ready for finding components
 
 		# also up-scale the input image
-		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledOrigImg.tif");
 
 		# and replace all 'old 2' (upscaled input membranes) with 'new 2' (upscaled skeleton)
 		imp = IJ.getImage()
@@ -241,7 +241,7 @@ def preprocessMembraneImage(realSizes):
 		upScaledSkeleton.close()
 	else:
 		print "empty input image detected, no membrane preprocessing"
-		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaled.tif");
+		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledOrigImg.tif");
 
 
 def getCurrentMaxPixelValue(ip):
