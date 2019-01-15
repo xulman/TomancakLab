@@ -50,6 +50,7 @@ colors = [0x00FF00, 0xFFFFFF, 0x0000FF, 0xFF0000]
 
 from ij import IJ
 from ij import ImagePlus
+from ij.gui import Roi
 from ij.process import ColorProcessor
 from ij.process import FloatProcessor
 from ij.measure import ResultsTable
@@ -90,6 +91,8 @@ def main():
 		backgroundPixelValue = 2 # in case of cell membranes
 		if preprocessMembraneImageFlag == True:
 			preprocessMembraneImage(realSizes)
+			# "backup" the pre-processed input image
+			IJ.getImage().duplicate().show()
 
 	imp = IJ.getImage()
 
@@ -101,6 +104,11 @@ def main():
 	nuclei = chooseNucleiNew(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, postprocessNucleiImageFlag)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
 	#nuclei += findComponents(imp,255,realSizes,realCoordinates,"n_")
+
+	roi = imp.getRoi()
+	if roi is not None:
+		print("ROI was found, keeping only nuclei that intersect with this ROI.")
+		filterOutNucleiIfNotTouchingROI( nuclei,collectROIInnerPoints(roi) )
 
 	# ------- analysis starts here -------
 	if len(nuclei) == 0:
