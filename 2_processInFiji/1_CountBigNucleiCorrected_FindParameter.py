@@ -108,7 +108,8 @@ def main():
 		return
 
 	circularitySum = 0
-	sizesum = 0
+	shapeFactorSum = 0
+	sizeSum = 0
 
 	i = IJ.getImage().getProcessor().getPixels()
 	w = IJ.getImage().getWidth()
@@ -122,13 +123,15 @@ def main():
 			nucl.updateCircularityAndSA()
 
 		circularitySum += nucl.Circularity
-		sizesum += nucl.Area
+		shapeFactorSum += nucl.ShapeFactor
+		sizeSum += nucl.Area
 		if (not inputImageShowsNuclei):
 			nucl.setNeighborsList(i,w)
 
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
-	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
+	print("Average ShapeFactor: "+str(shapeFactorSum/len(nuclei)))
+	print("Average Area: "+str(sizeSum/len(nuclei))+" square microns")
 
 	if inputImageShowsNuclei:
 		print("No. of neighborhood was not counted, works only with membrane images.")
