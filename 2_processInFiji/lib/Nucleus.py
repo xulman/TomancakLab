@@ -324,7 +324,7 @@ class Nucleus:
 			print("nucleus #"+str(thisColor)+" has suspiciously short circumference polygon ("+str(len(coords))+" vertices)")
 
 		if len(coords) != 2*self.EdgeSize+1:
-			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be"+str(2*self.EdgeSize+1)+")")
+			print("nucleus #"+str(thisColor)+" has unexpected length of circumference polygon ("+str(len(coords))+" vertices, should be "+str(2*self.EdgeSize+1)+")")
 
 		self.updateCircularityAndSA()
 
