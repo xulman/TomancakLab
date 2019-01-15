@@ -15,16 +15,17 @@
 #@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units") polySmoothSigma
 #
 #@File (style="directory", label="Folder with maps:") mapFolder
+#@String (label="\"cylinder1\" vs. \"cylinder2\":", value="cylinder1") mapCylinder
 class SimpleFile:
 	def __init__(self,path):
 		self.path = path
 	def getAbsolutePath(self):
 		return self.path
 
-aMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2_area.txt")
-xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_X.txt")
-yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_Y.txt")
-zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder2coords_Z.txt")
+aMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"_area.txt")
+xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_X.txt")
+yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt")
+zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
 
 #
 #@boolean (label="Show sheet with analysis data") showRawData
