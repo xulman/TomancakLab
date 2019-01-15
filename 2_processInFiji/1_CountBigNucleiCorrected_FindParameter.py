@@ -7,12 +7,12 @@
 #@boolean (label="Filter according to circularity") filterCirc
 #
 #@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
-#@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection") postprocessNucleiImageFlag
-#@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned") preprocessMembraneImageFlag
+#@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection", value=False) postprocessNucleiImageFlag
+#@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned", value=False) preprocessMembraneImageFlag
 #
-#@boolean (label="Polygon boundary smoothing: should do") polySmoothDo
-#@int     (label="Polygon boundary smoothing: smooth span in half-pixel units") polySmoothSpan
-#@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units") polySmoothSigma
+#@boolean (label="Polygon boundary smoothing: should do", value=False) polySmoothDo
+#@int     (label="Polygon boundary smoothing: smooth span in half-pixel units", value=10) polySmoothSpan
+#@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units", value=4) polySmoothSigma
 #
 #@File (style="directory", label="Folder with maps:") mapFolder
 #@String (label="\"cylinder1\" vs. \"cylinder2\":", value="cylinder1") mapCylinder
@@ -28,7 +28,7 @@ yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt"
 zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
 
 #
-#@boolean (label="Show sheet with analysis data") showRawData
+#@boolean (label="Show sheet with analysis data", value=True) showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
 #@boolean (label="Show image with shape factors") showShapeFactorImage
