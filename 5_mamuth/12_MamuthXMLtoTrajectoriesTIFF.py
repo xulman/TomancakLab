@@ -1,6 +1,6 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@String (label="Draw only up to these time points:") drawAtTheseTimepoints
+#@String (label="Draw only up to these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
 #@File (label="Output trajectories TIFF file:") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
@@ -25,6 +25,7 @@ ThisFile    = os.path.dirname(inspect.getfile(inspect.currentframe()))
 sys.path.append(ScriptsRoot+os.sep+ThisFile+os.sep+"lib")
 sys.path.append(ThisFile+os.sep+"lib")
 from MamutXMLreader import *
+from tools import *
 
 
 # adjust the size of the output image immediately
@@ -52,11 +53,6 @@ SEPARATOR = 0
 # don't draw no further than given stopTime; the TSHIFT is a helping
 # parameter connected to the SEPARATOR
 def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
-	# the coordinates will get divided by Down, and R as well;
-	# in this function, however, we want R to represent already the final
-	# width (radius), so we multiply by Down (to get divided later...)
-	R = R * Down
-
 	xC = spotA[0]
 	yC = spotA[1]
 	zC = spotA[2]
@@ -79,7 +75,9 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 
 	# if "line is decimated into a point", just draw one spot
 	if SN == 0:
-		drawBall(xC,yC,zC,R,Col,img)
+		drawBall(xC,yC,zC,R*Down,Col,img,Down)
+		# NB: the coordinates and _radius_ will get divided by Down,
+		#     but we want R to represent already the final radius
 		return
 
 	# (real) length of one segment
@@ -106,7 +104,7 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R,Col+int(i*deltaT),img)
+		drawBall(x,y,z,R*Down,Col+int(i*deltaT),img,Down)
 
 
 # ------------------------------------------------------------------------------------
@@ -134,6 +132,13 @@ def main(timePointList):
 	for sp in outShortProcessors:
 		stack.addSlice(sp)
 
+	# create the wrapping data structure...
+	simpleImg = SimpleImg(img,xSize,ySize,zSize)
+
+	# now: 'img' is an array of arrays that essentially shadow the pixel data
+	# from the 'stack' (ImageStack that has been built around 'img'),
+	# and 'simpleImg' only wraps (holds it) around the 'img'
+
 	outImp = ij.ImagePlus("trajectories", stack)
 	outImp.show()
 	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
@@ -157,7 +162,7 @@ def main(timePointList):
 					spotA = SPOTS[TRACK[tA]]
 					if spotA[3] < maxDrawTime:
 						spotB = SPOTS[TRACK[tB]]
-						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, img)
+						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, simpleImg)
 
 				tA = tB
 
