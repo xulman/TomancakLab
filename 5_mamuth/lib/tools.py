@@ -64,6 +64,12 @@ class SimpleImg:
 		self.ySize = ySize
 		self.zSize = zSize
 
+	def setPixelsToZero(self):
+		for z in range(len(self.pxls)):
+			slc = self.pxls[z]
+			for i in range(len(slc)):
+				slc[i] = 0
+
 # ------------------------------------------------------------------------------------
 def drawBall(xC,yC,zC, R,Col, img):
 	drawBall(xC,yC,zC, R,Col, img,1.0)

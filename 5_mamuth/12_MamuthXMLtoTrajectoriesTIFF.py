@@ -147,6 +147,8 @@ def main(timePointList):
 
 
 	for maxDrawTime in timePointList:
+		simpleImg.setPixelsToZero()
+
 		# scan all tracks
 		for tID in TRACKS:
 			TRACK = TRACKS[tID]
