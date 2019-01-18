@@ -69,13 +69,13 @@ def drawBall(xC,yC,zC, R,Col, img):
 	drawBall(xC,yC,zC, R,Col, img,1.0)
 
 # ------------------------------------------------------------------------------------
-# draws ball of radius R with center xC,yC,zC with colour Col into the image
+# draws ball of diameter D with center xC,yC,zC with colour Col into the image
 # considering the Down-scale factor, the image has to be of the SimpleImg type
-def drawBall(xC,yC,zC, R,Col, img,Down):
+def drawBall(xC,yC,zC, D,Col, img,Down):
 	xC = int(math.ceil(xC / Down))
 	yC = int(math.ceil(yC / Down))
 	zC = int(math.ceil(zC / Down))
-	R  = int(math.ceil(R  / Down))
+	R  = int(math.ceil( D / (2.0*Down) ))
 
 	#print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
 
