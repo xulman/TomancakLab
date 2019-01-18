@@ -1,6 +1,7 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@String (label="Draw only up to these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
+#@int (label="Draw trajectories only up to this time point:") drawTillThisTimepoint
+#@String (label="Draw balls at these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
 #@File (label="Output trajectories TIFF file:") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
@@ -8,6 +9,7 @@ from __future__ import print_function
 #@boolean (label="Squash everything to 2D:") shouldDoTwoD
 #@int (label="Downsampling factor:") xDown
 #@int (label="Thickness of trajectories in pixels:") trackThickness
+#@int (label="Diameter of balls at trajectories in pixels:") ballsDiameter
 
 from ij import IJ
 import ij.ImagePlus
@@ -45,14 +47,14 @@ if shouldDoTwoD:
 
 # dividing by SEPARATOR (e.g. via Image->Math) one can strip away time information/coordinate;
 # thresholding by 1, one can strip away all tracking information (track ID, time coordinate)
-SEPARATOR = 0
+SEPARATOR = 1
 
 # ------------------------------------------------------------------------------------
 # draws a line made of many (overlapping) balls, of width R from
 # spotA to spotB that belongs to track ID, into the image, but
 # don't draw no further than given stopTime; the TSHIFT is a helping
 # parameter connected to the SEPARATOR
-def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
+def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 	xC = spotA[0]
 	yC = spotA[1]
 	zC = spotA[2]
@@ -78,6 +80,9 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		drawBall(xC,yC,zC,R*Down,Col,img,Down)
 		# NB: the coordinates and _radius_ will get divided by Down,
 		#     but we want R to represent already the final radius
+		#
+		if spotA[3] <= ballTime and ballTime <= spotB[3]:
+			drawBall(xC,yC,zC,Rb*Down,Col,img,Down)
 		return
 
 	# (real) length of one segment
@@ -93,9 +98,22 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 
 	# shortcut... makes stopTime relative to the time of the spotA
 	stopTime = stopTime - spotA[3]
+	ballTime = ballTime - spotA[3]
+
+	# flag to signal now is the time to draw the ball
+	firstBallCross = False if ballTime >= 0 else True
 
 	SN = int(SN)
+	x = xC # outside the cycle so that their values remain between the individual loops
+	y = yC
+	z = zC
 	for i in range(0,SN+1):
+		# have we just passed the point where the ball should be drawn?
+		if i*deltaT > ballTime and firstBallCross == False:
+			firstBallCross = True
+			drawBall(x,y,z,Rb*Down,Col,img,Down)
+			# NB: draws at the previous (not yet passing) coordinate
+
 		# don't draw beyond the stopTime
 		if i*deltaT > stopTime:
 			return
@@ -104,7 +122,7 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R*Down,Col+int(i*deltaT),img,Down)
+		drawBall(x,y,z,R*Down,Col,img,Down)
 
 
 # ------------------------------------------------------------------------------------
@@ -146,7 +164,7 @@ def main(timePointList):
 	print("detected interval of time points ["+str(minT)+","+str(maxT)+"]")
 
 
-	for maxDrawTime in timePointList:
+	for currentBallTime in timePointList:
 		simpleImg.setPixelsToZero()
 
 		# scan all tracks
@@ -162,9 +180,9 @@ def main(timePointList):
 					#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
 
 					spotA = SPOTS[TRACK[tA]]
-					if spotA[3] < maxDrawTime:
+					if spotA[3] < drawTillThisTimepoint:
 						spotB = SPOTS[TRACK[tB]]
-						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, simpleImg)
+						drawLine(spotA,spotB,currentBallTime,ballsDiameter, drawTillThisTimepoint, trackThickness, tID,spotA[3], simpleImg)
 
 				tA = tB
 
@@ -172,7 +190,7 @@ def main(timePointList):
 		# now write the image onto harddrive...
 		fn = tifFile.getAbsolutePath()
 		i = fn.rfind('.')
-		fn = fn[0:i]+str(maxDrawTime)+fn[i:len(fn)]
+		fn = fn[0:i]+str(currentBallTime)+fn[i:len(fn)]
 
 		print("Writing trajectory image: "+fn)
 		IJ.save(outImp,fn)
