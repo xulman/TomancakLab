@@ -1,4 +1,5 @@
 from __future__ import print_function
+import math
 
 # ------------------------------------------------------------------------------------
 def parseOutTimes(tps):
@@ -54,12 +55,22 @@ def parseOutTimes(tps):
 	return ww
 
 # ------------------------------------------------------------------------------------
+# this is essentially only a wrapper/binder of pixel data (reachable
+# as [z][y*xSize+x]) and the relevant metadata
+class SimpleImg:
+	def __init__(self,pixels,xSize,ySize,zSize):
+		self.pxls = pixels
+		self.xSize = xSize
+		self.ySize = ySize
+		self.zSize = zSize
+
+# ------------------------------------------------------------------------------------
 def drawBall(xC,yC,zC, R,Col, img):
 	drawBall(xC,yC,zC, R,Col, img,1.0)
 
 # ------------------------------------------------------------------------------------
-# draws ball of radius R with center xC,yC,zC with colour Col into the image,
-# considering the Down-scale factor
+# draws ball of radius R with center xC,yC,zC with colour Col into the image
+# considering the Down-scale factor, the image has to be of the SimpleImg type
 def drawBall(xC,yC,zC, R,Col, img,Down):
 	xC = int(math.ceil(xC / Down))
 	yC = int(math.ceil(yC / Down))
@@ -68,14 +79,14 @@ def drawBall(xC,yC,zC, R,Col, img,Down):
 
 	#print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
 
-	x_min = xC-R if xC > R       else 0
-	x_max = xC+R if xC+R < xSize else xSize-1
+	x_min = xC-R if xC > R           else 0
+	x_max = xC+R if xC+R < img.xSize else img.xSize-1
 
-	y_min = yC-R if yC > R       else 0
-	y_max = yC+R if yC+R < ySize else ySize-1
+	y_min = yC-R if yC > R           else 0
+	y_max = yC+R if yC+R < img.ySize else img.ySize-1
 
-	z_min = zC-R if zC > R       else 0
-	z_max = zC+R if zC+R < zSize else zSize-1
+	z_min = zC-R if zC > R           else 0
+	z_max = zC+R if zC+R < img.zSize else img.zSize-1
 
 	R2 = R*R
 
@@ -90,4 +101,4 @@ def drawBall(xC,yC,zC, R,Col, img,Down):
 				dz = (z-zC) * (z-zC)
 
 				if dxy+dz <= R2:
-					img[z][x + y*xSize] = Col
+					img.pxls[z][x + y*img.xSize] = Col
