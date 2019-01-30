@@ -116,6 +116,9 @@ def main():
 	w = IJ.getImage().getWidth()
 
 	for nucl in nuclei:
+		if True == True: # straightening should always happen
+			nucl.reshapeNucleusWithStraightenedBoundary(i,w)
+
 		if polySmoothDo == True:
 			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
 			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)

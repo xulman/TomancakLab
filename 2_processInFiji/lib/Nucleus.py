@@ -328,6 +328,11 @@ class Nucleus:
 
 		self.updateCircularityAndSA()
 
+
+	def reshapeNucleusWithStraightenedBoundary(self, img):
+		self.reshapeNucleusWithStraightenedBoundary(img.getProcessor().getPixels(), img.getWidth())
+
+	def reshapeNucleusWithStraightenedBoundary(self, i,w):
 		# now, scan the vicinities of the self.outterBgEdge and detect junction-points
 		# neighbors that define vicinity of interest
 		jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
@@ -383,7 +388,7 @@ class Nucleus:
 
 
 	def setNeighborsList(self, img):
-		setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
+		self.setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
 
 	def setNeighborsList(self, i,w):
 		self.NeighIDs = set([self.Label])
