@@ -14,6 +14,9 @@ sys.path.append(ThisFile)
 # import our "library scripts"
 from properMeasurements import *
 
+#DEBUG VLADO REMOVE
+exportID = [253 , 222 , 270]
+
 
 class Nucleus:
 
@@ -71,6 +74,12 @@ class Nucleus:
 		# set of labels touching this nuclei (component),
 		# initially empty -> use setNeighborsList() to have it filled
 		self.NeighIDs = set()
+
+		#DEBUG VLADO REMOVE
+		if thisColor in exportID:
+			periFile = open("/Users/ulman/DATA/perimeter"+str(int(thisColor))+".txt","w")
+			areaFile = open("/Users/ulman/DATA/area"+str(int(thisColor))+".txt","w")
+			exportLineNo = 1
 
 		# sequential scan through the boundary pixels:
 		# (to be able to smooth out the boundary line consequently)
@@ -267,6 +276,16 @@ class Nucleus:
 				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 				cntrStop = cntrStop-1
 
+			#DEBUG VLADO REMOVE
+			if thisColor in exportID and self.EdgeSize < 5000:
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]+0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]+0.4)+" "+str(pix[1]+0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]+0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write( str(pix[0]-0.4)+" "+str(pix[1]-0.4)+" "+str(exportLineNo)+"\n")
+				areaFile.write("\n")
+				exportLineNo = exportLineNo+1
+
 			# enlist background pixels surrounding this edge/border pixel into outterBgEdge,
 			# enlist CW-ordered outter pixels of 'o' into outterBgEdgeCW
 			xBestDist = 5
@@ -343,6 +362,17 @@ class Nucleus:
 
 		self.updateCircularityAndSA()
 
+		#DEBUG VLADO REMOVE
+		if thisColor in exportID:
+			exportLineNo = 1
+			for c in coords:
+				periFile.write( str(c[0])+" "+str(c[1])+" "+str(exportLineNo)+"\n" )
+				exportLineNo = exportLineNo+1
+			periFile.write("\n")
+
+			periFile.close()
+			areaFile.close()
+
 
 	def reshapeNucleusWithStraightenedBoundary(self, img):
 		self.reshapeNucleusWithStraightenedBoundary(img.getProcessor().getPixels(), img.getWidth())
@@ -401,6 +431,17 @@ class Nucleus:
 			self.Coords.append( [x,y] )
 		# finish the loop...
 		self.Coords.append( self.Coords[0] )
+
+		if self.Label in exportID:
+			periFile = open("/Users/ulman/DATA/perilines"+str(int(self.Label))+".txt","w")
+
+			exportLineNo = 1
+			for c in self.Coords:
+				periFile.write( str(c[0])+" "+str(c[1])+" "+str(exportLineNo)+"\n" )
+				exportLineNo = exportLineNo+1
+			periFile.write("\n")
+
+			periFile.close()
 
 
 	def updateCircularityAndSA(self):
