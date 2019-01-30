@@ -328,6 +328,25 @@ class Nucleus:
 
 		self.updateCircularityAndSA()
 
+		# now, scan the vicinities of the self.outterBgEdge and detect junction-points
+		# neighbors that define vicinity of interest
+		jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
+		       -1*w-2,                       -1*w+2,
+		           -2,                           +2,
+		       +1*w-2,                       +1*w+2,
+		       +2*w-2, +2*w-1, +2*w, +2*w+1, +2*w+2 ]
+		# offsets of the junction-points
+		self.CoordsJunctions = []
+
+		for oo in self.outterBgEdge:
+			neigs = 0
+			for ojn in jn:
+				if oo+ojn >= 0 and oo+ojn < len(i) and i[oo+ojn] == i[oo]:
+					neigs = neigs+1
+
+			if neigs > 2:
+				self.CoordsJunctions.append(oo)
+
 
 	def updateCircularityAndSA(self):
 		# circularity: higher value means higher circularity
