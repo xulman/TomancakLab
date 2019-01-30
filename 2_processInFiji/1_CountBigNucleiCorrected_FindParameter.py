@@ -79,6 +79,8 @@ from Nucleus import Nucleus
 import math
 
 
+print("wait until \"Done.\" (or error) appears...")
+
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath())
 
@@ -91,6 +93,7 @@ def main():
 	if (not inputImageShowsNuclei):
 		backgroundPixelValue = 2 # in case of cell membranes
 		if preprocessMembraneImageFlag == True:
+			print("initial membrane preprocessing...")
 			preprocessMembraneImage(realSizes)
 
 	imp = IJ.getImage()
@@ -99,6 +102,7 @@ def main():
 	checkSize2DarrayVsImgPlus(realSizes, imp)
 	checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
+	print("extracting individual nuclei and their parameters...")
 	# obtain list of all valid nuclei
 	nuclei = chooseNucleiNew(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, postprocessNucleiImageFlag)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
@@ -115,6 +119,15 @@ def main():
 
 	i = IJ.getImage().getProcessor().getPixels()
 	w = IJ.getImage().getWidth()
+
+	if polyAsLargeSegments == True:
+		print("redesigning nuclei boundaries - fitting line segments...")
+	if polySmoothDo == True:
+		print("redesigning nuclei boundaries - smoothing it out...")
+	if polyAsLargeSegments == True or polySmoothDo == True:
+		print("recalculating nuclei parameters since boundaries have changed...")
+	if (not inputImageShowsNuclei):
+		print("calculating number of neighbors per nuclei...")
 
 	for nucl in nuclei:
 		# should straightening happen?
