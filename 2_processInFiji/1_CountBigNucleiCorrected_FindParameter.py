@@ -151,6 +151,13 @@ def main():
 			nucl.DrawValue = nucl.ShapeFactor
 		drawChosenNucleiValue("Real shape factors", imp.getWidth(),imp.getHeight(), nuclei)
 
+		slImgP = IJ.getImage().getProcessor().getPixels()
+		for n in nuclei:
+			# if (n.Label%5) == 0:
+			if n.Label == 253:
+				for o in n.CoordsJunctions:
+					slImgP[o] = 252.0;
+
 	if showAreaImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Area;

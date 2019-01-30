@@ -371,12 +371,17 @@ class Nucleus:
 								seenOtherNuclei = True
 								seenOtherNucleiAtAll = True
 
+					print(str(self.Label)+"@["+str(oo - w*int(oo/w))+","+str(int(oo/w))+"]: neig@["
+					     +str(ooo - w*int(ooo/w))+","+str(int(ooo/w))+"] my="
+					     +str(seenMyNuclei)+" other="+str(seenOtherNuclei))
 					if seenMyNuclei == False and seenOtherNuclei == True:
 						self.CoordsJunctions.append(oo)
 						break
 
 			if seenOtherNucleiAtAll == False:
 				self.CoordsJunctions.append(oo)
+
+		print("Detected jucntion points: "+str(len(self.CoordsJunctions)))
 
 
 	def updateCircularityAndSA(self):
