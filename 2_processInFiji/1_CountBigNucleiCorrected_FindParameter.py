@@ -10,6 +10,7 @@
 #@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection", value=False) postprocessNucleiImageFlag
 #@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned", value=False) preprocessMembraneImageFlag
 #
+#@boolean (label="Polygon boundary straightening:", value=False) polyAsLargeSegments
 #@boolean (label="Polygon boundary smoothing: should do", value=False) polySmoothDo
 #@int     (label="Polygon boundary smoothing: smooth span in half-pixel units", value=10) polySmoothSpan
 #@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units", value=4) polySmoothSigma
@@ -116,14 +117,17 @@ def main():
 	w = IJ.getImage().getWidth()
 
 	for nucl in nuclei:
-		if True == True: # straightening should always happen
+		# should straightening happen?
+		if polyAsLargeSegments == True:
 			nucl.reshapeNucleusWithStraightenedBoundary(i,w)
 
 		if polySmoothDo == True:
 			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
-			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
 
-			# update everything that depends on a corrected perimeter length
+		if polyAsLargeSegments == True or polySmoothDo == True:
+			# update everything that depends on a corrected area and perimeter length
+			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
+			#nucl.Area = TODO
 			nucl.updateCircularityAndSA()
 
 		circularitySum += nucl.Circularity

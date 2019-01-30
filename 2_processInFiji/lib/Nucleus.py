@@ -378,6 +378,15 @@ class Nucleus:
 			if seenOtherNucleiAtAll == False:
 				self.CoordsJunctions.append(oo)
 
+		# now, update the self.Coords - let it go through pixel centres
+		self.Coords = []
+		for o in self.CoordsJunctions:
+			y = int(o/w)
+			x = o - y*w
+			self.Coords.append( [x,y] )
+		# finish the loop...
+		self.Coords.append( self.Coords[0] )
+
 
 	def updateCircularityAndSA(self):
 		# circularity: higher value means higher circularity
