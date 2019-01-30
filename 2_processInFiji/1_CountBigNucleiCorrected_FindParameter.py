@@ -117,7 +117,8 @@ def main():
 
 	for nucl in nuclei:
 		if True == True: # straightening should always happen
-			nucl.reshapeNucleusWithStraightenedBoundary(i,w)
+			if n.Label == 253 or n.Label == 222 or n.Label == 270:
+				nucl.reshapeNucleusWithStraightenedBoundary(i,w)
 
 		if polySmoothDo == True:
 			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
@@ -154,7 +155,7 @@ def main():
 		slImgP = IJ.getImage().getProcessor().getPixels()
 		for n in nuclei:
 			# if (n.Label%5) == 0:
-			if n.Label == 253:
+			if n.Label == 253 or n.Label == 222 or n.Label == 270:
 				for o in n.CoordsJunctions:
 					slImgP[o] = 252.0;
 
