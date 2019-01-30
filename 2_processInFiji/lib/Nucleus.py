@@ -57,12 +57,16 @@ class Nucleus:
 		i = ip.getPixels()
 		w = ip.getWidth()
 
+		eightNH     = [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]
+		eightNHdist = [   2, 1,   2,  1,1,    2, 1,   2] #L0-dist to neighs
+
 		# integer label of the nuclei
 		self.Label = i[w*Pixels[0][1] + Pixels[0][0]]
 		thisColor = self.Label
 
 		# offsets of pixels just outside this nucleus
 		self.outterBgEdge = set()
+		self.outterBgEdgeCW = []
 
 		# set of labels touching this nuclei (component),
 		# initially empty -> use setNeighborsList() to have it filled
@@ -263,10 +267,21 @@ class Nucleus:
 				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 				cntrStop = cntrStop-1
 
-			# enlist background pixels surrounding this edge/border pixel
-			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
-				if i[o+x] == 0:
-					self.outterBgEdge.add(o+x)
+			# enlist background pixels surrounding this edge/border pixel into outterBgEdge,
+			# enlist CW-ordered outter pixels of 'o' into outterBgEdgeCW
+			xBestDist = 5
+			xBestIdx  = 0
+			for n in range(len(eightNH)):
+				x = o + eightNH[n]
+				if i[x] == 0:
+					if eightNHdist[n] <= xBestDist and not x in self.outterBgEdge:
+						xBestDist = eightNHdist[n]
+						xBestIdx  = x
+
+					self.outterBgEdge.add(x)
+
+			if xBestDist < 5:
+				self.outterBgEdgeCW.append(xBestIdx)
 
 			# find adjacent edge pixel
 			if cntr == 0:
@@ -333,7 +348,7 @@ class Nucleus:
 		self.reshapeNucleusWithStraightenedBoundary(img.getProcessor().getPixels(), img.getWidth())
 
 	def reshapeNucleusWithStraightenedBoundary(self, i,w):
-		# now, scan the vicinities of the self.outterBgEdge and detect junction-points
+		# now, scan the vicinities of the self.outterBgEdgeCW and detect junction-points
 		# neighbors that define vicinity of interest
 		jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
 		       -1*w-2,                       -1*w+2,
@@ -344,14 +359,14 @@ class Nucleus:
 		self.CoordsJunctions = []
 
 		# also an "inner" neighborhood -- that is "instantiated" around
-		# every background pixel (from self.outterBgEdge) that comes
+		# every background pixel (from self.outterBgEdgeCW) that comes
 		# out from the 'jn' array -- to look for absence of any pixel
 		# from this nucleus --> only then the "junction" pixel is found
 		nn = [ -w-1, -w, -w+1, -1, +1, w-1, w, w+1 ]
 
 		# over all outter edge pixels...
 		# (essentially a nearby/nucleus-touching background pixels)
-		for oo in self.outterBgEdge:
+		for oo in self.outterBgEdgeCW:
 			# ...and over the surroundings of every outter edge pixel
 			seenOtherNucleiAtAll = False
 			for ojn in jn:
