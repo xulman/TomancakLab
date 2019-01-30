@@ -338,13 +338,39 @@ class Nucleus:
 		# offsets of the junction-points
 		self.CoordsJunctions = []
 
-		for oo in self.outterBgEdge:
-			neigs = 0
-			for ojn in jn:
-				if oo+ojn >= 0 and oo+ojn < len(i) and i[oo+ojn] == i[oo]:
-					neigs = neigs+1
+		# also an "inner" neighborhood -- that is "instantiated" around
+		# every background pixel (from self.outterBgEdge) that comes
+		# out from the 'jn' array -- to look for absence of any pixel
+		# from this nucleus --> only then the "junction" pixel is found
+		nn = [ -w-1, -w, -w+1, -1, +1, w-1, w, w+1 ]
 
-			if neigs > 2:
+		# over all outter edge pixels...
+		# (essentially a nearby/nucleus-touching background pixels)
+		for oo in self.outterBgEdge:
+			# ...and over the surroundings of every outter edge pixel
+			seenOtherNucleiAtAll = False
+			for ojn in jn:
+				ooo = oo+ojn #Other Outter edge pixel Offset
+
+				if ooo >= 0 and ooo < len(i) and i[ooo] == i[oo]:
+					# found another background pixel, examine its neighborhood
+					seenMyNuclei = False
+					seenOtherNuclei = False
+
+					for n in nn:
+						if ooo+n >= 0 and ooo+n < len(i) and i[ooo+n] != i[oo]:
+							# found some nucleus pixel around the current 'ooo' pixel
+							if i[ooo+n] == self.Label:
+								seenMyNuclei = True
+							else:
+								seenOtherNuclei = True
+								seenOtherNucleiAtAll = True
+
+					if seenMyNuclei == False and seenOtherNuclei == True:
+						self.CoordsJunctions.append(oo)
+						break
+
+			if seenOtherNucleiAtAll == False:
 				self.CoordsJunctions.append(oo)
 
 
