@@ -22,6 +22,9 @@ class Nucleus:
 		# stringy label of the nuclei
 		self.Color = Color
 
+		self.OrigArea = 0.0
+		self.OrigEdgeLength = 0.0
+
 		# a scalar value to be used in chooseNuclei.drawChosenNucleiValue(),
 		# one may save here an arbitrary visualization hint for the nuclei drawing
 		self.DrawValue = 1

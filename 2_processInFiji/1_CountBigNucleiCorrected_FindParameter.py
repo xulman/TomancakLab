@@ -139,6 +139,9 @@ def main():
 
 		if polyAsLargeSegments == True or polySmoothDo == True:
 			# update everything that depends on a corrected area and perimeter length
+			nucl.OrigEdgeLength = nucl.EdgeLength
+			nucl.OrigArea = nucl.Area
+
 			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
 			nucl.getBoundaryInducedArea(realSizes)
 			nucl.updateCircularityAndSA()
@@ -183,6 +186,14 @@ def main():
 			nucl.DrawValue = len(nucl.NeighIDs);
 		drawChosenNucleiValue("Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
 
+	statsFile = open("/Users/ulman/DATA/stats.dat","w")
+	statsFile.write("Label, origPerimeter,origArea,origSF, Perimeter,Area,SF")
+	for n in nuclei:
+		oSA = n.OrigEdgeLength / math.sqrt(n.OrigArea)
+		statsFile.write(str(n.Label)+" "
+		  +str(n.OrigEdgeLength)+" "+str(n.OrigArea)+" "+str(oSA)+" "
+		  +str(n.EdgeLength)+" "+str(n.Area)+" "+str(n.ShapeFactor)+"\n")
+	statsFile.close()
 
 	if (showRawData):
 		print("Populating table...")
