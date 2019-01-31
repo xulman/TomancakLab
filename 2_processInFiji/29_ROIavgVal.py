@@ -9,7 +9,9 @@ def thresholdStack(img):
 		img.setZ(z)
 		pxs = img.getProcessor().getPixels()
 		for o in range(len(pxs)):
-			if pxs[o] != 0:
+			if pxs[o] > 0.001:
+				pxs[o] = 0
+			else:
 				pxs[o] = 255
 
 
@@ -22,9 +24,10 @@ imgRaw = IJ.getImage().duplicate()
 imgRaw.show()
 
 # ...and determine nuclei boundaries and CCA based on them...
+IJ.run("Find Edges")
 thresholdStack(imgMask)
 IJ.selectWindow(imgMask.getTitle())
-IJ.run("Grays");
+IJ.run("Grays")
 IJ.run("8-bit")
 IJ.run("Dilate","stack")
 
