@@ -195,6 +195,10 @@ def main():
 		  +str(n.EdgeLength)+" "+str(n.Area)+" "+str(n.ShapeFactor)+"\n")
 	statsFile.close()
 
+	for nucl in nuclei:
+		nucl.DrawValue = nucl.OrigArea / nucl.Area
+	drawChosenNucleiValue("Orig/New Area ratio", imp.getWidth(),imp.getHeight(), nuclei)
+
 	if (showRawData):
 		print("Populating table...")
 
