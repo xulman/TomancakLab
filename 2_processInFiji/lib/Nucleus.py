@@ -1,5 +1,6 @@
 import math
 import copy
+from ij.process import FloatPolygon
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -459,3 +460,62 @@ class Nucleus:
 		if (areaConsidered == True and (self.Area < areaMin or self.Area > areaMax)):
 			return False;
 		return True;
+
+
+	# updates the Pixels, Area, Size, CentreX and CentreY attributes of this object
+	# based on the current content of self.Coords, and the given 'realSizes' map
+	def getBoundaryInducedArea(self,realSizes):
+		# re-shape the self.Coords to make it usable for the FloatPolygon class,
+		# and to determine bbox around the current nucleus at the same time
+		minX = self.Coords[0][0]
+		maxX = self.Coords[0][0]
+		minY = self.Coords[0][1]
+		maxY = self.Coords[0][1]
+
+		xVertices = []
+		yVertices = []
+
+		for c in self.Coords:
+			minX = min(minX,c[0])
+			maxX = max(maxX,c[0])
+
+			minY = min(minY,c[1])
+			maxY = max(maxY,c[1])
+
+			xVertices.append(c[0])
+			yVertices.append(c[1])
+
+		# round and "integerify" the bounding box bounds
+		minX = int(math.floor(minX))
+		maxX = int(math.ceil( maxX))
+
+		minY = int(math.floor(minY))
+		maxY = int(math.ceil( maxY))
+
+		p = FloatPolygon(xVertices,yVertices)
+
+		self.Pixels = []
+		for y in range(minY,maxY+1):
+			for x in range(minX,maxX+1):
+				if p.contains(x,y):
+					self.Pixels.append([x,y])
+
+		# update the area calculation
+		# object area in squared microns
+		self.Area = 0.0
+		# object area in pixel number
+		self.Size = len(self.Pixels)
+
+		# geometric centre in pixel coordinates
+		self.CentreX = 0.0
+		self.CentreY = 0.0
+
+		# calculate real size and geometrical centre
+		for pix in self.Pixels:
+			self.Area += realSizes[pix[0]][pix[1]]
+			self.CentreX += pix[0]
+			self.CentreY += pix[1]
+
+		# finish calculation of the geometrical centre
+		self.CentreX /= len(self.Pixels)
+		self.CentreY /= len(self.Pixels)

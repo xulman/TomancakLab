@@ -140,7 +140,7 @@ def main():
 		if polyAsLargeSegments == True or polySmoothDo == True:
 			# update everything that depends on a corrected area and perimeter length
 			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
-			#nucl.Area = TODO
+			nucl.getBoundaryInducedArea(realSizes)
 			nucl.updateCircularityAndSA()
 
 		circularitySum += nucl.Circularity
@@ -157,6 +157,11 @@ def main():
 	if inputImageShowsNuclei:
 		print("No. of neighborhood was not counted, works only with membrane images.")
 
+
+	if polyAsLargeSegments == True or polySmoothDo == True:
+		for nucl in nuclei:
+			nucl.DrawValue = nucl.Label
+		drawChosenNucleiValue("NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showCircImage:
 		for nucl in nuclei:
