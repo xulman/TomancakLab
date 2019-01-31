@@ -1,5 +1,6 @@
 import math
 import copy
+from ij.process import FloatPolygon
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -57,12 +58,16 @@ class Nucleus:
 		i = ip.getPixels()
 		w = ip.getWidth()
 
+		eightNH     = [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]
+		eightNHdist = [   2, 1,   2,  1,1,    2, 1,   2] #L0-dist to neighs
+
 		# integer label of the nuclei
 		self.Label = i[w*Pixels[0][1] + Pixels[0][0]]
 		thisColor = self.Label
 
 		# offsets of pixels just outside this nucleus
 		self.outterBgEdge = set()
+		self.outterBgEdgeCW = []
 
 		# set of labels touching this nuclei (component),
 		# initially empty -> use setNeighborsList() to have it filled
@@ -263,10 +268,21 @@ class Nucleus:
 				#coords = [ [pix[0]-0.5,pix[1]] , [pix[0],pix[1]+0.5] , [pix[0]+0.5,pix[1]] , [pix[0],pix[1]-0.5] , [pix[0]-0.5,pix[1]] ]
 				cntrStop = cntrStop-1
 
-			# enlist background pixels surrounding this edge/border pixel
-			for x in [-w-1,-w,-w+1, -1,1, +w-1,+w,+w+1]:
-				if i[o+x] == 0:
-					self.outterBgEdge.add(o+x)
+			# enlist background pixels surrounding this edge/border pixel into outterBgEdge,
+			# enlist CW-ordered outter pixels of 'o' into outterBgEdgeCW
+			xBestDist = 5
+			xBestIdx  = 0
+			for n in range(len(eightNH)):
+				x = o + eightNH[n]
+				if i[x] == 0:
+					if eightNHdist[n] <= xBestDist and not x in self.outterBgEdge:
+						xBestDist = eightNHdist[n]
+						xBestIdx  = x
+
+					self.outterBgEdge.add(x)
+
+			if xBestDist < 5:
+				self.outterBgEdgeCW.append(xBestIdx)
 
 			# find adjacent edge pixel
 			if cntr == 0:
@@ -329,6 +345,65 @@ class Nucleus:
 		self.updateCircularityAndSA()
 
 
+	def reshapeNucleusWithStraightenedBoundary(self, img):
+		self.reshapeNucleusWithStraightenedBoundary(img.getProcessor().getPixels(), img.getWidth())
+
+	def reshapeNucleusWithStraightenedBoundary(self, i,w):
+		# now, scan the vicinities of the self.outterBgEdgeCW and detect junction-points
+		# neighbors that define vicinity of interest
+		jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
+		       -1*w-2,                       -1*w+2,
+		           -2,                           +2,
+		       +1*w-2,                       +1*w+2,
+		       +2*w-2, +2*w-1, +2*w, +2*w+1, +2*w+2 ]
+		# offsets of the junction-points
+		self.CoordsJunctions = []
+
+		# also an "inner" neighborhood -- that is "instantiated" around
+		# every background pixel (from self.outterBgEdgeCW) that comes
+		# out from the 'jn' array -- to look for absence of any pixel
+		# from this nucleus --> only then the "junction" pixel is found
+		nn = [ -w-1, -w, -w+1, -1, +1, w-1, w, w+1 ]
+
+		# over all outter edge pixels...
+		# (essentially a nearby/nucleus-touching background pixels)
+		for oo in self.outterBgEdgeCW:
+			# ...and over the surroundings of every outter edge pixel
+			seenOtherNucleiAtAll = False
+			for ojn in jn:
+				ooo = oo+ojn #Other Outter edge pixel Offset
+
+				if ooo >= 0 and ooo < len(i) and i[ooo] == i[oo]:
+					# found another background pixel, examine its neighborhood
+					seenMyNuclei = False
+					seenOtherNuclei = False
+
+					for n in nn:
+						if ooo+n >= 0 and ooo+n < len(i) and i[ooo+n] != i[oo]:
+							# found some nucleus pixel around the current 'ooo' pixel
+							if i[ooo+n] == self.Label:
+								seenMyNuclei = True
+							else:
+								seenOtherNuclei = True
+								seenOtherNucleiAtAll = True
+
+					if seenMyNuclei == False and seenOtherNuclei == True:
+						self.CoordsJunctions.append(oo)
+						break
+
+			if seenOtherNucleiAtAll == False:
+				self.CoordsJunctions.append(oo)
+
+		# now, update the self.Coords - let it go through pixel centres
+		self.Coords = []
+		for o in self.CoordsJunctions:
+			y = int(o/w)
+			x = o - y*w
+			self.Coords.append( [x,y] )
+		# finish the loop...
+		self.Coords.append( self.Coords[0] )
+
+
 	def updateCircularityAndSA(self):
 		# circularity: higher value means higher circularity
 		self.Circularity = (self.Area * 4.0 * math.pi) / (self.EdgeLength * self.EdgeLength)
@@ -338,7 +413,7 @@ class Nucleus:
 
 
 	def setNeighborsList(self, img):
-		setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
+		self.setNeighborsList(img.getProcessor().getPixels(), img.getWidth())
 
 	def setNeighborsList(self, i,w):
 		self.NeighIDs = set([self.Label])
@@ -385,3 +460,62 @@ class Nucleus:
 		if (areaConsidered == True and (self.Area < areaMin or self.Area > areaMax)):
 			return False;
 		return True;
+
+
+	# updates the Pixels, Area, Size, CentreX and CentreY attributes of this object
+	# based on the current content of self.Coords, and the given 'realSizes' map
+	def getBoundaryInducedArea(self,realSizes):
+		# re-shape the self.Coords to make it usable for the FloatPolygon class,
+		# and to determine bbox around the current nucleus at the same time
+		minX = self.Coords[0][0]
+		maxX = self.Coords[0][0]
+		minY = self.Coords[0][1]
+		maxY = self.Coords[0][1]
+
+		xVertices = []
+		yVertices = []
+
+		for c in self.Coords:
+			minX = min(minX,c[0])
+			maxX = max(maxX,c[0])
+
+			minY = min(minY,c[1])
+			maxY = max(maxY,c[1])
+
+			xVertices.append(c[0])
+			yVertices.append(c[1])
+
+		# round and "integerify" the bounding box bounds
+		minX = int(math.floor(minX))
+		maxX = int(math.ceil( maxX))
+
+		minY = int(math.floor(minY))
+		maxY = int(math.ceil( maxY))
+
+		p = FloatPolygon(xVertices,yVertices)
+
+		self.Pixels = []
+		for y in range(minY,maxY+1):
+			for x in range(minX,maxX+1):
+				if p.contains(x,y):
+					self.Pixels.append([x,y])
+
+		# update the area calculation
+		# object area in squared microns
+		self.Area = 0.0
+		# object area in pixel number
+		self.Size = len(self.Pixels)
+
+		# geometric centre in pixel coordinates
+		self.CentreX = 0.0
+		self.CentreY = 0.0
+
+		# calculate real size and geometrical centre
+		for pix in self.Pixels:
+			self.Area += realSizes[pix[0]][pix[1]]
+			self.CentreX += pix[0]
+			self.CentreY += pix[1]
+
+		# finish calculation of the geometrical centre
+		self.CentreX /= len(self.Pixels)
+		self.CentreY /= len(self.Pixels)
