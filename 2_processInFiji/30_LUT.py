@@ -73,6 +73,21 @@ def main():
 		sqArea = sqW * sqH
 		demoPixels = [ binOutValues[int(offset/sqArea)] for offset in range(sqArea*binNo) ]
 		ImagePlus("demo LUT", FloatProcessor(sqW,sqH*binNo,demoPixels)).show()
+
+		# also create an image showing all 256 values between min and max value
+		# from those given by the user (binOutValues)
+		minUserColor = binOutValues[0]
+		maxUserColor = binOutValues[0]
+		for bov in binOutValues:
+			minUserColor = min(minUserColor,bov)
+			maxUserColor = max(maxUserColor,bov)
+
+		demoPixels = []
+		for y in range(256):
+			v = y*(maxUserColor-minUserColor)/255 + minUserColor
+			for x in range(2*sqW):
+				demoPixels.append(v)
+		ImagePlus("complete LUT", FloatProcessor(sqW,512,demoPixels)).show()
 	else:
 		# don't work on the original image, work on a copy instead
 		IJ.getImage().duplicate().show()
