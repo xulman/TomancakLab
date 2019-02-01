@@ -86,24 +86,23 @@ from Nucleus import Nucleus
 import math
 
 
-print("wait until \"Done.\" (or error) appears...")
-originalImageName = IJ.getImage().getTitle()
-
-# FIX: we now assume membrane image to come; in this case, however, the script
-# assumes that membranes pixels store value of 2.0... but the current data use
-# value of 1.0 and so we have to fix it.....
-removeMeImg = IJ.getImage().duplicate()
-removeMeImg.show()
-IJ.run("Add...", "value=1");
-
-# reads the area_per_pixel information, already in squared microns
-realSizes = readRealSizes(aMapFile.getAbsolutePath())
-
-# read the 'real Coordinates', that take into account the different pixel sizes
-realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
-
-
 def main():
+	print("wait until \"Done.\" (or error) appears...")
+	originalImageName = IJ.getImage().getTitle()
+
+	# FIX: we now assume membrane image to come; in this case, however, the script
+	# assumes that membranes pixels store value of 2.0... but the current data use
+	# value of 1.0 and so we have to fix it.....
+	removeMeImg = IJ.getImage().duplicate()
+	removeMeImg.show()
+	IJ.run("Add...", "value=1");
+
+	# reads the area_per_pixel information, already in squared microns
+	realSizes = readRealSizes(aMapFile.getAbsolutePath())
+
+	# read the 'real Coordinates', that take into account the different pixel sizes
+	realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
+
 	backgroundPixelValue = 1 # in case of cell nuclei
 	if (not inputImageShowsNuclei):
 		backgroundPixelValue = 2 # in case of cell membranes
