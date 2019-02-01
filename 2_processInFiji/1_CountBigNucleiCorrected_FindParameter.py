@@ -6,14 +6,21 @@
 #@float(label="A nucleus has a circularity SMALLER than (1 represents perfect circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
-#@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
-#@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection", value=False) postprocessNucleiImageFlag
-#@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned", value=False) preprocessMembraneImageFlag
+#-------disabled-------@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
+#-------disabled-------@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection", value=False) postprocessNucleiImageFlag
+#-------disabled-------@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned", value=False) preprocessMembraneImageFlag
+inputImageShowsNuclei = False
+postprocessNucleiImageFlag = False
+preprocessMembraneImageFlag = True
+
 #
 #@boolean (label="Polygon boundary straightening:", value=False) polyAsLargeSegments
-#@boolean (label="Polygon boundary smoothing: should do", value=False) polySmoothDo
-#@int     (label="Polygon boundary smoothing: smooth span in half-pixel units", value=10) polySmoothSpan
-#@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units", value=4) polySmoothSigma
+#-------disabled-------@boolean (label="Polygon boundary smoothing: should do", value=False) polySmoothDo
+#-------disabled-------@int     (label="Polygon boundary smoothing: smooth span in half-pixel units", value=10) polySmoothSpan
+#-------disabled-------@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units", value=4) polySmoothSigma
+polySmoothDo = False
+polySmoothSpan = 10
+polySmoothSigma = 4
 #
 #@File (style="directory", label="Folder with maps:") mapFolder
 #@String (label="\"cylinder1\" vs. \"cylinder2\":", value="cylinder1") mapCylinder
@@ -81,6 +88,13 @@ import math
 
 print("wait until \"Done.\" (or error) appears...")
 originalImageName = IJ.getImage().getTitle()
+
+# FIX: we now assume membrane image to come; in this case, however, the script
+# assumes that membranes pixels store value of 2.0... but the current data use
+# value of 1.0 and so we have to fix it.....
+removeMeImg = IJ.getImage().duplicate()
+removeMeImg.show()
+IJ.run("Add...", "value=1");
 
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath())
@@ -242,6 +256,9 @@ def main():
 		# debug: what perimeter points are considered
 		# writeCoordsToFile(nuclei[0].EdgePixels,"/Users/ulman/DATA/fp_coords_0.txt")
 		# writeCoordsToFile(nuclei[1].EdgePixels,"/Users/ulman/DATA/fp_coords_1.txt")
+
+	removeMeImg.changes = False
+	removeMeImg.close()
 
 
 main()
