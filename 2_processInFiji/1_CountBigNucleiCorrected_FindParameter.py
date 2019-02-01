@@ -80,6 +80,7 @@ import math
 
 
 print("wait until \"Done.\" (or error) appears...")
+originalImageName = IJ.getImage().getTitle()
 
 # reads the area_per_pixel information, already in squared microns
 realSizes = readRealSizes(aMapFile.getAbsolutePath())
@@ -161,27 +162,27 @@ def main():
 	if polyAsLargeSegments == True or polySmoothDo == True:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Label
-		drawChosenNucleiValue("NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue(originalImageName+": NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showCircImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Circularity
-		drawChosenNucleiValue("Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue(originalImageName+": Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showShapeFactorImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.ShapeFactor
-		drawChosenNucleiValue("Real shape factors", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue(originalImageName+": Real shape factors", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showAreaImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Area;
-		drawChosenNucleiValue("Real areas", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue(originalImageName+": Real areas", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showNeigImage:
 		for nucl in nuclei:
 			nucl.DrawValue = len(nucl.NeighIDs);
-		drawChosenNucleiValue("Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue(originalImageName+": Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
 
 
 	if (showRawData):
