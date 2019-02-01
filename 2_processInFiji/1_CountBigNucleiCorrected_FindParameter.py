@@ -130,6 +130,7 @@ def main():
 	if (not inputImageShowsNuclei):
 		print("calculating number of neighbors per nuclei...")
 
+	drasticAreaChange = 0
 	for nucl in nuclei:
 		# should straightening happen?
 		if polyAsLargeSegments == True:
@@ -141,8 +142,12 @@ def main():
 		if polyAsLargeSegments == True or polySmoothDo == True:
 			# update everything that depends on a corrected area and perimeter length
 			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
+			origArea = nucl.Area
 			nucl.getBoundaryInducedArea(realSizes)
 			nucl.updateCircularityAndSA()
+
+			if nucl.Area/origArea < 0.90 or nucl.Area/origArea > 1.10:
+				drasticAreaChange = drasticAreaChange+1
 
 		circularitySum += nucl.Circularity
 		shapeFactorSum += nucl.ShapeFactor
@@ -150,6 +155,10 @@ def main():
 		if (not inputImageShowsNuclei):
 			nucl.setNeighborsList(i,w)
 
+
+	if polyAsLargeSegments == True and drasticAreaChange > 0:
+		print("WARNING: "+str(drasticAreaChange)+"/"+str(len(nuclei))
+		     +" cells have real area change larger than 10%.")
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
 	print("Average ShapeFactor: "+str(shapeFactorSum/len(nuclei)))
