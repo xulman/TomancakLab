@@ -74,6 +74,9 @@ def main():
 		demoPixels = [ binOutValues[int(offset/sqArea)] for offset in range(sqArea*binNo) ]
 		ImagePlus("demo LUT", FloatProcessor(sqW,sqH*binNo,demoPixels)).show()
 	else:
+		# don't work on the original image, work on a copy instead
+		IJ.getImage().duplicate().show()
+
 		binInBoundaries = parseBinBoundaries(binInString)
 
 		if len(binInBoundaries)+1 != binNo:
