@@ -260,5 +260,43 @@ def main():
 	removeMeImg.close()
 
 
+def startSession(folder,tpFile):
+	IJ.open(folder+"/"+tpFile)
+	IJ.selectWindow(tpFile);
+
+def closeSession(tpFile):
+	IJ.selectWindow(tpFile+": NEW SHAPES");
+	IJ.getImage().close();
+
+	IJ.selectWindow("1_labelled_image");
+	IJ.getImage().changes = False
+	IJ.getImage().close();
+
+	IJ.selectWindow("upScaledOrigImg.tif");
+	IJ.getImage().changes = False
+	IJ.getImage().close();
+
+	IJ.selectWindow(tpFile);
+	IJ.getImage().close();
+
+
+def doOneTP(tpFile):
+	print(tpFile+" Starting.............")
+	startSession("/Users/ulman/p_Akanksha/curated/curated2/",tpFile)
+	main()
+	print(tpFile+" Done.")
+	closeSession(tpFile)
+
+
+# HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
+# single, currently opened image mode
 main()
 print("Done.")
+
+
+# batch processing mode
+#doOneTP("10.tif")
+#doOneTP("310.tif")
+#doOneTP("340.tif")
+#doOneTP("425.tif")
+#doOneTP("555.tif")
