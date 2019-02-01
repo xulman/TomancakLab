@@ -24,11 +24,16 @@ imgRaw = IJ.getImage().duplicate()
 imgRaw.show()
 
 # ...and determine nuclei boundaries and CCA based on them...
+IJ.selectWindow(imgMask.getTitle())
 IJ.run("Find Edges")
 thresholdStack(imgMask)
+imgMask.updateAndRepaintWindow()
+
 IJ.selectWindow(imgMask.getTitle())
 IJ.run("Grays")
+IJ.run("Enhance Contrast", "saturated=0.35");
 IJ.run("8-bit")
+IJ.run("Enhance Contrast", "saturated=0.35");
 IJ.run("Dilate","stack")
 
 # ...into another image showing now the instance segmentation,
