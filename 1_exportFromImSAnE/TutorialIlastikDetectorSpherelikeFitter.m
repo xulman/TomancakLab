@@ -132,7 +132,48 @@ xp.fitSurface();
 
 zval = 600;
 Options = struct('dimension','z','value',zval,'pointCloud','b');
-xp.fitter.inspectQuality(inspectOptions, xp.detector, xp.stack);
+xp.fitter.inspectQuality(Options, xp.detector, xp.stack);
+
+%% Inspect the fit over the detection points in a series of cross sections
+% viewing params:
+dimLabels = ['x','y','z'];
+dimChooser = 1;            % 1 = x, 2 = y, 3 = z
+dimStep = 5;               % in pixels
+
+inspectOptions = struct('dimension', dimLabels(dimChooser), 'value', 0, 'pointCloud', 'b');
+
+% prealocate structs
+%myFrames(1:ceil((xp.fileMeta.stackSize(1)+0.01)/dimStep)) = struct('cdata',[],'colormap',[]);
+%frameCnt = 0;
+
+vw = VideoWriter(['pointsInspectionAlong_',dimLabels(dimChooser),'.avi'],'Uncompressed AVI');
+open(vw);
+
+% Prepare video of slices scanning the original image
+for x = 0:dimStep:xp.fileMeta.stackSize(dimChooser)
+    inspectOptions.value=x;
+
+    inspectOptions.pointCloud='b';
+    xp.detector.inspectQuality(inspectOptions, xp.stack);
+
+    hold on
+    inspectOptions.pointCloud='r';
+    xp.fitter.inspectQuality(inspectOptions, xp.detector, xp.stack);
+    hold off
+
+    t=text(50,50,[dimLabels(dimChooser),'=',int2str(x)]);
+    set(t,'BackgroundColor','w');
+
+    %frameCnt=frameCnt+1;
+    %myFrames(frameCnt) = getframe;
+    frame = getframe;
+    writeVideo(vw,frame);
+end
+
+close(vw);
+%movie(myFrames,5,1)
+%movie2avi(myFrames,['pointsInspectionAlong_',dimLabels(dimChooser),'.avi'],'FPS',4,'COMPRESSION','None')
+['done.']
 
 %% Inspect the could point of fitted points in 3D (in red)
 % THIS IS NICE COMPARISON OF THE DETECTED AND FITTED SURFACES
