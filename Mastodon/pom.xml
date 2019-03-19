@@ -1,0 +1,103 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.scijava</groupId>
+    <artifactId>pom-scijava</artifactId>
+    <version>22.3.0</version>
+    <relativePath />
+  </parent>
+
+
+  <groupId>de.mpicbg.tomancaklab</groupId>
+  <artifactId>Mastodon-Plugins</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+	<organization>
+		<name>MPI-CBG</name>
+		<url>http://www.mpi-cbg.de</url>
+	</organization>
+
+  <name>Mastodon-dedicated Plugins for the Fiji world</name>
+  <description>Implementation of various plugins...</description>
+  <url>https://github.com/xulman/TomancakLab</url>
+  <inceptionYear>2019</inceptionYear>
+
+  <packaging>jar</packaging>
+	<licenses>
+		<license>
+			<name>CC0 1.0 Universal License</name>
+			<url>http://creativecommons.org/publicdomain/zero/1.0/</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>xulman</id>
+			<name>Vladimír Ulman</name>
+			<url>http://www.fi.muni.cz/~xulman/</url>
+			<roles>
+				<role>founder</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+	</developers>
+	<contributors>
+		<contributor>
+			<name>None</name>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>http://forum.imagej.net/</archive>
+		</mailingList>
+	</mailingLists>
+
+
+	<scm>
+		<connection>scm:git:git://github.com/xulman/TomancakLab</connection>
+		<developerConnection>scm:git:localhost:9999</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/xulman/TomancakLab</url>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>http://github.com/xulman/TomancakLab/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>None</system>
+	</ciManagement>
+
+	<properties>
+		<license.licenseName>cc0</license.licenseName>
+		<license.copyrightOwners>Tomancak lab</license.copyrightOwners>
+		<license.projectName>TomancakLab's Mastodon Plugins</license.projectName>
+	</properties>
+
+  <repositories>
+    <repository>
+      <id>imagej.public</id>
+      <url>http://maven.imagej.net/content/groups/public</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.imagej</groupId>
+      <artifactId>imagej</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.trackmate</groupId>
+      <artifactId>trackmate</artifactId>
+      <version>1.0.0-beta-8</version>
+    </dependency>
+  </dependencies>
+</project>
