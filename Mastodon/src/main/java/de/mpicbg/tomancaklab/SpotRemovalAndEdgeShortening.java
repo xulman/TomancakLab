@@ -170,11 +170,74 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 			}
 		}
 
+		/*
+		//again, over all time points
+		final double[] pos = new double[3];
+		for (int time = timeFrom; time <= timeTill; ++time)
+		{
+			//over all spots in the current time point
+			for ( final Spot spot : spots.getSpatialIndex( time ) )
+			{
+				//find how many back- and forward-references (time-wise) this spot has
+				int countBackwardLinks = 0;
+				int countForwardLinks = 0;
+
+				for (int n=0; n < spot.incomingEdges().size(); ++n)
+				{
+					spot.incomingEdges().get(n, lRef).getSource( sRef );
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+					{
+						++countBackwardLinks;
+						bRef.refTo( sRef );
+					}
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
+					{
+						++countForwardLinks;
+						fRef.refTo( sRef );
+					}
+				}
+				for (int n=0; n < spot.outgoingEdges().size(); ++n)
+				{
+					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+					{
+						++countBackwardLinks;
+						bRef.refTo( sRef );
+					}
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
+					{
+						++countForwardLinks;
+						fRef.refTo( sRef );
+					}
+				}
+
+				//TODO: for now, deal with only 1 forward link
+				//root spot?
+				if (countBackwardLinks == 0 && countForwardLinks == 1)
+				{
+					logServiceRef.trace("found root spot...TODO");
+					//this does not work, cannot re-init, and don't see other way to adjust the timepoint
+					//spot.localize(pos);
+					//spot.init(0,pos,Math.sqrt(spot.getBoundingSphereRadiusSquared()) );
+				}
+				else
+				if (countBackwardLinks == 1)
+				{
+					logServiceRef.trace("adjusting time of spot...TODO");
+					//this does not work, cannot re-init, and don't see other way to adjust the timepoint
+					//spot.localize(pos);
+					//spot.init(spot.getTimepoint()+1,pos,Math.sqrt(spot.getBoundingSphereRadiusSquared()) );
+				}
+			}
+		}
+		*/
+
 		modelGraph.vertices().releaseRef(sRef);
 		modelGraph.vertices().releaseRef(bRef);
 		modelGraph.vertices().releaseRef(fRef);
 		modelGraph.releaseRef(lRef);
 
-		logServiceRef.info("edges were shorted.");
+		logServiceRef.info("edges were shortened.");
+		modelGraph.notifyGraphChanged();
 	}
 }
