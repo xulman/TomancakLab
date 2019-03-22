@@ -76,18 +76,18 @@ print("Y: "+str(min[1])+" .. "+str(max[1]))
 print("Z: "+str(min[2])+" .. "+str(max[2]))
 
 # create an output image of float type (as float can store also integers)
-min[0]=math.floor(min[0])
-min[1]=math.floor(min[1])
-min[2]=math.floor(min[2])
+min[0]=math.floor(min[0] /dsRatio)
+min[1]=math.floor(min[1] /dsRatio)
+min[2]=math.floor(min[2] /dsRatio)
 
-max[0]=math.ceil(max[0])
-max[1]=math.ceil(max[1])
-max[2]=math.ceil(max[2])
+max[0]=math.ceil(max[0] /dsRatio)
+max[1]=math.ceil(max[1] /dsRatio)
+max[2]=math.ceil(max[2] /dsRatio)
 
 # calc image size and downscale for the final output image
-xSize = int((max[0]-min[0]+1) /dsRatio)
-ySize = int((max[1]-min[1]+1) /dsRatio)
-zSize = int((max[2]-min[2]+1) /dsRatio)
+xSize = int(max[0]-min[0]+1)
+ySize = int(max[1]-min[1]+1)
+zSize = int(max[2]-min[2]+1)
 
 print("creating 3D of sizes: "+str(xSize)+" x "+str(ySize)+" x "+str(zSize))
 outRGBProcessors = [ ColorProcessor(xSize,ySize) for z in range(zSize) ]
@@ -102,9 +102,9 @@ for x in range(0,inImp.width):
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
 		# orig coords and downscale for the final output image
-		nx = int((math.floor(coord[0] +0.5) -min[0]) /dsRatio)
-		ny = int((math.floor(coord[1] +0.5) -min[1]) /dsRatio)
-		nz = int((math.floor(coord[2] +0.5) -min[2]) /dsRatio)
+		nx = int(math.floor((coord[0] +0.5) /dsRatio) -min[0])
+		ny = int(math.floor((coord[1] +0.5) /dsRatio) -min[1])
+		nz = int(math.floor((coord[2] +0.5) /dsRatio) -min[2])
 
 		ip = outRGBProcessors[nz]
 		ip.setColor(inIP.getColor(x,y))
