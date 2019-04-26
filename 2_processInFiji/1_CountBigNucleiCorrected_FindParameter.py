@@ -141,7 +141,7 @@ def main():
 	if polyAsLargeSegments == True or polySmoothDo == True:
 		print("recalculating nuclei parameters since boundaries have changed...")
 	if (not inputImageShowsNuclei):
-		print("calculating number of neighbors per nuclei...")
+		print("calculating number of neighbors per cell...")
 
 	drasticAreaChange = 0
 	for nucl in nuclei:
