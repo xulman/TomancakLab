@@ -1,7 +1,7 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
 #@String (label="Draw only up to these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
-#@File (label="Output trajectories TIFF file:") tifFile
+#@File (style="directory", label="Choose output folder and ADD TIFF filename to it:", value="/tmp/tp.tif") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
