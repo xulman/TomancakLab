@@ -6,8 +6,8 @@ from __future__ import print_function
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
 #@boolean (label="Squash everything to 2D:") shouldDoTwoD
-#@int (label="Downsampling factor:") xDown
-#@int (label="Thickness of trajectories in pixels:") trackThickness
+#@int (label="Downsampling factor:", value="1") xDown
+#@int (label="Thickness of trajectories in pixels:", min="1") trackThickness
 
 #@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TRACKSEP=", value="1000") TRACKSEP
 #@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TIMESEP=",  value="1")    TIMESEP
