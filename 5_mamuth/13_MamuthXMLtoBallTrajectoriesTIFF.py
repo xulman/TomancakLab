@@ -77,11 +77,13 @@ def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 	LL = math.sqrt((xC-xD)*(xC-xD) + (yC-yD)*(yC-yD) + (zC-zD)*(zC-zD))
 
 	# how many up-to-R-long segments are required
-	SN = math.ceil(LL / R)
+	safeR = R if R > 0 else 1
+	SN = math.ceil(LL / safeR)
 
 	# if "line is decimated into a point", just draw one spot
 	if SN == 0:
-		drawBall(xC,yC,zC,R*Down,Col,img,Down)
+		if R > 0:
+			drawBall(xC,yC,zC,R*Down,Col,img,Down)
 		# NB: the coordinates and _radius_ will get divided by Down,
 		#     but we want R to represent already the final radius
 		#
@@ -126,7 +128,8 @@ def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
+		if R > 0:
+			drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
 
 
 # ------------------------------------------------------------------------------------
