@@ -216,8 +216,8 @@ def readInputXMLfile(filePath):
 			eT = int(parseOutNumber(line,idx))
 
 			# debug
-			# print str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3])
-			# print str(eS)+" -> "+str(eT)
+			# print(str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3]))
+			# print(str(eS)+" -> "+str(eT))
 
 			# note that SOURCE_ID and TARGET_ID can actually contain
 			# both an edge from SOURCE to TARGET and also from TARGET to SOURCE
