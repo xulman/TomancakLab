@@ -7,9 +7,12 @@ from __future__ import print_function
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
 #@boolean (label="Squash everything to 2D:") shouldDoTwoD
-#@int (label="Downsampling factor:") xDown
-#@int (label="Thickness of trajectories in pixels:") trackThickness
-#@int (label="Diameter of balls at trajectories in pixels:") ballsDiameter
+#@int (label="Downsampling factor:", value="1") xDown
+#@int (label="Thickness of trajectories in pixels:", min="0") trackThickness
+#@int (label="Diameter of balls at trajectories in pixels:", min="1") ballsDiameter
+
+#@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TRACKSEP=", value="1000") TRACKSEP
+#@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TIMESEP=",  value="1")    TIMESEP
 
 from ij import IJ
 import ij.ImagePlus
@@ -40,20 +43,21 @@ if shouldDoTwoD:
 	zSize = 1
 
 # ------------------------------------------------------------------------------------
-# labels are of this form: trackID*SEPARATOR + (timePoint-TSHIFT)
+# labels are of this form: trackID*TRACKSEP + (timePoint-TSHIFT)*TIMESEP
 # requirements:
-#   trackID has to start from 0 or 1, should not be too many of them
-#   the time interval must not be longer than SEPARATOR
+#   trackID should start from 0 or 1 and should not be too many of them
+#   the time interval must not be longer than TRACKSEP
 
-# dividing by SEPARATOR (e.g. via Image->Math) one can strip away time information/coordinate;
-# thresholding by 1, one can strip away all tracking information (track ID, time coordinate)
-SEPARATOR = 1
+# dividing by TRACKSEP (e.g. via Fiji->Image->Math) one can strip away
+# time information/coordinate and only the trackIDs remain; by taking modulo
+# of TRACKSEP one can strip away the trackIDs and only time information remain;
+# thresholding by 1, one can strip away all tracking information (track ID & time coordinate)
 
 # ------------------------------------------------------------------------------------
 # draws a line made of many (overlapping) balls, of width R from
 # spotA to spotB that belongs to track ID, into the image, but
 # don't draw no further than given stopTime; the TSHIFT is a helping
-# parameter connected to the SEPARATOR
+# parameter connected to the TIMESEP
 def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 	xC = spotA[0]
 	yC = spotA[1]
@@ -67,17 +71,19 @@ def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 		zD = 0
 
 	# the final color becomes Col+deltaTime
-	Col = ID*SEPARATOR +spotA[3] -TSHIFT
+	Col = ID*TRACKSEP + (spotA[3] -TSHIFT)*TIMESEP
 
 	# the line length (LL)
 	LL = math.sqrt((xC-xD)*(xC-xD) + (yC-yD)*(yC-yD) + (zC-zD)*(zC-zD))
 
 	# how many up-to-R-long segments are required
-	SN = math.ceil(LL / R)
+	safeR = R if R > 0 else 1
+	SN = math.ceil(LL / safeR)
 
 	# if "line is decimated into a point", just draw one spot
 	if SN == 0:
-		drawBall(xC,yC,zC,R*Down,Col,img,Down)
+		if R > 0:
+			drawBall(xC,yC,zC,R*Down,Col,img,Down)
 		# NB: the coordinates and _radius_ will get divided by Down,
 		#     but we want R to represent already the final radius
 		#
@@ -111,7 +117,7 @@ def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 		# have we just passed the point where the ball should be drawn?
 		if i*deltaT > ballTime and firstBallCross == False:
 			firstBallCross = True
-			drawBall(x,y,z,Rb*Down,Col,img,Down)
+			drawBall(x,y,z,Rb*Down,Col+int(i*deltaT*TIMESEP),img,Down)
 			# NB: draws at the previous (not yet passing) coordinate
 
 		# don't draw beyond the stopTime
@@ -122,7 +128,8 @@ def drawLine(spotA,spotB,ballTime,Rb,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R*Down,Col,img,Down)
+		if R > 0:
+			drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
 
 
 # ------------------------------------------------------------------------------------
@@ -162,6 +169,7 @@ def main(timePointList):
 	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
 
 	print("detected interval of time points ["+str(minT)+","+str(maxT)+"]")
+	print("drawing scheme: TRACKSEP="+str(TRACKSEP)+", TIMESEP="+str(TIMESEP))
 
 
 	for currentBallTime in timePointList:
@@ -180,9 +188,9 @@ def main(timePointList):
 					#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
 
 					spotA = SPOTS[TRACK[tA]]
-					if spotA[3] < drawTillThisTimepoint:
+					if spotA[3] <= drawTillThisTimepoint:
 						spotB = SPOTS[TRACK[tB]]
-						drawLine(spotA,spotB,currentBallTime,ballsDiameter, drawTillThisTimepoint, trackThickness, tID,spotA[3], simpleImg)
+						drawLine(spotA,spotB,currentBallTime,ballsDiameter, drawTillThisTimepoint, trackThickness, tID,minT, simpleImg)
 
 				tA = tB
 

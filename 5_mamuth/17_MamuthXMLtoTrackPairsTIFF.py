@@ -1,13 +1,16 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@String (label="Draw only up to these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
+#@int (label="Draw trajectories only up to this time point:") drawTillThisTimepoint
+#@String (label="Draw pairs at these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
+#@String (label="Show these pairs (e.g. 3-13,22-18):") drawPairs
 #@File (style="directory", label="Choose output folder and ADD TIFF filename to it:", value="/tmp/tp.tif") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
 #@boolean (label="Squash everything to 2D:") shouldDoTwoD
 #@int (label="Downsampling factor:", value="1") xDown
-#@int (label="Thickness of trajectories in pixels:", min="1") trackThickness
+#@int (label="Thickness of trajectories in pixels:", min="0") trackThickness
+#@int (label="Thickness of pairs in pixels:", min="1") pairThickness
 
 #@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TRACKSEP=", value="1000") TRACKSEP
 #@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TIMESEP=",  value="1")    TIMESEP
@@ -41,6 +44,51 @@ if shouldDoTwoD:
 	zSize = 1
 
 # ------------------------------------------------------------------------------------
+def parseOutRangePair(rangeStr):
+	i = rangeStr.find('-')
+	if (i == -1):
+		print("haven't find the range separator '-', returning None instead")
+		return None
+
+	q = int(rangeStr[0:i])
+	w = int(rangeStr[i+1:len(rangeStr)])
+	return [q,w]
+
+
+def parseOutRangePairS(rangeSstr):
+	pairs = []
+
+	q=0
+	w=rangeSstr.find(',')
+	if (w == -1):
+		w=len(rangeSstr)
+
+	# iterate as long as there are non-empty substrings
+	while (q < w):
+		r = parseOutRangePair(rangeSstr[q:w])
+		if (r != None):
+			pairs.append(r)
+
+		q=w + 1;
+		w=q + rangeSstr[q:len(rangeSstr)].find(',')
+		if (w == q-1):
+			w=len(rangeSstr)
+
+	# debug
+	print("Detected pairs:")
+	for p in pairs:
+		print(str(p[0])+" <-> "+str(p[1]))
+
+	return pairs
+
+
+pairs = parseOutRangePairS(drawPairs)
+
+# lines[time point][track ID] = [x,y,z],
+# will be filled in the drawLineAndUpdateLines()
+lines = {}
+
+# ------------------------------------------------------------------------------------
 # labels are of this form: trackID*TRACKSEP + (timePoint-TSHIFT)*TIMESEP
 # requirements:
 #   trackID should start from 0 or 1 and should not be too many of them
@@ -56,7 +104,7 @@ if shouldDoTwoD:
 # spotA to spotB that belongs to track ID, into the image, but
 # don't draw no further than given stopTime; the TSHIFT is a helping
 # parameter connected to the TIMESEP
-def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
+def drawLineAndUpdateLines(spotA,spotB,ballTime,stopTime, R,ID,TSHIFT,img):
 	xC = spotA[0]
 	yC = spotA[1]
 	zC = spotA[2]
@@ -75,13 +123,18 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 	LL = math.sqrt((xC-xD)*(xC-xD) + (yC-yD)*(yC-yD) + (zC-zD)*(zC-zD))
 
 	# how many up-to-R-long segments are required
-	SN = math.ceil(LL / R)
+	safeR = R if R > 0 else 1
+	SN = math.ceil(LL / safeR)
 
 	# if "line is decimated into a point", just draw one spot
 	if SN == 0:
-		drawBall(xC,yC,zC,R*Down,Col,img,Down)
+		if R > 0:
+			drawBall(xC,yC,zC,R*Down,Col,img,Down)
 		# NB: the coordinates and _radius_ will get divided by Down,
 		#     but we want R to represent already the final radius
+		#
+		if spotA[3] <= ballTime and ballTime <= spotB[3]:
+			lines[ballTime][ID] = [xC,yC,zC]
 		return
 
 	# (real) length of one segment
@@ -96,10 +149,24 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 	deltaT = float(spotB[3]-spotA[3]) / SN
 
 	# shortcut... makes stopTime relative to the time of the spotA
+	origBallTime = ballTime
 	stopTime = stopTime - spotA[3]
+	ballTime = ballTime - spotA[3]
+
+	# flag to signal now is the time to draw the ball
+	firstBallCross = False if ballTime >= 0 else True
 
 	SN = int(SN)
+	x = xC # outside the cycle so that their values remain between the individual loops
+	y = yC
+	z = zC
 	for i in range(0,SN+1):
+		# have we just passed the point where the ball should be drawn?
+		if i*deltaT > ballTime and firstBallCross == False:
+			firstBallCross = True
+			lines[origBallTime][ID] = [x,y,z]
+			# NB: draws at the previous (not yet passing) coordinate
+
 		# don't draw beyond the stopTime
 		if i*deltaT > stopTime:
 			return
@@ -108,7 +175,8 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
+		if R > 0:
+			drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
 
 
 # ------------------------------------------------------------------------------------
@@ -143,7 +211,7 @@ def main(timePointList):
 	# from the 'stack' (ImageStack that has been built around 'img'),
 	# and 'simpleImg' only wraps (holds it) around the 'img'
 
-	outImp = ij.ImagePlus("trajectories", stack)
+	outImp = ij.ImagePlus("trajectoryPairs", stack)
 	outImp.show()
 	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
 
@@ -151,8 +219,9 @@ def main(timePointList):
 	print("drawing scheme: TRACKSEP="+str(TRACKSEP)+", TIMESEP="+str(TIMESEP))
 
 
-	for maxDrawTime in timePointList:
+	for currentBallTime in timePointList:
 		simpleImg.setPixelsToZero()
+		lines[currentBallTime] = {}
 
 		# scan all tracks
 		for tID in TRACKS:
@@ -167,17 +236,22 @@ def main(timePointList):
 					#print("track "+str(tID)+": time pair "+str(tA)+" -> "+str(tB))
 
 					spotA = SPOTS[TRACK[tA]]
-					if spotA[3] < maxDrawTime:
+					if spotA[3] <= drawTillThisTimepoint:
 						spotB = SPOTS[TRACK[tB]]
-						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, simpleImg)
+						drawLineAndUpdateLines(spotA,spotB,currentBallTime, drawTillThisTimepoint, trackThickness, tID,minT, simpleImg)
 
 				tA = tB
+
+		currentLines = lines[currentBallTime]
+		for pair in pairs:
+			if pair[0] in currentLines and pair[1] in currentLines:
+				drawLine( currentLines[pair[0]][0], currentLines[pair[0]][1], currentLines[pair[0]][2], currentLines[pair[1]][0], currentLines[pair[1]][1], currentLines[pair[1]][2], pairThickness, pair[1], simpleImg,Down )
 
 
 		# now write the image onto harddrive...
 		fn = tifFile.getAbsolutePath()
 		i = fn.rfind('.')
-		fn = fn[0:i]+str(maxDrawTime)+fn[i:len(fn)]
+		fn = fn[0:i]+str(currentBallTime)+fn[i:len(fn)]
 
 		print("Writing trajectory image: "+fn)
 		IJ.save(outImp,fn)

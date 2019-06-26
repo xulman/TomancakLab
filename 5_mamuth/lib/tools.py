@@ -108,3 +108,41 @@ def drawBall(xC,yC,zC, D,Col, img,Down):
 
 				if dxy+dz <= R2:
 					img.pxls[z][x + y*img.xSize] = Col
+
+# ------------------------------------------------------------------------------------
+def drawLine(xC,yC,zC, xD,yD,zD, R,Col, img):
+	drawLine(xC,yC,zC, xD,yD,zD, R,Col, img,1.0)
+
+# ------------------------------------------------------------------------------------
+# draws a line made of many (overlapping) balls, of width R, from
+# [xC,yC,zC] to [xD,yD,zD], with color Col, into the image img considering
+# the Down-scale factor, the image has to be of the SimpleImg type
+def drawLine(xC,yC,zC, xD,yD,zD, R,Col, img,Down):
+	# the line length (LL)
+	LL = math.sqrt((xC-xD)*(xC-xD) + (yC-yD)*(yC-yD) + (zC-zD)*(zC-zD))
+
+	# how many up-to-R-long segments are required
+	SN = math.ceil(LL / R)
+
+	# if "line is decimated into a point", just draw one spot
+	if SN == 0:
+		drawBall(xC,yC,zC,R*Down,Col,img,Down)
+		# NB: the coordinates and _radius_ will get divided by Down,
+		#     but we want R to represent already the final radius
+		return
+
+	# (real) length of one segment
+	SS = LL / SN
+
+	# a "one segment" vector
+	xSV = (xD-xC)*SS/LL
+	ySV = (yD-yC)*SS/LL
+	zSV = (zD-zC)*SS/LL
+
+	SN = int(SN)
+	for i in range(0,SN+1):
+		x = xC  +  float(i)*xSV
+		y = yC  +  float(i)*ySV
+		z = zC  +  float(i)*zSV
+
+		drawBall(x,y,z,R*Down,Col,img,Down)
