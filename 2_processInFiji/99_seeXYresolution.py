@@ -10,14 +10,6 @@ xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder1coords_X.txt")
 yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder1coords_Y.txt")
 zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/cylinder1coords_Z.txt")
 
-
-# Usage:
-#	- Run Fiji
-# 	- Make sure that the update site SCF-MPI-CBG is activated
-#	- Open one representative image of your data
-#	- Run this script
-# 	- If you are not confident with the output, repeat with other parameters.
-
 from ij import IJ
 from ij import ImagePlus
 from ij.process import FloatProcessor
