@@ -6,41 +6,15 @@
 #@float(label="A nucleus has a circularity SMALLER than (1 represents perfect circularity)") circularityMax
 #@boolean (label="Filter according to circularity") filterCirc
 #
-#-------disabled-------@boolean (label="Input image shows nuclei (checked) or membranes (unchecked)") inputImageShowsNuclei
-#-------disabled-------@boolean (label="Nuclei detection: After 1st run, close left-out nuclei and re-run detection", value=False) postprocessNucleiImageFlag
-#-------disabled-------@boolean (label="Membrane thinning: Input image should be up-scaled and membranes thinned", value=False) preprocessMembraneImageFlag
-inputImageShowsNuclei = False
-postprocessNucleiImageFlag = False
-preprocessMembraneImageFlag = True
-
+#@boolean (label="Input image shows nuclei (checked) or membranes (unchecked) ") inputImageShowsNuclei
+#@File (label="Pixel areas map:") aMapFile
+#@File (label="X coordinate map:") xMapFile
+#@File (label="Y coordinate map:") yMapFile
+#@File (label="Z coordinate map:") zMapFile
 #
-#@boolean (label="Polygon boundary straightening:", value=False) polyAsLargeSegments
-#-------disabled-------@boolean (label="Polygon boundary smoothing: should do", value=False) polySmoothDo
-#-------disabled-------@int     (label="Polygon boundary smoothing: smooth span in half-pixel units", value=10) polySmoothSpan
-#-------disabled-------@float   (label="Polygon boundary smoothing: smooth sigma in half-pixel units", value=4) polySmoothSigma
-polySmoothDo = False
-polySmoothSpan = 10
-polySmoothSigma = 4
-#
-#@File (style="directory", label="Folder with maps:") mapFolder
-#@String (label="\"cylinder1\" vs. \"cylinder2\":", value="cylinder1") mapCylinder
-class SimpleFile:
-	def __init__(self,path):
-		self.path = path
-	def getAbsolutePath(self):
-		return self.path
-
-aMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"_area.txt")
-xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_X.txt")
-yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt")
-zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
-
-#
-#@boolean (label="Show sheet with analysis data", value=True) showRawData
+#@boolean (label="Show sheet with analysis data") showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
-#@boolean (label="Show image with shape factors") showShapeFactorImage
-#@boolean (label="Show image with neighbor counts") showNeigImage
 
 # This script should be used to find suitable parameters for CountBigNucleiCorrected.py
 # You'll see nuclei of various colors:
@@ -86,125 +60,72 @@ from Nucleus import Nucleus
 import math
 
 
+# reads the area_per_pixel information, already in squared microns
+realSizes = readRealSizes(aMapFile.getAbsolutePath())
+
+# read the 'real Coordinates', that take into account the different pixel sizes
+realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
+
+imp = IJ.getImage()
+
+
 def main():
-	print("wait until \"Done.\" (or error) appears...")
-	originalImageName = IJ.getImage().getTitle()
-
-	# FIX: we now assume membrane image to come; in this case, however, the script
-	# assumes that membranes pixels store value of 2.0... but the current data use
-	# value of 1.0 and so we have to fix it.....
-	removeMeImg = IJ.getImage().duplicate()
-	removeMeImg.show()
-	IJ.run("Add...", "value=1");
-
-	# reads the area_per_pixel information, already in squared microns
-	realSizes = readRealSizes(aMapFile.getAbsolutePath())
-
-	# read the 'real Coordinates', that take into account the different pixel sizes
-	realCoordinates = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(),zMapFile.getAbsolutePath())
-
-	backgroundPixelValue = 1 # in case of cell nuclei
-	if (not inputImageShowsNuclei):
-		backgroundPixelValue = 2 # in case of cell membranes
-		if preprocessMembraneImageFlag == True:
-			print("initial membrane preprocessing...")
-			preprocessMembraneImage(realSizes)
-
-	imp = IJ.getImage()
-
 	# test that sizes of realSizes and imp matches
 	checkSize2DarrayVsImgPlus(realSizes, imp)
 	checkSize2DarrayVsImgPlus(realCoordinates, imp)
 
-	print("extracting individual nuclei and their parameters...")
+	backgroundPixelValue = 1 # in case of cell nuclei
+	if (not inputImageShowsNuclei):
+		backgroundPixelValue = 2 # in case of cell membranes
+
 	# obtain list of all valid nuclei
-	nuclei = chooseNucleiNew(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, postprocessNucleiImageFlag)
+	nuclei = chooseNuclei(imp,backgroundPixelValue,realSizes,realCoordinates, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax)
 	# add list of all INvalid nuclei (since only invalid are left in the input image)
-	#nuclei += findComponents(imp,255,realSizes,realCoordinates,"n_")
+	nuclei += findComponents(imp,backgroundPixelValue,realSizes,realCoordinates,"n_")
 
 	# ------- analysis starts here -------
-	if len(nuclei) == 0:
-		print("No components found, quiting...")
-		return
-
 	circularitySum = 0
-	shapeFactorSum = 0
-	sizeSum = 0
+	sizesum = 0
 
-	i = IJ.getImage().getProcessor().getPixels()
-	w = IJ.getImage().getWidth()
-
-	if polyAsLargeSegments == True:
-		print("redesigning nuclei boundaries - fitting line segments...")
-	if polySmoothDo == True:
-		print("redesigning nuclei boundaries - smoothing it out...")
-	if polyAsLargeSegments == True or polySmoothDo == True:
-		print("recalculating nuclei parameters since boundaries have changed...")
-	if (not inputImageShowsNuclei):
-		print("calculating number of neighbors per cell...")
-
-	drasticAreaChange = 0
 	for nucl in nuclei:
-		# should straightening happen?
-		if polyAsLargeSegments == True:
-			nucl.reshapeNucleusWithStraightenedBoundary(i,w)
-
-		if polySmoothDo == True:
-			nucl.smoothPolygonBoundary(polySmoothSpan,polySmoothSigma)
-
-		if polyAsLargeSegments == True or polySmoothDo == True:
-			# update everything that depends on a corrected area and perimeter length
-			nucl.EdgeLength = properLength(nucl.Coords,realCoordinates)
-			origArea = nucl.Area
-			nucl.getBoundaryInducedArea(realSizes)
-			nucl.updateCircularityAndSA()
-
-			if nucl.Area/origArea < 0.90 or nucl.Area/origArea > 1.10:
-				drasticAreaChange = drasticAreaChange+1
-
 		circularitySum += nucl.Circularity
-		shapeFactorSum += nucl.ShapeFactor
-		sizeSum += nucl.Area
-		if (not inputImageShowsNuclei):
-			nucl.setNeighborsList(i,w)
-
-
-	if polyAsLargeSegments == True and drasticAreaChange > 0:
-		print("WARNING: "+str(drasticAreaChange)+"/"+str(len(nuclei))
-		     +" cells have real area change larger than 10%.")
+		sizesum += nucl.Area
 
 	print("Average Circularity: "+str(circularitySum/len(nuclei)))
-	print("Average ShapeFactor: "+str(shapeFactorSum/len(nuclei)))
-	print("Average Area: "+str(sizeSum/len(nuclei))+" square microns")
+	print("Average Area: "+str(sizesum/len(nuclei))+" square microns")
 
-	if inputImageShowsNuclei:
-		print("No. of neighborhood was not counted, works only with membrane images.")
+	print("Creating output image ...")
+	OutputPixels = [[0 for y in range(imp.width)] for x in range(imp.height)]
+	# green - fit both conditions
+	# blue - does not fit area
+	# white - does not fit circularity
+	# red - fails both conditions
+	#
+	for nucl in nuclei:
+		errCnt = 0
+		if (filterCirc == True and (nucl.Circularity < circularityMin or nucl.Circularity > circularityMax)):
+			errCnt += 1
+		if (filterArea == True and (nucl.Area < areaMin or nucl.Area > areaMax)):
+			errCnt += 2
 
+		for pix in nucl.Pixels:
+			OutputPixels[pix[1]][pix[0]] = colors[errCnt]
 
-	if polyAsLargeSegments == True or polySmoothDo == True:
-		for nucl in nuclei:
-			nucl.DrawValue = nucl.Label
-		drawChosenNucleiValue(originalImageName+": NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
+	OutputPixelsNew = reduce(lambda x,y :x+y ,OutputPixels)
+	cp = ColorProcessor(imp.getWidth(),imp.getHeight(), OutputPixelsNew)
+	OutputImg = ImagePlus("OutputImg", cp)
+	OutputImg.show()
+
 
 	if showCircImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Circularity
-		drawChosenNucleiValue(originalImageName+": Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
-
-	if showShapeFactorImage:
-		for nucl in nuclei:
-			nucl.DrawValue = nucl.ShapeFactor
-		drawChosenNucleiValue(originalImageName+": Real shape factors", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue("Real circularities", imp.getWidth(),imp.getHeight(), nuclei)
 
 	if showAreaImage:
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Area;
-		drawChosenNucleiValue(originalImageName+": Real areas", imp.getWidth(),imp.getHeight(), nuclei)
-
-	if showNeigImage:
-		for nucl in nuclei:
-			nucl.DrawValue = len(nucl.NeighIDs);
-		drawChosenNucleiValue(originalImageName+": Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
+		drawChosenNucleiValue("Real areas", imp.getWidth(),imp.getHeight(), nuclei)
 
 
 	if (showRawData):
@@ -216,25 +137,21 @@ def main():
 		# also create two hidden 1D images (arrays essentially) and ask to display their histograms later
 		imgArea = []
 		imgCirc = []
-		imgNeig = []
 
 		for nucl in nuclei:
 			rt.incrementCounter()
 			rt.addValue("label"                            ,nucl.Color)
 			rt.addValue("circularity (higher more roundish)",nucl.Circularity)
 			rt.addValue("circularity (pixel-based)"        ,nucl.DrawValue) # VLADO PIXEL CIRC DEBUG
-			rt.addValue("shape factor"                     ,nucl.ShapeFactor)
 			rt.addValue("area (um^2)"                      ,nucl.Area)
 			rt.addValue("area (px)"                        ,nucl.Size)
 			rt.addValue("perimeter (px)"                   ,nucl.EdgeSize)
 			rt.addValue("perimeter (um)"                   ,nucl.EdgeLength)
-			rt.addValue("neigbor count"                    ,len(nucl.NeighIDs))
 			rt.addValue("centreX (px)"                     ,nucl.CentreX)
 			rt.addValue("centreY (px)"                     ,nucl.CentreY)
 
 			imgArea.append(nucl.Area)
 			imgCirc.append(nucl.Circularity)
-			imgNeig.append(len(nucl.NeighIDs))
 
 		# show the image
 		rt.showRowNumbers(False)
@@ -249,54 +166,12 @@ def main():
 		imgCirc = ImagePlus("nuclei_circularities",FloatProcessor(len(nuclei),1,imgCirc))
 		IJ.run(imgCirc, "Histogram", "20")
 
-		imgNeig = ImagePlus("nuclei_neigborCount",FloatProcessor(len(nuclei),1,imgNeig))
-		IJ.run(imgNeig, "Histogram", "10")
-
 		# debug: what perimeter points are considered
 		# writeCoordsToFile(nuclei[0].EdgePixels,"/Users/ulman/DATA/fp_coords_0.txt")
 		# writeCoordsToFile(nuclei[1].EdgePixels,"/Users/ulman/DATA/fp_coords_1.txt")
 
-	removeMeImg.changes = False
-	removeMeImg.close()
+
+	print("Done.")
 
 
-def startSession(folder,tpFile):
-	IJ.open(folder+"/"+tpFile)
-	IJ.selectWindow(tpFile);
-
-def closeSession(tpFile):
-	IJ.selectWindow(tpFile+": NEW SHAPES");
-	IJ.getImage().close();
-
-	IJ.selectWindow("1_labelled_image");
-	IJ.getImage().changes = False
-	IJ.getImage().close();
-
-	IJ.selectWindow("upScaledOrigImg.tif");
-	IJ.getImage().changes = False
-	IJ.getImage().close();
-
-	IJ.selectWindow(tpFile);
-	IJ.getImage().close();
-
-
-def doOneTP(tpFile):
-	print(tpFile+" Starting.............")
-	startSession("/Users/ulman/p_Akanksha/curated/curated2/",tpFile)
-	main()
-	print(tpFile+" Done.")
-	closeSession(tpFile)
-
-
-# HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
-# single, currently opened image mode
 main()
-print("Done.")
-
-
-# batch processing mode
-#doOneTP("10.tif")
-#doOneTP("310.tif")
-#doOneTP("340.tif")
-#doOneTP("425.tif")
-#doOneTP("555.tif")
