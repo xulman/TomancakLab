@@ -89,6 +89,10 @@ def main():
 
 	OutputPixels = [ 0.0 for o in range(w*h) ]
 
+	# smallest and largest length spotted
+	minLength = 10000000;
+	maxLength = 0;
+
 	# grid positions
 	for y in range(2+yGridInit, h-2, yGridStep):
 		for x in range(2+xGridInit, w-2, xGridStep):
@@ -105,6 +109,8 @@ def main():
 					coords.append( [cx,cy] )
 
 				length = properLength(coords, realCoordinates)
+				minLength = min(length,minLength)
+				maxLength = max(length,maxLength)
 
 				for px in coords:
 					OutputPixels[px[1]*w +px[0]] = length
@@ -113,6 +119,9 @@ def main():
 			#OutputPixels[y*w +x] = 0
 
 	ImagePlus("Resolution compasses", FloatProcessor(w,h, OutputPixels)).show()
+
+	print("the smaller micron length of a bar is: "+str(minLength))
+	print("the largest micron length of a bar is: "+str(maxLength))
 
 
 main()
