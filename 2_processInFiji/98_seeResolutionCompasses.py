@@ -102,12 +102,10 @@ def main():
 	for y in range(2+yGridShift+dirLength, h-2-dirLength, yGridStep):
 		for x in range(2+xGridShift+dirLength, w-2-dirLength, xGridStep):
 			for dire in directions:
-				# skip the first element (the centre)
-				coords = []
-
 				# add the sides/arms - in the original/full image size
 				cx = x *downScaleFactor
 				cy = y *downScaleFactor
+				coords = [ [cx,cy] ]
 				for i in range(int(direSteps[dire[2]] *downScaleFactor)):
 					cx += dire[0]
 					cy += dire[1]
