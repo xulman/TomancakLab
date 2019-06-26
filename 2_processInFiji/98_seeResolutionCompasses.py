@@ -3,8 +3,8 @@
 #@int (label="Pixel length of all sides of the compass:", value="3", min="1") dirLength
 #@int (label="Distance between compasses along axis X:", min="1", value="20") xGridStep
 #@int (label="Distance between compasses along axis Y:", min="1", value="20") yGridStep
-#@int (label="Position of 1st compass from top-left along axis X:", min="1", value="5") xGridInit
-#@int (label="Position of 1st compass from top-left along axis Y:", min="1", value="5") yGridInit
+#@int (label="Position of 1st compass from top-left along axis X:", min="0", value="0") xGridShift
+#@int (label="Position of 1st compass from top-left along axis Y:", min="0", value="0") yGridShift
 
 class SimpleFile:
 	def __init__(self,path):
@@ -94,8 +94,8 @@ def main():
 	maxLength = 0;
 
 	# grid positions
-	for y in range(2+yGridInit, h-2, yGridStep):
-		for x in range(2+xGridInit, w-2, xGridStep):
+	for y in range(2+yGridShift+dirLength, h-2-dirLength, yGridStep):
+		for x in range(2+xGridShift+dirLength, w-2-dirLength, xGridStep):
 			for dire in directions:
 				# skip the first element (the centre)
 				coords = []
@@ -114,9 +114,6 @@ def main():
 
 				for px in coords:
 					OutputPixels[px[1]*w +px[0]] = length
-
-			# black centre (because it is shared, hence it does not belong to anyone)
-			#OutputPixels[y*w +x] = 0
 
 	ImagePlus("Resolution compasses", FloatProcessor(w,h, OutputPixels)).show()
 
