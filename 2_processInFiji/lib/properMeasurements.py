@@ -69,6 +69,58 @@ def properLength(xyCoords, realCoordinates):
 	return sum
 
 
+def travelGivenRealDistance(xyStartCoords, xyDirection, micronDistance, realCoordinates):
+	# xyStartCoords should be a 2-element list of starting x,y position
+	# xyDirection should be a 2-element list of (small) steps to do until one get sufficiently far
+	# micronDistance is how far we should get (aka target distance):
+	#  if the current step induces distance closer to the target one, no further steps are conducted;
+	#  if the next step would induce a distance closer than the current one, we move
+	# return value is [x,y] with the new position, it is always inside the image
+
+	noGoBorder = 2
+	w = len(realCoordinates)    -noGoBorder
+	h = len(realCoordinates[0]) -noGoBorder
+
+	cx = xyStartCoords[0]
+	cy = xyStartCoords[1]
+	dist = 0.0
+
+	shouldMove = True
+	while shouldMove:
+		# where shall be the new step
+		ncx = cx+xyDirection[0]
+		ncy = cy+xyDirection[1]
+
+		# if the new step would ended up outside the image,
+		# we better break the while cycle and return the last valid position
+		if ncx < noGoBorder or ncx >= w or ncy < noGoBorder or ncy >= h:
+			break
+
+		# examine what distance would there be if we would have moved more step
+		nextSegment = [ [cx,cy],[ncx,ncy] ]
+		nextDist  = properLength(nextSegment, realCoordinates)
+		nextDist += dist
+
+		# have we crossed over the threshold distance?
+		if nextDist < micronDistance:
+			# no, we can update the current step
+			cx = ncx
+			cy = ncy
+			dist = nextDist
+		else:
+			# yes, we need to stop iterating in any case
+			shouldMove = False
+
+			# shall we use the distance?
+			if micronDistance-dist > nextDist-micronDistance:
+				# yes, the new one
+				cx = ncx
+				cy = ncy
+				dist = nextDist
+
+	return [ cx,cy ]
+
+
 # ---------- real areas ----------
 def properArea(xyCoords, realAreas):
 	# xyCoords should be a list of pairs,

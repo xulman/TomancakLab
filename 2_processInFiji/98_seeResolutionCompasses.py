@@ -1,10 +1,11 @@
 #@File (style="directory", label="Folder with maps:") mapFolder
+#@float (label="Downscale output image by this factor:", value="1.0", min="1") downScaleFactor
 #@String (label="Choose comma-separated orientations from N,NE,E,SE,S,SW,W,NW:", value="N,NE,E,SE,S,SW,W,NW") dirSides
 #@int (label="Pixel length of all sides of the compass:", value="3", min="1") dirLength
 #@int (label="Distance between compasses along axis X:", min="1", value="20") xGridStep
 #@int (label="Distance between compasses along axis Y:", min="1", value="20") yGridStep
-#@int (label="Position of 1st compass from top-left along axis X:", min="1", value="5") xGridInit
-#@int (label="Position of 1st compass from top-left along axis Y:", min="1", value="5") yGridInit
+#@int (label="Position of 1st compass from top-left along axis X:", min="0", value="0") xGridShift
+#@int (label="Position of 1st compass from top-left along axis Y:", min="0", value="0") yGridShift
 
 class SimpleFile:
 	def __init__(self,path):
@@ -75,7 +76,11 @@ def main():
 	w = len(realSizes)
 	h = len(realSizes[0])
 	print("calculating from maps in the folder: "+mapFolder.getAbsolutePath())
-	print("width="+str(w)+", heigh="+str(h))
+	print(" maps  width="+str(w)+", heigh="+str(h))
+
+	w = int(math.ceil( w / downScaleFactor ))
+	h = int(math.ceil( h / downScaleFactor ))
+	print("output width="+str(w)+", heigh="+str(h))
 
 	directions = parsingSides(dirSides)
 
@@ -89,30 +94,38 @@ def main():
 
 	OutputPixels = [ 0.0 for o in range(w*h) ]
 
-	# grid positions
-	for y in range(2+yGridInit, h-2, yGridStep):
-		for x in range(2+xGridInit, w-2, xGridStep):
-			for dire in directions:
-				# skip the first element (the centre)
-				coords = []
+	# smallest and largest length spotted
+	minLength = 10000000;
+	maxLength = 0;
 
-				# add the sides/arms
-				cx = x
-				cy = y
-				for i in range(direSteps[dire[2]]):
+	# grid positions - in downscaled image
+	for y in range(2+yGridShift+dirLength, h-2-dirLength, yGridStep):
+		for x in range(2+xGridShift+dirLength, w-2-dirLength, xGridStep):
+			for dire in directions:
+				# add the sides/arms - in the original/full image size
+				cx = x *downScaleFactor
+				cy = y *downScaleFactor
+				coords = [ [cx,cy] ]
+				for i in range(int(direSteps[dire[2]] *downScaleFactor)):
 					cx += dire[0]
 					cy += dire[1]
 					coords.append( [cx,cy] )
 
 				length = properLength(coords, realCoordinates)
+				minLength = min(length,minLength)
+				maxLength = max(length,maxLength)
 
-				for px in coords:
-					OutputPixels[px[1]*w +px[0]] = length
-
-			# black centre (because it is shared, hence it does not belong to anyone)
-			#OutputPixels[y*w +x] = 0
+				cx = x
+				cy = y
+				for i in range(direSteps[dire[2]]):
+					cx += dire[0]
+					cy += dire[1]
+					OutputPixels[cy*w +cx] = length
 
 	ImagePlus("Resolution compasses", FloatProcessor(w,h, OutputPixels)).show()
+
+	print("the smaller micron length of a bar is: "+str(minLength))
+	print("the largest micron length of a bar is: "+str(maxLength))
 
 
 main()
