@@ -29,6 +29,10 @@ import javax.swing.*;
 import java.io.File;
 import java.util.*;
 
+import org.zeromq.SocketType;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
+
 
 @Plugin( type = OpenSimViewerAndSendTracking.class )
 public class OpenSimViewerAndSendTracking extends AbstractContextual implements MastodonPlugin
@@ -103,19 +107,106 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		actionSend.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
-	private LogService logServiceRef; //(re)defined with every call to this.workerSRES()
+	private LogService logServiceRef;
+	private ZMQ.Socket socket = null;
 
+	private String nodeMsg = new String();
+	private int nodeMsgCnt = 0;
+
+	private String lineMsg = new String();
+	private int lineMsgCnt = 0;
 
 	/** opens the SimViewer */
 	private void workerOpen()
 	{
-		System.out.println("open SimViewer");
+		System.out.println("connecting to SimViewer");
+		boolean connected = false;
+
+		//init the communication side
+		final ZMQ.Context zmqContext = ZMQ.context(1);
+		try
+		{
+			socket = zmqContext.socket(SocketType.PAIR);
+			if (socket == null)
+				throw new Exception("Network sender: Cannot obtain local socket.");
+
+			//port to listen for incoming data
+			//socket.subscribe(new byte[] {});
+			socket.connect("tcp://localhost:8765");
+			connected = true;
+		}
+		catch (ZMQException e) {
+			System.out.println("Network sender: Crashed with ZeroMQ error: " + e.getMessage());
+		}
+		catch (InterruptedException e) {
+			System.out.println("Network sender: Interrupted.");
+		}
+		catch (Exception e) {
+			System.out.println("Network sender: Error: " + e.getMessage());
+			e.printStackTrace();
+		}
+		finally {
+			if (socket != null && connected == false)
+			{
+				System.out.println("Network sender: Disconnecting...");
+				socket.disconnect("tcp://localhost:8765");
+				socket.close();
+			}
+			//zmqContext.close();
+			//zmqContext.term();
+		}
+
+		if (connected) System.out.println("connected to SimViewer");
 	}
+
+	private void appendNodeToMsg(float[] pos, float radius, int color)
+	{
+		++nodeMsgCnt;
+		nodeMsg = nodeMsg.concat( String.format(" %d %f %f %f %f %d",nodeMsgCnt,pos[0],pos[1],pos[2],radius,color) );
+	}
+
+	private void appendLineToMsg(float[] from, float[] to, int color)
+	{
+		++lineMsgCnt;
+		lineMsg = lineMsg.concat( String.format(" %d %f %f %f %f %f %f %d",lineMsgCnt,from[0],from[1],from[2],to[0],to[1],to[2],color) );
+	}
+
+	private void sendAndClearAllMsgs()
+	{
+		if (socket != null)
+		{
+			if (nodeMsgCnt > 0)
+				socket.send("v1 points "+nodeMsgCnt+" dim 3"+nodeMsg);
+
+			if (lineMsgCnt > 0)
+				socket.send("v1 lines "+lineMsgCnt+" dim 3"+lineMsg);
+
+			socket.send("v1 tick Mastodon sent you "+nodeMsgCnt+" nodes with "+lineMsgCnt+" edges");
+		}
+
+		nodeMsg = new String();
+		nodeMsgCnt = 0;
+		lineMsg = new String();
+		lineMsgCnt = 0;
+	}
+
 
 	/** sends some (now fake!) stuff to the SimViewer */
 	private void workerSend()
 	{
-		System.out.println("populate SimViewer");
+		final Model model = pluginAppModel.getAppModel().getModel();
+		//final ModelGraph modelGraph = model.getGraph();
+		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
+
+		final int timeTill = pluginAppModel.getAppModel().getMaxTimepoint();
+		for ( final Spot spot : spots.getSpatialIndex( timeTill ) )
+		{
+			float pos[] = new float[3];
+			spot.localize(pos);
+			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
+		}
+
+		sendAndClearAllMsgs();
 	}
 
 

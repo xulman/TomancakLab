@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.scijava</groupId>
     <artifactId>pom-scijava</artifactId>
-    <version>22.3.0</version>
+    <version>25.0.0</version>
     <relativePath />
   </parent>
 
 
   <groupId>de.mpicbg.tomancaklab</groupId>
   <artifactId>Mastodon-Plugins</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-withSimViewer</version>
 
 	<organization>
 		<name>MPI-CBG</name>
@@ -97,12 +97,17 @@
     <dependency>
       <groupId>net.trackmate</groupId>
       <artifactId>trackmate</artifactId>
-      <version>1.0.0-beta-8</version>
+      <version>1.0.0-beta-14-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.graphstream</groupId>
       <artifactId>gs-core</artifactId>
       <version>1.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.zeromq</groupId>
+      <artifactId>jeromq</artifactId>
+      <version>0.5.1</version>
     </dependency>
   </dependencies>
 </project>
