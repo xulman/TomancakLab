@@ -231,12 +231,29 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//final ModelGraph modelGraph = model.getGraph();
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
 
+		//DEBUG STATS:
+		float minPos[] = {+100000,+100000,+100000};
+		float maxPos[] = {-100000,-100000,-100000};
+
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
 			float pos[] = new float[3];
 			spot.localize(pos);
 			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
+
+			//DEBUG STATS:
+			for (int i=0; i < 3; ++i)
+			{
+				minPos[i] = Math.min(minPos[i],pos[i]);
+				maxPos[i] = Math.max(maxPos[i],pos[i]);
+			}
 		}
+
+		//DEBUG STATS:
+		System.out.println("spatial span @ "+timePoint+": "
+				+minPos[0]+"-"+maxPos[0]+"  x  "
+				+minPos[1]+"-"+maxPos[1]+"  x  "
+				+minPos[2]+"-"+maxPos[2]);
 
 		sendAndClearAllMsgs();
 	}
