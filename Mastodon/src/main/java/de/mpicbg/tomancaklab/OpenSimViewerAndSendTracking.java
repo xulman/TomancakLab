@@ -38,8 +38,9 @@ import org.zeromq.ZMQException;
 public class OpenSimViewerAndSendTracking extends AbstractContextual implements MastodonPlugin
 {
 	//"IDs" of all plug-ins wrapped in this class
-	private static final String PluginID_open = "LoPaT-OpenSimViewer";
-	private static final String PluginID_send = "LoPaT-SendTracking";
+	private static final String PluginID_open = "SV-OpenSimViewer";
+	private static final String PluginID_senB = "SV-SendFrameOnBackwardTPmove";
+	private static final String PluginID_senF = "SV-SendFrameOnForwardTPmove";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -49,15 +50,14 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//the titles of the items are defined right below
 		return Arrays.asList(
 				menu( "Plugins",
-						item( PluginID_open ), item ( PluginID_send ) ) );
+						item( PluginID_open ) ) );
 	}
 
 	/** titles of this plug-in's menu items */
 	private static Map< String, String > menuTexts = new HashMap<>();
 	static
 	{
-		menuTexts.put( PluginID_open, "Open SimViewer" );
-		menuTexts.put( PluginID_send, "Populate SimViewer" );
+		menuTexts.put( PluginID_open, "Connect to SimViewer" );
 	}
 
 	@Override
@@ -68,13 +68,15 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	//------------------------------------------------------------------------
 
 	private final AbstractNamedAction actionOpen;
-	private final AbstractNamedAction actionSend;
+	private final AbstractNamedAction actionSendB;
+	private final AbstractNamedAction actionSendF;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public OpenSimViewerAndSendTracking()
 	{
-		actionOpen = new RunnableAction( PluginID_open, this::workerOpen );
-		actionSend = new RunnableAction( PluginID_send, this::workerSend );
+		actionOpen  = new RunnableAction( PluginID_open, this::workerOpen );
+		actionSendB = new RunnableAction( PluginID_senB, this::workerTimePrev );
+		actionSendF = new RunnableAction( PluginID_senF, this::workerTimeNext );
 		updateEnabledActions();
 	}
 
@@ -82,9 +84,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	@Override
 	public void installGlobalActions( final Actions actions )
 	{
-		final String[] noShortCut = new String[] {};
-		actions.namedAction( actionOpen, noShortCut );
-		actions.namedAction( actionSend, noShortCut );
+		//final String[] noShortCut = new String[] {};
+		actions.namedAction( actionOpen,  "C" );
+		actions.namedAction( actionSendB, "N" );
+		actions.namedAction( actionSendF, "M" );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -97,14 +100,18 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//the application reports back to us if some project is available
 		this.pluginAppModel = model;
 		updateEnabledActions();
+
+		minTimePoint = pluginAppModel.getAppModel().getMinTimepoint();
+		maxTimePoint = pluginAppModel.getAppModel().getMaxTimepoint();
 	}
 
 	/** enables/disables menu items based on the availability of some project */
 	private void updateEnabledActions()
 	{
 		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionOpen.setEnabled( appModel != null );
-		actionSend.setEnabled( appModel != null );
+		actionOpen.setEnabled(  appModel != null );
+		actionSendB.setEnabled( appModel != null );
+		actionSendF.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
 	private LogService logServiceRef;
@@ -191,15 +198,40 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	}
 
 
+	private int minTimePoint,maxTimePoint;
+	private int timePoint = -1;
+	private void workerTimePrev()
+	{
+		if (timePoint == -1) timePoint = minTimePoint;
+
+		if (timePoint > minTimePoint)
+		{
+			--timePoint;
+			workerSend();
+		}
+	}
+
+	private void workerTimeNext()
+	{
+		if (timePoint == -1) timePoint = minTimePoint;
+
+		if (timePoint < maxTimePoint)
+		{
+			++timePoint;
+			workerSend();
+		}
+	}
+
 	/** sends some (now fake!) stuff to the SimViewer */
 	private void workerSend()
 	{
+		if (timePoint == -1) timePoint = minTimePoint;
+
 		final Model model = pluginAppModel.getAppModel().getModel();
 		//final ModelGraph modelGraph = model.getGraph();
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
 
-		final int timeTill = pluginAppModel.getAppModel().getMaxTimepoint();
-		for ( final Spot spot : spots.getSpatialIndex( timeTill ) )
+		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
 			float pos[] = new float[3];
 			spot.localize(pos);
