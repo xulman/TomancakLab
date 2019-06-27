@@ -124,8 +124,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		Locale.setDefault( Locale.US );
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 
-		final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
-//		final MamutProject project = new MamutProjectIO().load( "/Users/ulman/DATA/CTC2/T_carto_forMastodon/corrections/" );
+		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
+		final MamutProject project = new MamutProject(
+				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/2D_mamut.mastodon" ),
+				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/dataset2.xml" ) );
 
 		final Mastodon mastodon = new Mastodon();
 		new Context().inject( mastodon );
