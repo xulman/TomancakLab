@@ -8,8 +8,15 @@ import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 
 import org.mastodon.project.MamutProject;
+import org.mastodon.revised.mamut.MamutViewTrackScheme;
 import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.revised.mamut.WindowManager;
+import org.mastodon.revised.model.tag.ObjTagMap;
+import org.mastodon.revised.model.tag.TagSetModel;
+import org.mastodon.revised.model.tag.TagSetStructure;
+import org.mastodon.revised.trackscheme.TrackSchemeEdge;
+import org.mastodon.revised.trackscheme.TrackSchemeVertex;
+import org.mastodon.revised.trackscheme.display.TrackSchemeFrame;
+import org.mastodon.revised.ui.coloring.GraphColorGenerator;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Model;
@@ -125,9 +132,12 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	private String lineMsg = new String();
 	private int lineMsgCnt = 0;
 
-	/** opens the SimViewer */
+	/** opens (again) the SimViewer */
 	private void workerOpen()
 	{
+		//just close if something was opened (making a reset in this way)
+		workerClose();
+
 		System.out.println("connecting to SimViewer");
 		boolean connected = false;
 
@@ -137,35 +147,54 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		{
 			socket = zmqContext.socket(SocketType.PAIR);
 			if (socket == null)
-				throw new Exception("Network sender: Cannot obtain local socket.");
+				throw new Exception("Mastodon network sender: Cannot obtain local socket.");
 
-			//port to listen for incoming data
-			//socket.subscribe(new byte[] {});
 			socket.connect("tcp://localhost:8765");
 			connected = true;
 		}
 		catch (ZMQException e) {
-			System.out.println("Network sender: Crashed with ZeroMQ error: " + e.getMessage());
+			System.out.println("Mastodon network sender: Crashed with ZeroMQ error: " + e.getMessage());
 		}
 		catch (InterruptedException e) {
-			System.out.println("Network sender: Interrupted.");
+			System.out.println("Mastodon network sender: Interrupted: " + e.getMessage());
 		}
 		catch (Exception e) {
-			System.out.println("Network sender: Error: " + e.getMessage());
+			System.out.println("Mastodon network sender: Error: " + e.getMessage());
 			e.printStackTrace();
 		}
 		finally {
-			if (socket != null && connected == false)
-			{
-				System.out.println("Network sender: Disconnecting...");
-				socket.disconnect("tcp://localhost:8765");
-				socket.close();
-			}
-			//zmqContext.close();
-			//zmqContext.term();
+			if (connected == false) workerClose();
 		}
 
-		if (connected) System.out.println("connected to SimViewer");
+		if (connected)
+		{
+			System.out.println("connected to SimViewer");
+
+			//open a TrackScheme window that shall be under our control,
+			//and retrieve a handle on the current GraphColorGenerator
+			final MamutViewTrackScheme tsWindow = pluginAppModel.getWindowManager().createTrackScheme();
+			final TrackSchemeFrame tsFrame = (TrackSchemeFrame)tsWindow.getFrame();
+			tsFrame.getTrackschemePanel().timepointChanged();
+			colorGenerator = tsFrame.getTrackschemePanel().getColorGenerator();
+
+			//and send the current content to the SimViewer
+			this.workerSend();
+		}
+		else
+			System.out.println("NOT connected to SimViewer");
+	}
+
+	private GraphColorGenerator<TrackSchemeVertex, TrackSchemeEdge> colorGenerator = null;
+
+	private void workerClose()
+	{
+		if (socket != null)
+		{
+			System.out.println("Mastodon network sender: Disconnecting...");
+			socket.disconnect("tcp://localhost:8765");
+			socket.close();
+			socket = null;
+		}
 	}
 
 	private void appendNodeToMsg(float[] pos, float radius, int color)
