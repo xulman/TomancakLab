@@ -2,6 +2,7 @@
 #@float (label="Downscale output image by this factor:", value="1.0", min="1") downScaleFactor
 #@float (label="Micron radius of the circles:", min="0", value="10") circRadius
 #@int (label="Stepping in degrees when rendering circles:", min="0", max="360", value="30") circAngStep
+#@boolean (label="Connect perimetr points with lines:", value="True") circPeriLines
 #@int (label="Distance between circles along axis X:", min="1", value="20") xGridStep
 #@int (label="Distance between circles along axis Y:", min="1", value="20") yGridStep
 #@int (label="Position of 1st circle from top-left along axis X:", min="0", value="0") xGridShift
@@ -36,6 +37,20 @@ sys.path.append(ThisFile+os.sep+"lib")
 from importsFromImSAnE import *
 from properMeasurements import *
 
+# from [fx,fy] to [tx,ty] with color in the img (represented as imgBuffer and imgWidth)
+def drawLine(fx,fy, tx,ty, color,imgBuffer,imgWidth):
+	# that many steps to draw this line
+	LL = int(math.floor( math.sqrt((fx-tx)*(fx-tx) + (fy-ty)*(fy-ty)) ))
+
+	dx = float(tx-fx) / float(LL)
+	dy = float(ty-fy) / float(LL)
+	for s in range(LL):
+		cx = fx + int(math.floor( float(s)*dx ))
+		cy = fy + int(math.floor( float(s)*dy ))
+
+		imgBuffer[cy*imgWidth +cx] = color
+	imgBuffer[ty*imgWidth +tx] = color
+
 
 def main():
 	# reads the area_per_pixel information, already in squared microns
@@ -58,6 +73,8 @@ def main():
 	# grid positions - in downscaled image
 	for y in range(2+yGridShift, h-2, yGridStep):
 		for x in range(2+xGridShift, w-2, xGridStep):
+			periPoints = []
+
 			for ang in range(0,359,circAngStep):
 				angInRad = float(ang)*3.14159/180.0
 				direction = [ math.cos(angInRad),math.sin(angInRad) ]
@@ -70,7 +87,17 @@ def main():
 				cy = int(math.floor(endPos[1] /downScaleFactor))
 
 				#if cx >= 0 and cx < w and cy >= 0 and cy < h:
-				OutputPixels[cy*w +cx] = 1
+				periPoints.append( [cx,cy] )
+
+			color = 1
+			if circPeriLines:
+				lastValidIdx = len(periPoints)-1
+				for p in range(lastValidIdx):
+					drawLine(periPoints[p][0],periPoints[p][1], periPoints[p+1][0],periPoints[p+1][1], color, OutputPixels,w)
+				drawLine(periPoints[lastValidIdx][0],periPoints[lastValidIdx][1], periPoints[0][0],periPoints[0][1], color, OutputPixels,w)
+			else:
+				for p in periPoints:
+					OutputPixels[p[1]*w +p[0]] = color
 
 	ImagePlus("Resolution circles", FloatProcessor(w,h, OutputPixels)).show()
 
