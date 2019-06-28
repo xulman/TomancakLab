@@ -113,8 +113,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		actionSendB.setEnabled( appModel != null );
 		actionSendF.setEnabled( appModel != null );
 	}
-	//------------------------------------------------------------------------
-	private LogService logServiceRef;
+
+
+	//---------------------------------------------------------------------------------------
+	//---------------------------------- ZERO MQ stuff --------------------------------------
 	private ZMQ.Socket socket = null;
 
 	private String nodeMsg = new String();
@@ -196,10 +198,17 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		lineMsg = new String();
 		lineMsgCnt = 0;
 	}
+	//---------------------------------- ZERO MQ stuff --------------------------------------
+	//---------------------------------------------------------------------------------------
 
 
 	private int minTimePoint,maxTimePoint;
-	private int timePoint = -1;
+	private int timePoint = -1; //current timepoint
+
+	public int deltaBackPoints = 10;
+	public int deltaForwardPoints = 3;
+
+
 	private void workerTimePrev()
 	{
 		if (timePoint == -1) timePoint = minTimePoint;
@@ -228,16 +237,21 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		if (timePoint == -1) timePoint = minTimePoint;
 
 		final Model model = pluginAppModel.getAppModel().getModel();
-		//final ModelGraph modelGraph = model.getGraph();
+		final ModelGraph modelGraph = model.getGraph();
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
+
+		// -------------- nodes --------------
+
+		float pos[]  = new float[3]; //for nodes and edges
+		float posB[] = new float[3]; //for edges
 
 		//DEBUG STATS:
 		float minPos[] = {+100000,+100000,+100000};
 		float maxPos[] = {-100000,-100000,-100000};
 
+		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
-			float pos[] = new float[3];
 			spot.localize(pos);
 			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
 
@@ -254,6 +268,70 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 				+minPos[0]+"-"+maxPos[0]+"  x  "
 				+minPos[1]+"-"+maxPos[1]+"  x  "
 				+minPos[2]+"-"+maxPos[2]);
+
+
+		// -------------- edges --------------
+
+		final Link lRef = modelGraph.edgeRef();              //link reference
+		final Spot sRef = modelGraph.vertices().createRef(); //aux spot reference
+
+		//send edges backward up to a desired no. of timepoints
+		for (int time = timePoint; time > (timePoint-deltaBackPoints) && time > minTimePoint; --time)
+		{
+			//over all spots in the current time point
+			for ( final Spot spot : spots.getSpatialIndex( time ) )
+			{
+				for (int n=0; n < spot.incomingEdges().size(); ++n)
+				{
+					spot.incomingEdges().get(n, lRef).getSource( sRef );
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
+					{
+						spot.localize(pos);
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, 4);
+					}
+				}
+				for (int n=0; n < spot.outgoingEdges().size(); ++n)
+				{
+					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
+					{
+						spot.localize(pos);
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, 4);
+					}
+				}
+			}
+		}
+
+		//send edges forward up to a desired no. of timepoints
+		for (int time = timePoint; time < (timePoint+deltaForwardPoints) && time < maxTimePoint; ++time)
+		{
+			//over all spots in the current time point
+			for ( final Spot spot : spots.getSpatialIndex( time ) )
+			{
+				for (int n=0; n < spot.incomingEdges().size(); ++n)
+				{
+					spot.incomingEdges().get(n, lRef).getSource( sRef );
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
+					{
+						spot.localize(pos);
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, 5);
+					}
+				}
+				for (int n=0; n < spot.outgoingEdges().size(); ++n)
+				{
+					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
+					{
+						spot.localize(pos);
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, 5);
+					}
+				}
+			}
+		}
 
 		sendAndClearAllMsgs();
 	}
