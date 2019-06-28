@@ -30,7 +30,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
-import org.scijava.log.LogService;
 
 import javax.swing.*;
 import java.io.PrintWriter;
@@ -339,10 +338,35 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 	}
 
-	/** sends some (now fake!) stuff to the SimViewer */
+	/** this is turned "on" by TagEditorListeners, is turned "off" by createListOfSpotToTagMaps() */
+	private boolean areThereNewChangesInTagSets = true; //TODO should be thread-safe/synchronized
+	private List< ObjTagMap< Spot, TagSetStructure.Tag > > lastListOfSpotToTagMaps = null;
+
+	private List< ObjTagMap< Spot, TagSetStructure.Tag > > createListOfSpotToTagMaps()
+	{
+		final TagSetModel< Spot, Link > tsModel = pluginAppModel.getAppModel().getModel().getTagSetModel();
+		final List< TagSetStructure.TagSet > tagSets = tsModel.getTagSetStructure().getTagSets();
+
+		final List< ObjTagMap< Spot, TagSetStructure.Tag > > tagSetsMaps = new ArrayList<>( tagSets.size() );
+		for (TagSetStructure.TagSet ts : tagSets)
+		{
+			tagSetsMaps.add( tsModel.getVertexTags().tags( ts ) );
+			/*
+			System.out.println("TagSet: "+ts.getName());
+			for (TagSetStructure.Tag t : ts.getTags())
+				System.out.println("  tag: "+t.label()+" with color "+t.color());
+			*/
+		}
+
+		areThereNewChangesInTagSets = false;
+		return tagSetsMaps;
+	}
+
+	/** sends some stuff to the SimViewer */
 	private void workerSend()
 	{
 		if (timePoint == -1) timePoint = minTimePoint;
+		if (areThereNewChangesInTagSets) lastListOfSpotToTagMaps = createListOfSpotToTagMaps();
 
 		final Model model = pluginAppModel.getAppModel().getModel();
 		final ModelGraph modelGraph = model.getGraph();
@@ -357,11 +381,27 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		float[] minPos = {+100000,+100000,+100000};
 		float[] maxPos = {-100000,-100000,-100000};
 
+		final int defaultColor = 0x00FFFFFF;
+		final float defaultRadius = 5;
+
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
+			//spot position
 			spot.localize(pos);
-			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
+
+			//spot radius
+			final float radius = spot.edges().size() > 2 ? 2*defaultRadius : defaultRadius;
+
+			//spot color
+			int color = defaultColor;
+			for (ObjTagMap< Spot, TagSetStructure.Tag > tagMap : lastListOfSpotToTagMaps)
+			{
+				if (tagMap.get( spot ) != null) color = tagMap.get(spot).color();
+			}
+
+			//appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),color); //orig  node size
+			appendNodeToMsg(pos,radius,color);                                                    //fixed node size
 
 			//DEBUG STATS:
 			for (int i=0; i < 3; ++i)
