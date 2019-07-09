@@ -7,6 +7,8 @@ import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 
+import org.mastodon.project.MamutProject;
+import org.mastodon.revised.mamut.Mastodon;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Model;
@@ -15,12 +17,15 @@ import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 
 import org.scijava.AbstractContextual;
+import org.scijava.Context;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
 import org.scijava.log.LogService;
 
+import javax.swing.*;
+import java.io.File;
 import java.util.*;
 
 
@@ -243,5 +248,23 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 
 		logServiceRef.info("edges were shortened.");
 		modelGraph.notifyGraphChanged();
+	}
+
+
+	public static void main( final String[] args ) throws Exception
+	{
+		Locale.setDefault( Locale.US );
+		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+
+		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
+		final MamutProject project = new MamutProject(
+				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
+				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
+
+		final Mastodon mastodon = new Mastodon();
+		new Context().inject( mastodon );
+		mastodon.run();
+		mastodon.setExitOnClose();
+		mastodon.openProject( project );
 	}
 }
