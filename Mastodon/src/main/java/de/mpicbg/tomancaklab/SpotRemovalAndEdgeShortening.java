@@ -106,7 +106,6 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 
 		//opens the GraphStreamer window
 		GraphStreamViewer gsv = new GraphStreamViewer();
-		gsv.runExample(); //TODO replace me with some proper code
 
 		//aux Fiji services
 		logServiceRef = this.getContext().getService(LogService.class).log();
@@ -121,8 +120,8 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
 		final Link lRef = modelGraph.edgeRef();              //link reference
 		final Spot sRef = modelGraph.vertices().createRef(); //aux spot reference
-		final Spot bRef = modelGraph.vertices().createRef(); //spot's predecessor buddy (backward)
-		final Spot fRef = modelGraph.vertices().createRef(); //spot's ancestor buddy (forward)
+
+		int treeCnt = 0;
 
 		//over all time points
 		for (int time = timeFrom; time <= timeTill; ++time)
@@ -130,124 +129,150 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 			//over all spots in the current time point
 			for ( final Spot spot : spots.getSpatialIndex( time ) )
 			{
-				//find how many back- and forward-references (time-wise) this spot has
+				//find how many backward-references (time-wise) this spot has
 				int countBackwardLinks = 0;
-				int countForwardLinks = 0;
 
 				for (int n=0; n < spot.incomingEdges().size(); ++n)
 				{
 					spot.incomingEdges().get(n, lRef).getSource( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+					if (sRef.getTimepoint() < time)
 					{
 						++countBackwardLinks;
-						bRef.refTo( sRef );
-					}
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
-					{
-						++countForwardLinks;
-						fRef.refTo( sRef );
 					}
 				}
 				for (int n=0; n < spot.outgoingEdges().size(); ++n)
 				{
 					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+					if (sRef.getTimepoint() < time)
 					{
 						++countBackwardLinks;
-						bRef.refTo( sRef );
-					}
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
-					{
-						++countForwardLinks;
-						fRef.refTo( sRef );
 					}
 				}
 
-				//can this spot be reduced?
-				if (countBackwardLinks == 1 && countForwardLinks == 1)
+				//can this spot be root?
+				if (countBackwardLinks == 0)
 				{
-					//yes, has exactly one bRef and one fRef neigbors
-					logServiceRef.trace("removing spot...TODO");
-
-					//create a "bypass" link/edge
-					modelGraph.addEdge(bRef,fRef);
-
-					//and remove the spot
-					//TODO, hope it does not screw up the iteration order of spots.getSpatialIndex()
-					modelGraph.remove(spot);
+					logServiceRef.info("Discovered root "+spot.getLabel());
+					discoverEdge(gsv,modelGraph, spot, spot, 0,treeCnt*1000);
+					++treeCnt;
 				}
 			}
 		}
-
-		/*
-		//again, over all time points
-		final double[] pos = new double[3];
-		for (int time = timeFrom; time <= timeTill; ++time)
-		{
-			//over all spots in the current time point
-			for ( final Spot spot : spots.getSpatialIndex( time ) )
-			{
-				//find how many back- and forward-references (time-wise) this spot has
-				int countBackwardLinks = 0;
-				int countForwardLinks = 0;
-
-				for (int n=0; n < spot.incomingEdges().size(); ++n)
-				{
-					spot.incomingEdges().get(n, lRef).getSource( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
-					{
-						++countBackwardLinks;
-						bRef.refTo( sRef );
-					}
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
-					{
-						++countForwardLinks;
-						fRef.refTo( sRef );
-					}
-				}
-				for (int n=0; n < spot.outgoingEdges().size(); ++n)
-				{
-					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
-					{
-						++countBackwardLinks;
-						bRef.refTo( sRef );
-					}
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
-					{
-						++countForwardLinks;
-						fRef.refTo( sRef );
-					}
-				}
-
-				//TODO: for now, deal with only 1 forward link
-				//root spot?
-				if (countBackwardLinks == 0 && countForwardLinks == 1)
-				{
-					logServiceRef.trace("found root spot...TODO");
-					//this does not work, cannot re-init, and don't see other way to adjust the timepoint
-					//spot.localize(pos);
-					//spot.init(0,pos,Math.sqrt(spot.getBoundingSphereRadiusSquared()) );
-				}
-				else
-				if (countBackwardLinks == 1)
-				{
-					logServiceRef.trace("adjusting time of spot...TODO");
-					//this does not work, cannot re-init, and don't see other way to adjust the timepoint
-					//spot.localize(pos);
-					//spot.init(spot.getTimepoint()+1,pos,Math.sqrt(spot.getBoundingSphereRadiusSquared()) );
-				}
-			}
-		}
-		*/
 
 		modelGraph.vertices().releaseRef(sRef);
-		modelGraph.vertices().releaseRef(bRef);
-		modelGraph.vertices().releaseRef(fRef);
 		modelGraph.releaseRef(lRef);
 
-		logServiceRef.info("edges were shortened.");
+		logServiceRef.info("generation graph rendered");
 		modelGraph.notifyGraphChanged();
+	}
+
+
+	private void discoverEdge(final GraphStreamViewer gsv, final ModelGraph modelGraph,
+	                          final Spot root, final Spot parent,
+	                          final int generation,
+	                          final int x)
+	{
+		final Spot spot = modelGraph.vertices().createRef(); //aux spot reference
+		final Spot fRef = modelGraph.vertices().createRef(); //spot's ancestor buddy (forward)
+		final Link lRef = modelGraph.edgeRef();              //link reference
+
+		spot.refTo( root );
+
+		boolean keepGoing = true;
+		while (keepGoing)
+		{
+			//find how many forward-references (time-wise) this spot has
+			int countForwardLinks = 0;
+
+			final int time = spot.getTimepoint();
+
+			for (int n=0; n < spot.incomingEdges().size(); ++n)
+			{
+				spot.incomingEdges().get(n, lRef).getSource( fRef );
+				if (fRef.getTimepoint() > time)
+				{
+					++countForwardLinks;
+				}
+			}
+			for (int n=0; n < spot.outgoingEdges().size(); ++n)
+			{
+				spot.outgoingEdges().get(n, lRef).getTarget( fRef );
+				if (fRef.getTimepoint() > time)
+				{
+					++countForwardLinks;
+				}
+			}
+
+			if (countForwardLinks == 1)
+			{
+				//just a vertex on "a string", move over it
+				spot.refTo( fRef );
+			}
+			else
+			{
+				//we're leaf or branching point
+				keepGoing = false;
+
+				//add edge if the spot is different from the parent
+				if (generation == 0)
+				{
+					//first generation is just a vertex node (there's no one to connect to)
+					final String rootID = Integer.toString(spot.getInternalPoolIndex());
+					System.out.println("root node "+rootID);
+					gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {x,0,0});
+				}
+				else
+				{
+					//every next generation is a vertex node connected to its parent
+					System.out.print("generation: "+generation+"   ");
+					gsv.addStraightLineConnectedVertex(
+						Integer.toString(parent.getInternalPoolIndex()),
+						Integer.toString(spot.getInternalPoolIndex()),
+						x, -700*generation, 0);
+				}
+
+				//branching point?
+				if (countForwardLinks > 1)
+				{
+					//width at this generation level:
+					final int width = (int)(1000.0 / Math.pow(2,generation));
+
+					//x position of the left most branch
+					final int X = x - (int)(0.5*width);
+
+					//n branches gives rise to n+1 spaces around them,
+					//countForwardLinks is the number of the separating spaces
+					++countForwardLinks;
+
+					//current position of the branches
+					int cnt = 1;
+
+					//enumerate all ancestors and restart searches from them
+					for (int n=0; n < spot.incomingEdges().size(); ++n)
+					{
+						spot.incomingEdges().get(n, lRef).getSource( fRef );
+						if (fRef.getTimepoint() > time)
+						{
+							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							++cnt;
+						}
+					}
+					for (int n=0; n < spot.outgoingEdges().size(); ++n)
+					{
+						spot.outgoingEdges().get(n, lRef).getTarget( fRef );
+						if (fRef.getTimepoint() > time)
+						{
+							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							++cnt;
+						}
+					}
+				}
+			}
+		}
+
+		modelGraph.vertices().releaseRef(spot);
+		modelGraph.vertices().releaseRef(fRef);
+		modelGraph.releaseRef(lRef);
 	}
 
 
@@ -256,7 +281,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		Locale.setDefault( Locale.US );
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 
-		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
+		//final MamutProject project = new MamutProject( new File( "/tmp/test.mastodon" ), new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
 		final MamutProject project = new MamutProject(
 				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
 				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );

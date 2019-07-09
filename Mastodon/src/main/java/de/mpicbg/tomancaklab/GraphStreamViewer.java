@@ -47,6 +47,7 @@ class GraphStreamViewer
 	{
 		graph.addNode( newNodeID ).addAttribute( "xyz", xyz );
 		graph.addEdge( parentNodeID.concat( newNodeID ), parentNodeID, newNodeID );
+		System.out.println(parentNodeID+" -> "+newNodeID);
 	}
 
 
