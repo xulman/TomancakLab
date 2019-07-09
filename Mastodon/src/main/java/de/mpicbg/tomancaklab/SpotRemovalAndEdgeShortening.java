@@ -9,12 +9,9 @@ import org.mastodon.plugin.MastodonPluginAppModel;
 
 import org.mastodon.project.MamutProject;
 import org.mastodon.revised.mamut.Mastodon;
+import org.mastodon.revised.model.mamut.*;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.revised.model.mamut.Model;
-import org.mastodon.revised.model.mamut.ModelGraph;
-import org.mastodon.revised.model.mamut.Spot;
-import org.mastodon.revised.model.mamut.Link;
 
 import org.scijava.AbstractContextual;
 import org.scijava.Context;
@@ -25,7 +22,10 @@ import org.scijava.ui.behaviour.util.RunnableAction;
 import org.scijava.log.LogService;
 
 import javax.swing.*;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 
@@ -153,7 +153,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 				if (countBackwardLinks == 0)
 				{
 					logServiceRef.info("Discovered root "+spot.getLabel());
-					discoverEdge(gsv,modelGraph, spot, spot, 0,treeCnt*1000);
+					discoverEdge(gsv,modelGraph, spot, spot,spot, 0,treeCnt*1000);
 					++treeCnt;
 				}
 			}
@@ -164,11 +164,23 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 
 		logServiceRef.info("generation graph rendered");
 		modelGraph.notifyGraphChanged();
+
+		for ( final Spot spot : model.getSpatioTemporalIndex().getSpatialIndex(timeFrom,timeTill) )
+			modelGraph.remove( spot );
+		for ( final Spot spot : newModel.getSpatioTemporalIndex().getSpatialIndex(timeFrom,timeTill) )
+		{
+		    spot.localize(pos);
+			modelGraph.addVertex().init(spot.getTimepoint(),pos,Math.sqrt(spot.getBoundingSphereRadiusSquared())).setLabel(spot.getLabel());
+		}
 	}
+
+	final Model newModel = new Model();
+	final ModelGraph newModelGraph = newModel.getGraph();
 
 
 	private void discoverEdge(final GraphStreamViewer gsv, final ModelGraph modelGraph,
 	                          final Spot root, final Spot parent,
+	                          final Spot mastodonNewParent,
 	                          final int generation,
 	                          final int x)
 	{
@@ -206,12 +218,15 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 			if (countForwardLinks == 1)
 			{
 				//just a vertex on "a string", move over it
+				//modelGraph.remove(spot);
 				spot.refTo( fRef );
 			}
 			else
 			{
 				//we're leaf or branching point
 				keepGoing = false;
+
+				Spot mastodonNewSpot;
 
 				//add edge if the spot is different from the parent
 				if (generation == 0)
@@ -220,6 +235,12 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 					final String rootID = Integer.toString(spot.getInternalPoolIndex());
 					System.out.println("root node "+rootID);
 					gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {x,0,0});
+
+					spot.localize(pos);
+					mastodonNewSpot = newModelGraph.addVertex();
+					mastodonNewSpot
+						.init(generation+200,pos,2)
+						.setLabel(spot.getLabel());
 				}
 				else
 				{
@@ -229,6 +250,13 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						Integer.toString(parent.getInternalPoolIndex()),
 						Integer.toString(spot.getInternalPoolIndex()),
 						x, -700*generation, 0);
+
+					spot.localize(pos);
+					mastodonNewSpot = newModelGraph.addVertex();
+					mastodonNewSpot
+							.init(generation+200,pos,2)
+							.setLabel(spot.getLabel());
+					newModelGraph.addEdge(mastodonNewParent,mastodonNewSpot);
 				}
 
 				//branching point?
@@ -253,7 +281,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						spot.incomingEdges().get(n, lRef).getSource( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							discoverEdge(gsv,modelGraph, fRef, spot,mastodonNewSpot, generation+1, X +(cnt*width/countForwardLinks));
 							++cnt;
 						}
 					}
@@ -262,11 +290,12 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						spot.outgoingEdges().get(n, lRef).getTarget( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							discoverEdge(gsv,modelGraph, fRef, spot,mastodonNewSpot, generation+1, X +(cnt*width/countForwardLinks));
 							++cnt;
 						}
 					}
 				}
+				//modelGraph.remove(spot);
 			}
 		}
 
@@ -275,16 +304,20 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		modelGraph.releaseRef(lRef);
 	}
 
+	final double pos[] = new double[3];
+
 
 	public static void main( final String[] args ) throws Exception
 	{
 		Locale.setDefault( Locale.US );
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 
-		//final MamutProject project = new MamutProject( new File( "/tmp/test.mastodon" ), new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
+		final MamutProject project = new MamutProject( new File( "/tmp/test.mastodon" ), new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
+		/*
 		final MamutProject project = new MamutProject(
 				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
 				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
+		*/
 
 		final Mastodon mastodon = new Mastodon();
 		new Context().inject( mastodon );
