@@ -99,6 +99,10 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	{
 		//NB: this method could be in a class of its own... later...
 
+		//opens the GraphStreamer window
+		GraphStreamViewer gsv = new GraphStreamViewer();
+		gsv.runExample(); //TODO replace me with some proper code
+
 		//aux Fiji services
 		logServiceRef = this.getContext().getService(LogService.class).log();
 
