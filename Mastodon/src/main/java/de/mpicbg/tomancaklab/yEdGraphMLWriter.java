@@ -145,24 +145,7 @@ class yEdGraphMLWriter
 	}
 
 
-	public void runExample()
 	{
-		System.out.println("GraphML started");
-
-		//the main root of the tree
-		addNode("A", "A",defaultNodeColour, 200,0);
-
-		//left subtree: straight lines
-		addStraightLineConnectedVertex("A" , "AL" , "AL" ,defaultNodeColour, 100,200,0);
-		addStraightLineConnectedVertex("AL", "ALL", "ALL",defaultNodeColour,  50,400,0);
-		addStraightLineConnectedVertex("AL", "ALR", "ALR",defaultNodeColour, 150,400,0);
-
-		//right subtree: bended lines
-		addBendedLineConnectedVertex( "A" , "AR" , "AR" ,defaultNodeColour, 300,200,0);
-		addBendedLineConnectedVertex( "AR", "ARL", "ARL",defaultNodeColour, 250,400,0);
-		addBendedLineConnectedVertex( "AR", "ARR", "ARR",defaultNodeColour, 350,400,0);
-
-		System.out.println("GraphML stopped");
 	}
 
 
@@ -187,5 +170,23 @@ class yEdGraphMLWriter
 		addNode(newNodeID, label,colorRGB, xyz[0],xyz[1]);
 		writeEdge(parentNodeID.concat(newNodeID), parentNodeID, newNodeID, xyz[0]+defaultNodeWidth/2,xyz[1]+bendingPointAbsoluteOffset);
 		System.out.println(parentNodeID+" -> "+newNodeID);
+	public void runExample()
+	{
+		System.out.println("GraphML started");
+
+		//the main root of the tree
+		addNode("A", "A",defaultNodeColour, 200,0);
+
+		//left subtree: straight lines
+		addStraightLineConnectedVertex("A" , "AL" , "AL" ,defaultNodeColour, 100,200,0);
+		addStraightLineConnectedVertex("AL", "ALL", "ALL",defaultNodeColour,  50,400,0);
+		addStraightLineConnectedVertex("AL", "ALR", "ALR",defaultNodeColour, 150,400,0);
+
+		//right subtree: bended lines
+		addBendedLineConnectedVertex( "A" , "AR" , "AR" ,defaultNodeColour, 300,200,0);
+		addBendedLineConnectedVertex( "AR", "ARL", "ARL",defaultNodeColour, 250,400,0);
+		addBendedLineConnectedVertex( "AR", "ARR", "ARR",defaultNodeColour, 350,400,0);
+
+		System.out.println("GraphML stopped");
 	}
 }
