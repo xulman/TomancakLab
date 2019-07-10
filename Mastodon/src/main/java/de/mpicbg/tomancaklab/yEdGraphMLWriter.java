@@ -144,10 +144,12 @@ class yEdGraphMLWriter
 		}
 	}
 
+	public void addStraightLine(final String fromId, final String toId)
 
 	{
+		writeEdge(fromId.concat(toId), fromId, toId);
+		System.out.println(fromId+" -> "+toId);
 	}
-
 
 	public void addStraightLineConnectedVertex(final String parentNodeID,
 	                                           final String newNodeID,
@@ -155,12 +157,17 @@ class yEdGraphMLWriter
 	                                           final int... xyz)
 	{
 		addNode(newNodeID, label,colorRGB, xyz[0],xyz[1]);
-		writeEdge(parentNodeID.concat(newNodeID), parentNodeID, newNodeID);
-		System.out.println(parentNodeID+" -> "+newNodeID);
+		addStraightLine(parentNodeID, newNodeID);
 	}
 
-
 	final int bendingPointAbsoluteOffset = -80;
+
+	public void addBendedLine(final String fromId, final String toId,
+	                          final int toX, final int toY)
+	{
+		writeEdge(fromId.concat(toId), fromId, toId, toX+defaultNodeWidth/2,toY+bendingPointAbsoluteOffset);
+		System.out.println(fromId+" -> "+toId);
+	}
 
 	public void addBendedLineConnectedVertex(final String parentNodeID,
 	                                         final String newNodeID,
@@ -168,8 +175,8 @@ class yEdGraphMLWriter
 	                                         final int... xyz)
 	{
 		addNode(newNodeID, label,colorRGB, xyz[0],xyz[1]);
-		writeEdge(parentNodeID.concat(newNodeID), parentNodeID, newNodeID, xyz[0]+defaultNodeWidth/2,xyz[1]+bendingPointAbsoluteOffset);
-		System.out.println(parentNodeID+" -> "+newNodeID);
+		addBendedLine(parentNodeID, newNodeID, xyz[0],xyz[1]);
+	}
 	public void runExample()
 	{
 		System.out.println("GraphML started");
