@@ -7,6 +7,7 @@ import java.io.IOException;
 
 class yEdGraphMLWriter
 {
+	// -----------------------------------------------------------------------------
 	BufferedWriter file;
 
 	public yEdGraphMLWriter(final String outputGraphMLFile)
@@ -44,6 +45,7 @@ class yEdGraphMLWriter
 	{
 		if (!closed) close();
 	}
+	// -----------------------------------------------------------------------------
 
 	/** assuming the input color "value" has meaning
 	    when read in hexadecimal 0xRRGGBB format */
@@ -56,7 +58,7 @@ class yEdGraphMLWriter
 	{
 		return String.format( "#%02X%02X%02X", r,g,b );
 	}
-
+	// -----------------------------------------------------------------------------
 
 	final int defaultNodeWidth  = 30;
 	final int defaultNodeHeight = 30;
@@ -102,6 +104,7 @@ class yEdGraphMLWriter
 			e.printStackTrace();
 		}
 	}
+	// -----------------------------------------------------------------------------
 
 	/** straight edge */
 	void writeEdge(final String id,
@@ -123,7 +126,7 @@ class yEdGraphMLWriter
 		}
 	}
 
-	/** bending edge around the point [bx,by] */
+	/** edge bending around the point [bx,by] */
 	void writeEdge(final String id,
 	               final String fromId, final String toId,
 	               final int bx, final int by)
@@ -143,9 +146,9 @@ class yEdGraphMLWriter
 			e.printStackTrace();
 		}
 	}
+	// -----------------------------------------------------------------------------
 
 	public void addStraightLine(final String fromId, final String toId)
-
 	{
 		writeEdge(fromId.concat(toId), fromId, toId);
 		System.out.println(fromId+" -> "+toId);
@@ -159,6 +162,7 @@ class yEdGraphMLWriter
 		addNode(newNodeID, label,colorRGB, xyz[0],xyz[1]);
 		addStraightLine(parentNodeID, newNodeID);
 	}
+	// -----------------------------------------------------------------------------
 
 	final int bendingPointAbsoluteOffset = -80;
 
@@ -177,6 +181,8 @@ class yEdGraphMLWriter
 		addNode(newNodeID, label,colorRGB, xyz[0],xyz[1]);
 		addBendedLine(parentNodeID, newNodeID, xyz[0],xyz[1]);
 	}
+	// -----------------------------------------------------------------------------
+
 	public void runExample()
 	{
 		System.out.println("GraphML started");
