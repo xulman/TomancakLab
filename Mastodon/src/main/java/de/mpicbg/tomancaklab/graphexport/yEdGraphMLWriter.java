@@ -1,11 +1,11 @@
-package de.mpicbg.tomancaklab;
+package de.mpicbg.tomancaklab.graphexport;
 
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 
-class yEdGraphMLWriter
+public class yEdGraphMLWriter
 {
 	// -----------------------------------------------------------------------------
 	BufferedWriter file;
@@ -60,30 +60,30 @@ class yEdGraphMLWriter
 	}
 	// -----------------------------------------------------------------------------
 
-	final int defaultNodeWidth  = 30;
-	final int defaultNodeHeight = 30;
-	final int defaultNodeColour = 0xCCCCCC;
+	public final int defaultNodeWidth  = 30;
+	public final int defaultNodeHeight = 30;
+	public final int defaultNodeColour = 0xCCCCCC;
 
-	void addNode(final String id,
+	public void addNode(final String id,
 	             final String label)
 	{
 		addNode(id, label,defaultNodeColour, 0,0, defaultNodeWidth,defaultNodeHeight);
 	}
 
-	void addNode(final String id,
+	public void addNode(final String id,
 	             final String label, final int colorRGB)
 	{
 		addNode(id, label,colorRGB, 0,0, defaultNodeWidth,defaultNodeHeight);
 	}
 
-	void addNode(final String id,
+	public void addNode(final String id,
 	             final String label, final int colorRGB,
 	             final int x, final int y)
 	{
 		addNode(id, label,colorRGB, x,y, defaultNodeWidth,defaultNodeHeight);
 	}
 
-	void addNode(final String id,
+	public void addNode(final String id,
 	             final String label, final int colorRGB,
 	             final int x, final int y,
 	             final int width, final int height)

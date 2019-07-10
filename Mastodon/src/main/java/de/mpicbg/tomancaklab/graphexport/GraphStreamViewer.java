@@ -1,11 +1,11 @@
-package de.mpicbg.tomancaklab;
+package de.mpicbg.tomancaklab.graphexport;
 
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.DefaultGraph;
 import org.graphstream.ui.view.Viewer;
 
-class GraphStreamViewer
+public class GraphStreamViewer
 {
 	final Graph graph;
 
