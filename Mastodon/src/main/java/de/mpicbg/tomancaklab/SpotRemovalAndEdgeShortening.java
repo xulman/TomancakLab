@@ -104,8 +104,8 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	{
 		//NB: this method could be in a class of its own... later...
 
-		//opens the GraphStreamer window
-		GraphStreamViewer gsv = new GraphStreamViewer();
+		//opens the GraphML file
+		yEdGraphMLWriter gml = new yEdGraphMLWriter("/tmp/mastodon.graphml");
 
 		//aux Fiji services
 		logServiceRef = this.getContext().getService(LogService.class).log();
@@ -153,7 +153,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 				if (countBackwardLinks == 0)
 				{
 					logServiceRef.info("Discovered root "+spot.getLabel());
-					discoverEdge(gsv,modelGraph, spot, spot, 0,treeCnt*1000);
+					discoverEdge(gml,modelGraph, spot, spot, 0,treeCnt*1000);
 					++treeCnt;
 				}
 			}
@@ -162,12 +162,14 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		modelGraph.vertices().releaseRef(sRef);
 		modelGraph.releaseRef(lRef);
 
+		gml.close();
+
 		logServiceRef.info("generation graph rendered");
 		modelGraph.notifyGraphChanged();
 	}
 
 
-	private void discoverEdge(final GraphStreamViewer gsv, final ModelGraph modelGraph,
+	private void discoverEdge(final yEdGraphMLWriter gml, final ModelGraph modelGraph,
 	                          final Spot root, final Spot parent,
 	                          final int generation,
 	                          final int x)
@@ -219,16 +221,19 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 					//first generation is just a vertex node (there's no one to connect to)
 					final String rootID = Integer.toString(spot.getInternalPoolIndex());
 					System.out.println("root node "+rootID);
-					gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {x,0,0});
+					//gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {x,0,0});
+					gml.addNode(rootID, spot.getLabel(),gml.defaultNodeColour, x,0);
 				}
 				else
 				{
 					//every next generation is a vertex node connected to its parent
 					System.out.print("generation: "+generation+"   ");
-					gsv.addStraightLineConnectedVertex(
+					//gml.addStraightLineConnectedVertex(
+					gml.addBendedLineConnectedVertex(
 						Integer.toString(parent.getInternalPoolIndex()),
 						Integer.toString(spot.getInternalPoolIndex()),
-						x, -700*generation, 0);
+						spot.getLabel(),gml.defaultNodeColour,
+						x, 100*generation, 0);
 				}
 
 				//branching point?
@@ -253,7 +258,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						spot.incomingEdges().get(n, lRef).getSource( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							discoverEdge(gml,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
 							++cnt;
 						}
 					}
@@ -262,7 +267,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						spot.outgoingEdges().get(n, lRef).getTarget( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gsv,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
+							discoverEdge(gml,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
 							++cnt;
 						}
 					}
