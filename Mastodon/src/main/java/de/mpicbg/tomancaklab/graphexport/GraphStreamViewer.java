@@ -15,31 +15,6 @@ public class GraphStreamViewer
 		graph.display( false ).setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
 	}
 
-	public void runExample()
-	{
-		System.out.println("gsApp started");
-
-		//coords are:
-		// x - horizontal, higher means more right
-		// y - vertical, higher means more up
-		// ([0,0] is bottom-left corner)
-
-		//the main root of the tree
-		graph.addNode("A").addAttribute("xyz", new int[] {20,0,0} );
-
-		//left subtree: straight lines
-		addStraightLineConnectedVertex("A" , "AL",  10,-20,0);
-		addStraightLineConnectedVertex("AL", "ALL",  5,-40,0);
-		addStraightLineConnectedVertex("AL", "ALR", 15,-40,0);
-
-		//right subtree: bended lines
-		addBendedLineConnectedVertex( "A" , "AR",  30,-20,0);
-		addBendedLineConnectedVertex( "AR", "ARL", 25,-40,0);
-		addBendedLineConnectedVertex( "AR", "ARR", 35,-40,0);
-
-		System.out.println("gsApp stopped");
-	}
-
 
 	public void addStraightLineConnectedVertex(final String parentNodeID,
 															 final String newNodeID,
@@ -80,5 +55,30 @@ public class GraphStreamViewer
 
 		graph.addEdge( parentNodeID.concat( benderNodeID ), parentNodeID, benderNodeID );
 		graph.addEdge( benderNodeID.concat( newNodeID ),    benderNodeID, newNodeID );
+	}
+
+	public void runExample()
+	{
+		System.out.println("gsApp started");
+
+		//coords are:
+		// x - horizontal, higher means more right
+		// y - vertical, higher means more up
+		// ([0,0] is bottom-left corner)
+
+		//the main root of the tree
+		graph.addNode("A").addAttribute("xyz", new int[] {20,0,0} );
+
+		//left subtree: straight lines
+		addStraightLineConnectedVertex("A" , "AL",  10,-20);
+		addStraightLineConnectedVertex("AL", "ALL",  5,-40);
+		addStraightLineConnectedVertex("AL", "ALR", 15,-40);
+
+		//right subtree: bended lines
+		addBendedLineConnectedVertex( "A" , "AR",  30,-20);
+		addBendedLineConnectedVertex( "AR", "ARL", 25,-40);
+		addBendedLineConnectedVertex( "AR", "ARR", 35,-40);
+
+		System.out.println("gsApp stopped");
 	}
 }
