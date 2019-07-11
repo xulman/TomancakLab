@@ -6,6 +6,8 @@ public interface GraphExportable
 	int xColumnWidth = 50;
 	/** grid stepping along y */
 	int yLineStep = 100;
+	/** the bending point along y */
+	int defaultBendingPointAbsoluteOffsetY = -80;
 
 	int defaultNodeWidth  = 30;
 	int defaultNodeHeight = 30;
@@ -35,8 +37,6 @@ public interface GraphExportable
 	                                    final String label, final int colorRGB,
 	                                    final int x, final int y);
 
-
-	int defaultBendingPointAbsoluteOffsetY = -80;
 
 	/** adds bended line where the bending shall happen at
 	    [toX + defaultNodeWidth/2 , toY + defaultBendingPointAbsoluteOffsetY ] */
