@@ -7,7 +7,7 @@ import java.io.IOException;
 public class yEdGraphMLWriter implements GraphExportable
 {
 	// -----------------------------------------------------------------------------
-	BufferedWriter file;
+	private BufferedWriter file;
 
 	public yEdGraphMLWriter(final String outputGraphMLFile)
 	{
@@ -61,16 +61,14 @@ public class yEdGraphMLWriter implements GraphExportable
 	}
 	// -----------------------------------------------------------------------------
 
-	public final int defaultNodeWidth  = 30;
-	public final int defaultNodeHeight = 30;
-	public final int defaultNodeColour = 0xCCCCCC;
-
+	/** extra addNode() that places the node at [0,0] */
 	public void addNode(final String id,
 	             final String label)
 	{
 		addNode(id, label,defaultNodeColour, 0,0, defaultNodeWidth,defaultNodeHeight);
 	}
 
+	/** extra addNode() that places the node at [0,0] */
 	public void addNode(final String id,
 	             final String label, final int colorRGB)
 	{
