@@ -5,57 +5,92 @@ import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.DefaultGraph;
 import org.graphstream.ui.view.Viewer;
 
-public class GraphStreamViewer
+public class GraphStreamViewer implements GraphExportable
 {
-	final Graph graph;
+	// -----------------------------------------------------------------------------
+	private final Graph graph;
 
-	public GraphStreamViewer()
+	public GraphStreamViewer(final String windowTitle)
 	{
-		graph = new DefaultGraph("Mastodon Generation Lineage");
+		graph = new DefaultGraph(windowTitle);
 		graph.display( false ).setCloseFramePolicy(Viewer.CloseFramePolicy.CLOSE_VIEWER);
 	}
 
+	@Override
+	public void close() {}
+	// -----------------------------------------------------------------------------
 
-	public void addStraightLineConnectedVertex(final String parentNodeID,
-															 final String newNodeID,
-															 final int... xyz)
+	@Override
+	public void addNode(final String id,
+	             final String label, final int colorRGB,
+	             final int x, final int y)
 	{
-		graph.addNode( newNodeID ).addAttribute( "xyz", xyz );
-		graph.addEdge( parentNodeID.concat( newNodeID ), parentNodeID, newNodeID );
-		System.out.println(parentNodeID+" -> "+newNodeID);
+		addNode(id, label,colorRGB, x,y, defaultNodeWidth,defaultNodeHeight);
 	}
 
+	@Override
+	public void addNode(final String id,
+	             final String label, final int colorRGB,
+	             final int x, final int y,
+	             final int width, final int height)
+	{
+		final Node n = graph.addNode( id );
+		n.addAttribute( "xyz", x,-y,0 );
+		//n.label
+		//n.color
+	}
+	// -----------------------------------------------------------------------------
 
-	final float bendingPointRelativeFraction = 0.1f;
+	@Override
+	public void addStraightLine(final String fromId, final String toId)
+	{
+		graph.addEdge(fromId.concat(toId), fromId, toId);
+		System.out.println(fromId+" -> "+toId);
+	}
 
-	public void addBendedLineConnectedVertex(final String parentNodeID,
-														  final String newNodeID,
-														  final int... xyz)
+	@Override
+	public void addStraightLineConnectedVertex(final String parentNodeID,
+	                                           final String newNodeID,
+	                                           final String label, final int colorRGB,
+	                                           final int x, final int y)
+	{
+		addNode(newNodeID, label,colorRGB, x,y);
+		addStraightLine(parentNodeID, newNodeID);
+	}
+	// -----------------------------------------------------------------------------
+
+	@Override
+	public void addBendedLine(final String fromId, final String toId,
+	                          final int toX, final int toY)
+	{
+		addBendedLine(fromId,toId, toX,toY, defaultBendingPointAbsoluteOffsetY);
+	}
+
+	@Override
+	public void addBendedLine(final String fromId, final String toId,
+	                          final int toX, final int toY, final int bendingOffsetY)
 	{
 		//ID of the hidden node -- the "bender"
-		final String benderNodeID = newNodeID.concat("hidden_");
-
-		//y-coordinate of the "parent"/root vertex
-		Node n = graph.getNode( parentNodeID );
-		if (n == null)
-			throw new RuntimeException("Couldn't find the vertex: "+parentNodeID);
-		//
-		float y = ((int[])n.getAttribute( "xyz" ))[1];
-
-		//y-coordinate of the (hidden) bending vertex
-		y *= 1.0f - bendingPointRelativeFraction;
-		y += bendingPointRelativeFraction * (float)xyz[1];
-
-		n = graph.addNode( benderNodeID );
-		//n.addAttribute( "xyz", new int[] { xyz[0], (int)y, xyz[2] } );
-		n.addAttribute( "xyz", xyz[0], (int)y, xyz[2] );
+		final String benderNodeID = toId.concat("hidden");
+		final Node n = graph.addNode( benderNodeID );
+		n.addAttribute( "xyz", toX,toY-bendingOffsetY,0 );
 		n.addAttribute( "ui.hide" );
 
-		graph.addNode( newNodeID ).addAttribute( "xyz", xyz );
-
-		graph.addEdge( parentNodeID.concat( benderNodeID ), parentNodeID, benderNodeID );
-		graph.addEdge( benderNodeID.concat( newNodeID ),    benderNodeID, newNodeID );
+		graph.addEdge( fromId.concat( benderNodeID ), fromId, benderNodeID );
+		graph.addEdge( benderNodeID.concat( toId ),   benderNodeID, toId );
+		System.out.println(fromId+" -> "+toId);
 	}
+
+	@Override
+	public void addBendedLineConnectedVertex(final String parentNodeID,
+														  final String newNodeID,
+	                                         final String label, final int colorRGB,
+	                                         final int x, final int y)
+	{
+		addNode(newNodeID, label,colorRGB, x,y);
+		addBendedLine(parentNodeID, newNodeID, x,y);
+	}
+	// -----------------------------------------------------------------------------
 
 	public void runExample()
 	{
@@ -67,17 +102,17 @@ public class GraphStreamViewer
 		// ([0,0] is bottom-left corner)
 
 		//the main root of the tree
-		graph.addNode("A").addAttribute("xyz", new int[] {20,0,0} );
+		addNode("A", "A",defaultNodeColour, 200,0);
 
 		//left subtree: straight lines
-		addStraightLineConnectedVertex("A" , "AL",  10,-20);
-		addStraightLineConnectedVertex("AL", "ALL",  5,-40);
-		addStraightLineConnectedVertex("AL", "ALR", 15,-40);
+		addStraightLineConnectedVertex("A" , "AL" , "AL" ,defaultNodeColour, 100,200);
+		addStraightLineConnectedVertex("AL", "ALL", "ALL",defaultNodeColour,  50,400);
+		addStraightLineConnectedVertex("AL", "ALR", "ALR",defaultNodeColour, 150,400);
 
 		//right subtree: bended lines
-		addBendedLineConnectedVertex( "A" , "AR",  30,-20);
-		addBendedLineConnectedVertex( "AR", "ARL", 25,-40);
-		addBendedLineConnectedVertex( "AR", "ARR", 35,-40);
+		addBendedLineConnectedVertex( "A" , "AR" , "AR" ,defaultNodeColour, 300,200);
+		addBendedLineConnectedVertex( "AR", "ARL", "ARL",defaultNodeColour, 250,400);
+		addBendedLineConnectedVertex( "AR", "ARR", "ARR",defaultNodeColour, 350,400);
 
 		System.out.println("gsApp stopped");
 	}
