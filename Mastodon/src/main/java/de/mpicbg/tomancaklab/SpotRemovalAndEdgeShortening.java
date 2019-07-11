@@ -3,6 +3,9 @@ package de.mpicbg.tomancaklab;
 import static org.mastodon.app.ui.ViewMenuBuilder.item;
 import static org.mastodon.app.ui.ViewMenuBuilder.menu;
 
+import de.mpicbg.tomancaklab.graphexport.GraphExportable;
+import de.mpicbg.tomancaklab.graphexport.yEdGraphMLWriter;
+import de.mpicbg.tomancaklab.graphexport.GraphStreamViewer;
 import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
@@ -105,7 +108,8 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		//NB: this method could be in a class of its own... later...
 
 		//opens the GraphML file
-		yEdGraphMLWriter gml = new yEdGraphMLWriter("/tmp/mastodon.graphml");
+		GraphExportable ge = new yEdGraphMLWriter("/tmp/mastodon.graphml");
+		//GraphExportable ge = new GraphStreamViewer("Mastodon Generation Lineage");
 
 		//aux Fiji services
 		logServiceRef = this.getContext().getService(LogService.class).log();
@@ -121,7 +125,8 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		final Link lRef = modelGraph.edgeRef();              //link reference
 		final Spot sRef = modelGraph.vertices().createRef(); //aux spot reference
 
-		int treeCnt = 0;
+		int xLeftBound = 0;
+		final int[] xIgnoreCoords = new int[1];
 
 		//over all time points
 		for (int time = timeFrom; time <= timeTill; ++time)
@@ -153,8 +158,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 				if (countBackwardLinks == 0)
 				{
 					logServiceRef.info("Discovered root "+spot.getLabel());
-					discoverEdge(gml,modelGraph, spot, spot, 0,treeCnt*1000);
-					++treeCnt;
+					xLeftBound += discoverEdge(ge,modelGraph, spot, 0,xLeftBound, xIgnoreCoords,0);
 				}
 			}
 		}
@@ -162,17 +166,19 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		modelGraph.vertices().releaseRef(sRef);
 		modelGraph.releaseRef(lRef);
 
-		gml.close();
+		ge.close();
 
 		logServiceRef.info("generation graph rendered");
 		modelGraph.notifyGraphChanged();
 	}
 
 
-	private void discoverEdge(final yEdGraphMLWriter gml, final ModelGraph modelGraph,
-	                          final Spot root, final Spot parent,
-	                          final int generation,
-	                          final int x)
+	/** returns width of the tree induced with the given 'root' */
+	private int discoverEdge(final GraphExportable ge, final ModelGraph modelGraph,
+	                         final Spot root,
+	                         final int generation,
+	                         final int xLeftBound,
+	                         final int[] xCoords, final int xCoordsPos)
 	{
 		final Spot spot = modelGraph.vertices().createRef(); //aux spot reference
 		final Spot fRef = modelGraph.vertices().createRef(); //spot's ancestor buddy (forward)
@@ -180,13 +186,13 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 
 		spot.refTo( root );
 
-		boolean keepGoing = true;
-		while (keepGoing)
+		while (true)
 		{
+			//shortcut to the time of the current node/spot
+			final int time = spot.getTimepoint();
+
 			//find how many forward-references (time-wise) this spot has
 			int countForwardLinks = 0;
-
-			final int time = spot.getTimepoint();
 
 			for (int n=0; n < spot.incomingEdges().size(); ++n)
 			{
@@ -212,54 +218,21 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 			}
 			else
 			{
+				int xRightBound = xLeftBound;
+				final int[] childrenXcoords = new int[countForwardLinks];
+
 				//we're leaf or branching point
-				keepGoing = false;
-
-				//add edge if the spot is different from the parent
-				if (generation == 0)
-				{
-					//first generation is just a vertex node (there's no one to connect to)
-					final String rootID = Integer.toString(spot.getInternalPoolIndex());
-					System.out.println("root node "+rootID);
-					//gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {x,0,0});
-					gml.addNode(rootID, spot.getLabel(),gml.defaultNodeColour, x,0);
-				}
-				else
-				{
-					//every next generation is a vertex node connected to its parent
-					System.out.print("generation: "+generation+"   ");
-					//gml.addStraightLineConnectedVertex(
-					gml.addBendedLineConnectedVertex(
-						Integer.toString(parent.getInternalPoolIndex()),
-						Integer.toString(spot.getInternalPoolIndex()),
-						spot.getLabel(),gml.defaultNodeColour,
-						x, 100*generation, 0);
-				}
-
-				//branching point?
 				if (countForwardLinks > 1)
 				{
-					//width at this generation level:
-					final int width = (int)(1000.0 / Math.pow(2,generation));
-
-					//x position of the left most branch
-					final int X = x - (int)(0.5*width);
-
-					//n branches gives rise to n+1 spaces around them,
-					//countForwardLinks is the number of the separating spaces
-					++countForwardLinks;
-
-					//current position of the branches
-					int cnt = 1;
-
-					//enumerate all ancestors and restart searches from them
+					int childCnt = 0;
+					//branching point -> enumerate all ancestors and restart searches from them
 					for (int n=0; n < spot.incomingEdges().size(); ++n)
 					{
 						spot.incomingEdges().get(n, lRef).getSource( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gml,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
-							++cnt;
+							xRightBound += discoverEdge(ge,modelGraph, fRef, generation+1,xRightBound, childrenXcoords,childCnt);
+							++childCnt;
 						}
 					}
 					for (int n=0; n < spot.outgoingEdges().size(); ++n)
@@ -267,17 +240,70 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 						spot.outgoingEdges().get(n, lRef).getTarget( fRef );
 						if (fRef.getTimepoint() > time)
 						{
-							discoverEdge(gml,modelGraph, fRef, spot, generation+1, X +(cnt*width/countForwardLinks));
-							++cnt;
+							xRightBound += discoverEdge(ge,modelGraph, fRef, generation+1,xRightBound, childrenXcoords,childCnt);
+							++childCnt;
 						}
 					}
 				}
+				else
+				{
+					//we're a leaf -> pretend a subtree of single column width
+					xRightBound += ge.xColumnWidth;
+				}
+
+				final String rootID = Integer.toString(root.getInternalPoolIndex());
+				xCoords[xCoordsPos] = countForwardLinks == 0
+				                      ? (xRightBound + xLeftBound)/2
+				                      : (childrenXcoords[0] + childrenXcoords[countForwardLinks-1])/2;
+				//gsv.graph.addNode(rootID).addAttribute("xyz", new int[] {!,!,0});
+				ge.addNode(rootID, root.getLabel(),ge.defaultNodeColour,
+				           xCoords[xCoordsPos],ge.yLineStep*generation);
+
+				if (countForwardLinks > 1)
+				{
+					int childCnt = 0;
+					//enumerate all ancestors (children) and connect them (to this parent)
+					for (int n=0; n < spot.incomingEdges().size(); ++n)
+					{
+						spot.incomingEdges().get(n, lRef).getSource( fRef );
+						if (fRef.getTimepoint() > time)
+						{
+							//edge
+							System.out.print("generation: "+generation+"   ");
+							//ge.addStraightLine( rootID, Integer.toString(fRef.getInternalPoolIndex())
+							ge.addBendedLine( rootID, Integer.toString(fRef.getInternalPoolIndex())
+							                  ,childrenXcoords[childCnt++],ge.yLineStep*(generation+1)
+							                );
+						}
+					}
+					for (int n=0; n < spot.outgoingEdges().size(); ++n)
+					{
+						spot.outgoingEdges().get(n, lRef).getTarget( fRef );
+						if (fRef.getTimepoint() > time)
+						{
+							//edge
+							System.out.print("generation: "+generation+"   ");
+							//ge.addStraightLine( rootID, Integer.toString(fRef.getInternalPoolIndex())
+							ge.addBendedLine( rootID, Integer.toString(fRef.getInternalPoolIndex())
+							                  ,childrenXcoords[childCnt++],ge.yLineStep*(generation+1)
+							                );
+						}
+					}
+				}
+				else
+				{
+					//leaf is just a vertex node (there's no one to connect to)
+					System.out.println("Discovered \"leaf\" "+root.getLabel());
+				}
+
+				//clean up first before exiting
+				modelGraph.vertices().releaseRef(spot);
+				modelGraph.vertices().releaseRef(fRef);
+				modelGraph.releaseRef(lRef);
+
+				return (xRightBound - xLeftBound);
 			}
 		}
-
-		modelGraph.vertices().releaseRef(spot);
-		modelGraph.vertices().releaseRef(fRef);
-		modelGraph.releaseRef(lRef);
 	}
 
 
