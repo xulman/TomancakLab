@@ -5,6 +5,8 @@ import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.DefaultGraph;
 import org.graphstream.ui.view.Viewer;
 
+import java.awt.*;
+
 public class GraphStreamViewer implements GraphExportable
 {
 	// -----------------------------------------------------------------------------
@@ -36,8 +38,16 @@ public class GraphStreamViewer implements GraphExportable
 	{
 		final Node n = graph.addNode( id );
 		n.addAttribute( "xyz", x,-y,0 );
-		//n.label
-		//n.color
+		n.addAttribute( "ui.style", "size: "+width+","+height+";" );
+		n.addAttribute( "ui.style", "stroke-mode: plain; stroke-color: #000000;" );
+		n.addAttribute( "ui.style", "fill-color: rgb("
+		                                 +((colorRGB>>16)&0xFF)+","
+		                                 +((colorRGB>> 8)&0xFF)+","
+		                                 +((colorRGB    )&0xFF)+");" );
+
+		//n.addAttribute( "ui.style", "text-alignment: left;" );
+		n.addAttribute( "ui.style", "text-offset: "+(-width)+",0;" );
+		n.addAttribute( "ui.label", label );
 	}
 	// -----------------------------------------------------------------------------
 
@@ -73,7 +83,7 @@ public class GraphStreamViewer implements GraphExportable
 		//ID of the hidden node -- the "bender"
 		final String benderNodeID = toId.concat("hidden");
 		final Node n = graph.addNode( benderNodeID );
-		n.addAttribute( "xyz", toX,toY-bendingOffsetY,0 );
+		n.addAttribute( "xyz", toX,-toY-bendingOffsetY,0 );
 		n.addAttribute( "ui.hide" );
 
 		graph.addEdge( fromId.concat( benderNodeID ), fromId, benderNodeID );
