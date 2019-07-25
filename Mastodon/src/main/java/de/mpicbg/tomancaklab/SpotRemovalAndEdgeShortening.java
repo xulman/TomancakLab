@@ -36,7 +36,8 @@ import java.util.*;
 public class SpotRemovalAndEdgeShortening extends AbstractContextual implements MastodonPlugin
 {
 	//"IDs" of all plug-ins wrapped in this class
-	private static final String PluginID = "LoPaT-SpotRemovalEdgeShortening";
+	private static final String t2gyEd = "LoPaT-Time2Gen-yEd";
+	private static final String t2gGS  = "LoPaT-Time2Gen-GSOutlook";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -46,14 +47,15 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		//the titles of the items are defined right below
 		return Arrays.asList(
 				menu( "Plugins",
-						item( PluginID ) ) );
+						item( t2gyEd ), item ( t2gGS ) ) );
 	}
 
 	/** titles of this plug-in's menu items */
 	private static Map< String, String > menuTexts = new HashMap<>();
 	static
 	{
-		menuTexts.put( PluginID, "Spots Removal & Edge Shortenings" );
+		menuTexts.put( t2gyEd, "Time2Gen2yEd" );
+		menuTexts.put( t2gGS,  "Time2Gen2OutlookWindow" );
 	}
 
 	@Override
@@ -63,12 +65,13 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	}
 	//------------------------------------------------------------------------
 
-	private final AbstractNamedAction actionSRES; //Spot Removal Edge Shortening
+	private final AbstractNamedAction actionyEd,actionGS;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public SpotRemovalAndEdgeShortening()
 	{
-		actionSRES = new RunnableAction( PluginID, this::workerSRES );
+		actionyEd = new RunnableAction( t2gyEd, this::time2Gen2yEd );
+		actionGS  = new RunnableAction( t2gGS,  this::time2Gen2GSwindow );
 		updateEnabledActions();
 	}
 
@@ -76,8 +79,9 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	@Override
 	public void installGlobalActions( final Actions actions )
 	{
-		final String[] noShortCut = new String[] {};
-		actions.namedAction( actionSRES, noShortCut );
+		final String[] noShortCut = { "not mapped" };
+		actions.namedAction( actionyEd, noShortCut );
+		actions.namedAction( actionGS,  noShortCut );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -96,23 +100,31 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	private void updateEnabledActions()
 	{
 		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionSRES.setEnabled( appModel != null );
+		actionyEd.setEnabled( appModel != null );
+		actionGS.setEnabled(  appModel != null );
 	}
 	//------------------------------------------------------------------------
-	private LogService logServiceRef; //(re)defined with every call to this.workerSRES()
 
+	private void time2Gen2yEd()
+	{
+		//opens the GraphML file
+		final GraphExportable ge = new yEdGraphMLWriter("/tmp/mastodon.graphml");
+		time2Gen2GraphExportable( ge );
+	}
+
+	private void time2Gen2GSwindow()
+	{
+		final GraphExportable ge = new GraphStreamViewer("Mastodon Generation Lineage");
+		time2Gen2GraphExportable( ge );
+	}
 
 	/** implements the "SpotRemovalAndEdgeShortening" functionality */
-	private void workerSRES()
+	private void time2Gen2GraphExportable(final GraphExportable ge)
 	{
 		//NB: this method could be in a class of its own... later...
 
-		//opens the GraphML file
-		GraphExportable ge = new yEdGraphMLWriter("/tmp/mastodon.graphml");
-		//GraphExportable ge = new GraphStreamViewer("Mastodon Generation Lineage");
-
 		//aux Fiji services
-		logServiceRef = this.getContext().getService(LogService.class).log();
+		final LogService logServiceRef = this.getContext().getService(LogService.class).log();
 
 		//shortcuts to the data
 		final int timeFrom = pluginAppModel.getAppModel().getMinTimepoint();
