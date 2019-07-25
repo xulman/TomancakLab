@@ -22,6 +22,8 @@ public class GraphStreamViewer implements GraphExportable
 	public void close() {}
 	// -----------------------------------------------------------------------------
 
+	private final int yAxisStretchFactor = 3;
+
 	@Override
 	public void addNode(final String id,
 	             final String label, final int colorRGB,
@@ -37,7 +39,7 @@ public class GraphStreamViewer implements GraphExportable
 	             final int width, final int height)
 	{
 		final Node n = graph.addNode( id );
-		n.addAttribute( "xyz", x,-y,0 );
+		n.addAttribute( "xyz", x,-y *yAxisStretchFactor,0 );
 		n.addAttribute( "ui.style", "size: "+width+","+height+";" );
 		n.addAttribute( "ui.style", "stroke-mode: plain; stroke-color: #000000;" );
 		n.addAttribute( "ui.style", "fill-color: rgb("
@@ -45,7 +47,7 @@ public class GraphStreamViewer implements GraphExportable
 		                                 +((colorRGB>> 8)&0xFF)+","
 		                                 +((colorRGB    )&0xFF)+");" );
 
-		//n.addAttribute( "ui.style", "text-alignment: left;" );
+		n.addAttribute( "ui.style", "text-alignment: center;" );
 		n.addAttribute( "ui.style", "text-offset: "+(-width)+",0;" );
 		n.addAttribute( "ui.label", label );
 	}
@@ -83,7 +85,7 @@ public class GraphStreamViewer implements GraphExportable
 		//ID of the hidden node -- the "bender"
 		final String benderNodeID = toId.concat("hidden");
 		final Node n = graph.addNode( benderNodeID );
-		n.addAttribute( "xyz", toX,-toY-bendingOffsetY,0 );
+		n.addAttribute( "xyz", toX,(-toY-bendingOffsetY) *yAxisStretchFactor,0 );
 		n.addAttribute( "ui.hide" );
 
 		graph.addEdge( fromId.concat( benderNodeID ), fromId, benderNodeID );
