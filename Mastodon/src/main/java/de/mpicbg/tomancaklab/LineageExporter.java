@@ -32,8 +32,8 @@ import java.io.File;
 import java.util.*;
 
 
-@Plugin( type = SpotRemovalAndEdgeShortening.class )
-public class SpotRemovalAndEdgeShortening extends AbstractContextual implements MastodonPlugin
+@Plugin( type = LineageExporter.class )
+public class LineageExporter extends AbstractContextual implements MastodonPlugin
 {
 	//"IDs" of all plug-ins wrapped in this class
 	private static final String t2gyEd = "LoPaT-Time2Gen-yEd";
@@ -68,7 +68,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 	private final AbstractNamedAction actionyEd,actionGS;
 
 	/** default c'tor: creates Actions available from this plug-in */
-	public SpotRemovalAndEdgeShortening()
+	public LineageExporter()
 	{
 		actionyEd = new RunnableAction( t2gyEd, this::time2Gen2yEd );
 		actionGS  = new RunnableAction( t2gGS,  this::time2Gen2GSwindow );
@@ -118,7 +118,7 @@ public class SpotRemovalAndEdgeShortening extends AbstractContextual implements 
 		time2Gen2GraphExportable( ge );
 	}
 
-	/** implements the "SpotRemovalAndEdgeShortening" functionality */
+	/** implements the "LineageExporter" functionality */
 	private void time2Gen2GraphExportable(final GraphExportable ge)
 	{
 		//NB: this method could be in a class of its own... later...
