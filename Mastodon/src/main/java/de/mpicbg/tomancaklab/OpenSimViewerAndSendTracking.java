@@ -112,6 +112,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		minTimePoint = pluginAppModel.getAppModel().getMinTimepoint();
 		maxTimePoint = pluginAppModel.getAppModel().getMaxTimepoint();
+
+		//install new TagSet listener
+		pluginAppModel.getAppModel().getModel().getTagSetModel().listeners().add( new TagsListener() );
+		//TODO: add onClose() to disconnect listener, or is this only for windowed stuff?
 	}
 
 	/** enables/disables menu items based on the availability of some project */
@@ -339,11 +343,21 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	}
 
 	/** this is turned "on" by TagEditorListeners, is turned "off" by createListOfSpotToTagMaps() */
-	private boolean areThereNewChangesInTagSets = true; //TODO should be thread-safe/synchronized
+	private boolean areThereNewChangesInTagSets = true;
 	private List< ObjTagMap< Spot, TagSetStructure.Tag > > lastListOfSpotToTagMaps = null;
+
+	class TagsListener implements TagSetModel.TagSetModelListener
+	{
+		@Override
+		public void tagSetStructureChanged()
+		{
+			areThereNewChangesInTagSets = true;
+		}
+	}
 
 	private List< ObjTagMap< Spot, TagSetStructure.Tag > > createListOfSpotToTagMaps()
 	{
+		System.out.println("triggered createListOfSpotToTagMaps()");
 		final TagSetModel< Spot, Link > tsModel = pluginAppModel.getAppModel().getModel().getTagSetModel();
 		final List< TagSetStructure.TagSet > tagSets = tsModel.getTagSetStructure().getTagSets();
 
