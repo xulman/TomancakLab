@@ -2,27 +2,25 @@ package de.mpicbg.tomancaklab;
 
 import static org.mastodon.app.ui.ViewMenuBuilder.item;
 import static org.mastodon.app.ui.ViewMenuBuilder.menu;
-
 import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 
-import org.mastodon.project.MamutProject;
-import org.mastodon.revised.mamut.MamutViewTrackScheme;
 import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.revised.model.tag.ObjTagMap;
-import org.mastodon.revised.model.tag.TagSetModel;
-import org.mastodon.revised.model.tag.TagSetStructure;
+import org.mastodon.revised.mamut.MamutAppModel;
+import org.mastodon.revised.mamut.MamutViewTrackScheme;
+
 import org.mastodon.revised.trackscheme.TrackSchemeEdge;
 import org.mastodon.revised.trackscheme.TrackSchemeVertex;
-import org.mastodon.revised.trackscheme.display.TrackSchemeFrame;
-import org.mastodon.revised.ui.coloring.GraphColorGenerator;
-import org.mastodon.spatial.SpatioTemporalIndex;
-import org.mastodon.revised.mamut.MamutAppModel;
+import org.mastodon.revised.ui.coloring.GraphColorGeneratorAdapter;
+
 import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
+import org.mastodon.spatial.SpatioTemporalIndex;
+
+import org.mastodon.project.MamutProject;
 
 import org.scijava.AbstractContextual;
 import org.scijava.Context;
@@ -30,7 +28,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
-import org.scijava.log.LogService;
 
 import javax.swing.*;
 import java.io.PrintWriter;
@@ -135,7 +132,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//just close if something was opened (making a reset in this way)
 		workerClose();
 
-		System.out.println("connecting to SimViewer");
+		System.out.println("Mastodon network sender: connecting to SimViewer");
 		boolean connected = false;
 
 		//init the communication side
@@ -165,23 +162,36 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		if (connected)
 		{
-			System.out.println("connected to SimViewer");
+			System.out.println("Mastodon network sender: connected to SimViewer");
 
 			//open a TrackScheme window that shall be under our control,
-			//and retrieve a handle on the current GraphColorGenerator
-			final MamutViewTrackScheme tsWindow = pluginAppModel.getWindowManager().createTrackScheme();
-			final TrackSchemeFrame tsFrame = (TrackSchemeFrame)tsWindow.getFrame();
-			tsFrame.getTrackschemePanel().timepointChanged();
-			colorGenerator = tsFrame.getTrackschemePanel().getColorGenerator();
+			//and retrieve a handle on the current GraphColorGeneratorAdapter
+			myOwnTSWindow = pluginAppModel.getWindowManager().createTrackScheme();
+			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter();
 
-			//and send the current content to the SimViewer
-			this.workerSend();
+			if (myOwnColorProvider == null)
+				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
+
+			//also register that this connection should be closed on this window close
+			myOwnTSWindow.onClose( this::workerClose );
+
+			//on coloring style change, repaint the currently sent time point
+			myOwnTSWindow.getColoringModel().listeners().add( this::workerSend );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::workerSend ) );
+
+			//on time point change, repaint the current time point
+			myOwnTSWindow.getTimepointModel().listeners().add( this::workerCurrentTime );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getTimepointModel().listeners().remove( this::workerCurrentTime ));
+
+			//finally, send the current content to the SimViewer
+			this.workerCurrentTime();
 		}
 		else
-			System.out.println("NOT connected to SimViewer");
+			System.out.println("Mastodon network sender: NOT connected to SimViewer");
 	}
 
-	private GraphColorGenerator<TrackSchemeVertex, TrackSchemeEdge> colorGenerator = null;
+	private MamutViewTrackScheme myOwnTSWindow = null;
+	private GraphColorGeneratorAdapter<Spot, Link, TrackSchemeVertex, TrackSchemeEdge> myOwnColorProvider = null;
 
 	private void workerClose()
 	{
@@ -311,16 +321,33 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 
 	private int minTimePoint,maxTimePoint;
-	private int timePoint = -1; //current timepoint
+	private int timePoint = -1; //if not set earlier, workerSend() will fix it to minTimePoint
 
-	public int deltaBackPoints = 10;
-	public int deltaForwardPoints = 3;
+	// --------- future GUI control points ---------
+	//
+	public int deltaBackPoints = 0;
+	public int deltaForwardPoints = 0;
+
+	public boolean useOwnRadiusInsteadOfSpotsOwn = false;
+	//if yes:
+	public float radiusOwnValue = 2.f;
+	//if no:
+	public float radiusScalingFactor = 1.f;
+
+	public int colorWhenNoStyleIsUsed = 0x00FFFFFF;
+	//else if color styles are used:
+	public boolean alwaysShowAllNodes = true;
+	//if yes:
+	public int colorForNotColoredNodes = 0x00606060;
+	//if no: nodes not covered/colored with the current style are not displayed
+
+	public boolean reportSpotsRangeStats = true;
+	//
+	// --------- future GUI control points ---------
 
 
 	private void workerTimePrev()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
-
 		if (timePoint > minTimePoint)
 		{
 			--timePoint;
@@ -330,8 +357,6 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 	private void workerTimeNext()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
-
 		if (timePoint < maxTimePoint)
 		{
 			++timePoint;
@@ -339,10 +364,17 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 	}
 
-	/** sends some (now fake!) stuff to the SimViewer */
+	private void workerCurrentTime()
+	{
+		timePoint = myOwnTSWindow.getTimepointModel().getTimepoint();
+		workerSend();
+	}
+
+	/** sends some stuff to the SimViewer */
 	private void workerSend()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
+		//assure that the timePoint is valid
+		timePoint = Math.min( Math.max( timePoint, minTimePoint ), maxTimePoint );
 
 		final Model model = pluginAppModel.getAppModel().getModel();
 		final ModelGraph modelGraph = model.getGraph();
@@ -360,22 +392,52 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
+			//spot color
+			int color = colorWhenNoStyleIsUsed;
+			if ( ! myOwnTSWindow.getColoringModel().noColoring() )
+			{
+				//some color style is used, take color from it
+				color = myOwnColorProvider.spotColor( spot );
+
+				//did this spot got some color, that is, is it colored in this style?
+				if (color == 0)
+				{
+					//no color, use either default or skip drawing of this spot
+					if (alwaysShowAllNodes) color = colorForNotColoredNodes;
+					else continue;
+				}
+			}
+
+			//spot position
 			spot.localize(pos);
-			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
+
+			//spot radius
+			final float radius = useOwnRadiusInsteadOfSpotsOwn ?
+				( spot.edges().size() > 2 ? 2*radiusOwnValue : radiusOwnValue )
+				:
+				radiusScalingFactor * (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
+
+			appendNodeToMsg(pos,radius,color);
 
 			//DEBUG STATS:
-			for (int i=0; i < 3; ++i)
+			if (reportSpotsRangeStats)
 			{
-				minPos[i] = Math.min(minPos[i],pos[i]);
-				maxPos[i] = Math.max(maxPos[i],pos[i]);
+				for (int i=0; i < 3; ++i)
+				{
+					minPos[i] = Math.min(minPos[i],pos[i]);
+					maxPos[i] = Math.max(maxPos[i],pos[i]);
+				}
 			}
 		}
 
 		//DEBUG STATS:
-		System.out.println("spatial span @ "+timePoint+": "
-				+minPos[0]+"-"+maxPos[0]+"  x  "
-				+minPos[1]+"-"+maxPos[1]+"  x  "
-				+minPos[2]+"-"+maxPos[2]);
+		if (reportSpotsRangeStats)
+		{
+			System.out.println("spatial span @ "+timePoint+": "
+			    +minPos[0]+"-"+maxPos[0]+"  x  "
+			    +minPos[1]+"-"+maxPos[1]+"  x  "
+			    +minPos[2]+"-"+maxPos[2]);
+		}
 
 
 		// -------------- edges --------------
@@ -452,8 +514,12 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
 		final MamutProject project = new MamutProject(
-				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/2D_mamut.mastodon" ),
-				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/dataset2.xml" ) );
+		/*
+				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
+				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
+		*/
+				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP_newer.mastodon" ),
+				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
 		final Mastodon mastodon = new Mastodon();
 		new Context().inject( mastodon );
