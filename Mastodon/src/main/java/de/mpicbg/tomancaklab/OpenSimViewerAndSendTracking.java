@@ -318,8 +318,27 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	private int minTimePoint,maxTimePoint;
 	private int timePoint = 36; //current timepoint
 
+	// --------- future GUI control points ---------
+	//
 	public int deltaBackPoints = 0;
 	public int deltaForwardPoints = 0;
+
+	public boolean useOwnRadiusInsteadOfSpotsOwn = false;
+	//if yes:
+	public float radiusOwnValue = 2.f;
+	//if no:
+	public float radiusScalingFactor = 1.f;
+
+	public int colorWhenNoStyleIsUsed = 0x00FFFFFF;
+	//else if color styles are used:
+	public boolean alwaysShowAllNodes = true;
+	//if yes:
+	public int colorForNotColoredNodes = 0x00606060;
+	//if no: nodes not covered/colored with the current style are not displayed
+
+	public boolean reportSpotsRangeStats = true;
+	//
+	// --------- future GUI control points ---------
 
 
 	private void workerTimePrev()
@@ -362,38 +381,55 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		float[] minPos = {+100000,+100000,+100000};
 		float[] maxPos = {-100000,-100000,-100000};
 
-		final int defaultColor = 0x00404040;
-		final float defaultRadius = 5;
-
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
+			//spot color
+			int color = colorWhenNoStyleIsUsed;
+			if ( ! myOwnTSWindow.getColoringModel().noColoring() )
+			{
+				//some color style is used, take color from it
+				color = myOwnColorProvider.spotColor( spot );
+
+				//did this spot got some color, that is, is it colored in this style?
+				if (color == 0)
+				{
+					//no color, use either default or skip drawing of this spot
+					if (alwaysShowAllNodes) color = colorForNotColoredNodes;
+					else continue;
+				}
+			}
+
 			//spot position
 			spot.localize(pos);
 
 			//spot radius
-			//final float radius = spot.edges().size() > 2 ? 2*defaultRadius : defaultRadius;
-			final float radius = (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
-
-			//spot color
-			int color = myOwnColorProvider.spotColor( spot );
-			if (color == 0) color = defaultColor;
+			final float radius = useOwnRadiusInsteadOfSpotsOwn ?
+				( spot.edges().size() > 2 ? 2*radiusOwnValue : radiusOwnValue )
+				:
+				radiusScalingFactor * (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
 
 			appendNodeToMsg(pos,radius,color);
 
 			//DEBUG STATS:
-			for (int i=0; i < 3; ++i)
+			if (reportSpotsRangeStats)
 			{
-				minPos[i] = Math.min(minPos[i],pos[i]);
-				maxPos[i] = Math.max(maxPos[i],pos[i]);
+				for (int i=0; i < 3; ++i)
+				{
+					minPos[i] = Math.min(minPos[i],pos[i]);
+					maxPos[i] = Math.max(maxPos[i],pos[i]);
+				}
 			}
 		}
 
 		//DEBUG STATS:
-		System.out.println("spatial span @ "+timePoint+": "
-				+minPos[0]+"-"+maxPos[0]+"  x  "
-				+minPos[1]+"-"+maxPos[1]+"  x  "
-				+minPos[2]+"-"+maxPos[2]);
+		if (reportSpotsRangeStats)
+		{
+			System.out.println("spatial span @ "+timePoint+": "
+			    +minPos[0]+"-"+maxPos[0]+"  x  "
+			    +minPos[1]+"-"+maxPos[1]+"  x  "
+			    +minPos[2]+"-"+maxPos[2]);
+		}
 
 
 		// -------------- edges --------------
