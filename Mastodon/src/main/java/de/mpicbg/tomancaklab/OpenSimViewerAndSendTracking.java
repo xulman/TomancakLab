@@ -175,11 +175,16 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 			//also register that this connection should be closed on this window close
 			myOwnTSWindow.onClose( this::workerClose );
 
+			//on coloring style change, repaint the currently sent time point
 			myOwnTSWindow.getColoringModel().listeners().add( this::workerSend );
 			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::workerSend ) );
 
+			//on time point change, repaint the current time point
+			myOwnTSWindow.getTimepointModel().listeners().add( this::workerCurrentTime );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getTimepointModel().listeners().remove( this::workerCurrentTime ));
+
 			//finally, send the current content to the SimViewer
-			this.workerSend();
+			this.workerCurrentTime();
 		}
 		else
 			System.out.println("Mastodon network sender: NOT connected to SimViewer");
@@ -316,7 +321,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 
 	private int minTimePoint,maxTimePoint;
-	private int timePoint = 36; //current timepoint
+	private int timePoint = -1; //if not set earlier, workerSend() will fix it to minTimePoint
 
 	// --------- future GUI control points ---------
 	//
@@ -343,8 +348,6 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 	private void workerTimePrev()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
-
 		if (timePoint > minTimePoint)
 		{
 			--timePoint;
@@ -354,8 +357,6 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 	private void workerTimeNext()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
-
 		if (timePoint < maxTimePoint)
 		{
 			++timePoint;
@@ -363,10 +364,17 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 	}
 
+	private void workerCurrentTime()
+	{
+		timePoint = myOwnTSWindow.getTimepointModel().getTimepoint();
+		workerSend();
+	}
+
 	/** sends some stuff to the SimViewer */
 	private void workerSend()
 	{
-		if (timePoint == -1) timePoint = minTimePoint;
+		//assure that the timePoint is valid
+		timePoint = Math.min( Math.max( timePoint, minTimePoint ), maxTimePoint );
 
 		final Model model = pluginAppModel.getAppModel().getModel();
 		final ModelGraph modelGraph = model.getGraph();
