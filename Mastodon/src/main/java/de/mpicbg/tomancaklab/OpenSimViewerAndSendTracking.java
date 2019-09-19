@@ -316,10 +316,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 
 	private int minTimePoint,maxTimePoint;
-	private int timePoint = -1; //current timepoint
+	private int timePoint = 36; //current timepoint
 
-	public int deltaBackPoints = 10;
-	public int deltaForwardPoints = 3;
+	public int deltaBackPoints = 0;
+	public int deltaForwardPoints = 0;
 
 
 	private void workerTimePrev()
@@ -470,8 +470,12 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
 		final MamutProject project = new MamutProject(
-				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/2D_mamut.mastodon" ),
-				new File( "/Users/ulman/DATA/CTC2/A_SomeTestingData/T_carto_9-3-15/2D/dataset2.xml" ) );
+		/*
+				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
+				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
+		*/
+				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP_newer.mastodon" ),
+				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
 		final Mastodon mastodon = new Mastodon();
 		new Context().inject( mastodon );
