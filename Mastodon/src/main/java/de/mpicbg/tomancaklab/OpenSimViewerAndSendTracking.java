@@ -2,27 +2,25 @@ package de.mpicbg.tomancaklab;
 
 import static org.mastodon.app.ui.ViewMenuBuilder.item;
 import static org.mastodon.app.ui.ViewMenuBuilder.menu;
-
 import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 
-import org.mastodon.project.MamutProject;
-import org.mastodon.revised.mamut.MamutViewTrackScheme;
 import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.revised.model.tag.ObjTagMap;
-import org.mastodon.revised.model.tag.TagSetModel;
-import org.mastodon.revised.model.tag.TagSetStructure;
+import org.mastodon.revised.mamut.MamutAppModel;
+import org.mastodon.revised.mamut.MamutViewTrackScheme;
+
 import org.mastodon.revised.trackscheme.TrackSchemeEdge;
 import org.mastodon.revised.trackscheme.TrackSchemeVertex;
-import org.mastodon.revised.trackscheme.display.TrackSchemeFrame;
-import org.mastodon.revised.ui.coloring.GraphColorGenerator;
-import org.mastodon.spatial.SpatioTemporalIndex;
-import org.mastodon.revised.mamut.MamutAppModel;
+import org.mastodon.revised.ui.coloring.GraphColorGeneratorAdapter;
+
 import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
+import org.mastodon.spatial.SpatioTemporalIndex;
+
+import org.mastodon.project.MamutProject;
 
 import org.scijava.AbstractContextual;
 import org.scijava.Context;
@@ -30,7 +28,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
-import org.scijava.log.LogService;
 
 import javax.swing.*;
 import java.io.PrintWriter;
@@ -135,7 +132,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//just close if something was opened (making a reset in this way)
 		workerClose();
 
-		System.out.println("connecting to SimViewer");
+		System.out.println("Mastodon network sender: connecting to SimViewer");
 		boolean connected = false;
 
 		//init the communication side
@@ -165,23 +162,31 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		if (connected)
 		{
-			System.out.println("connected to SimViewer");
+			System.out.println("Mastodon network sender: connected to SimViewer");
 
 			//open a TrackScheme window that shall be under our control,
-			//and retrieve a handle on the current GraphColorGenerator
-			final MamutViewTrackScheme tsWindow = pluginAppModel.getWindowManager().createTrackScheme();
-			final TrackSchemeFrame tsFrame = (TrackSchemeFrame)tsWindow.getFrame();
-			tsFrame.getTrackschemePanel().timepointChanged();
-			colorGenerator = tsFrame.getTrackschemePanel().getColorGenerator();
+			//and retrieve a handle on the current GraphColorGeneratorAdapter
+			myOwnTSWindow = pluginAppModel.getWindowManager().createTrackScheme();
+			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter();
 
-			//and send the current content to the SimViewer
+			if (myOwnColorProvider == null)
+				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
+
+			//also register that this connection should be closed on this window close
+			myOwnTSWindow.onClose( this::workerClose );
+
+			myOwnTSWindow.getColoringModel().listeners().add( this::workerSend );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::workerSend ) );
+
+			//finally, send the current content to the SimViewer
 			this.workerSend();
 		}
 		else
-			System.out.println("NOT connected to SimViewer");
+			System.out.println("Mastodon network sender: NOT connected to SimViewer");
 	}
 
-	private GraphColorGenerator<TrackSchemeVertex, TrackSchemeEdge> colorGenerator = null;
+	private MamutViewTrackScheme myOwnTSWindow = null;
+	private GraphColorGeneratorAdapter<Spot, Link, TrackSchemeVertex, TrackSchemeEdge> myOwnColorProvider = null;
 
 	private void workerClose()
 	{
@@ -339,7 +344,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 	}
 
-	/** sends some (now fake!) stuff to the SimViewer */
+	/** sends some stuff to the SimViewer */
 	private void workerSend()
 	{
 		if (timePoint == -1) timePoint = minTimePoint;
@@ -357,11 +362,24 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		float[] minPos = {+100000,+100000,+100000};
 		float[] maxPos = {-100000,-100000,-100000};
 
+		final int defaultColor = 0x00404040;
+		final float defaultRadius = 5;
+
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
+			//spot position
 			spot.localize(pos);
-			appendNodeToMsg(pos,(float)Math.sqrt(spot.getBoundingSphereRadiusSquared()),2);
+
+			//spot radius
+			//final float radius = spot.edges().size() > 2 ? 2*defaultRadius : defaultRadius;
+			final float radius = (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
+
+			//spot color
+			int color = myOwnColorProvider.spotColor( spot );
+			if (color == 0) color = defaultColor;
+
+			appendNodeToMsg(pos,radius,color);
 
 			//DEBUG STATS:
 			for (int i=0; i < 3; ++i)
