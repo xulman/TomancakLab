@@ -33,6 +33,9 @@ import org.scijava.ui.behaviour.util.RunnableAction;
 import org.scijava.log.LogService;
 
 import javax.swing.*;
+import java.io.PrintWriter;
+import java.io.BufferedWriter;
+import java.io.StringWriter;
 import java.io.File;
 import java.util.*;
 
@@ -126,12 +129,6 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	//---------------------------------- ZERO MQ stuff --------------------------------------
 	private ZMQ.Socket socket = null;
 
-	private String nodeMsg = new String();
-	private int nodeMsgCnt = 0;
-
-	private String lineMsg = new String();
-	private int lineMsgCnt = 0;
-
 	/** opens (again) the SimViewer */
 	private void workerOpen()
 	{
@@ -197,35 +194,117 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 	}
 
+
+	//stores repeating xyzRC chunks of node definitions
+	private final int msgNodesChunkSize = 5;
+	private final Vector<Float> msgNodes = new Vector<>(400*msgNodesChunkSize, 20*msgNodesChunkSize);
+
+	//stores repeating xyzxyzC chunks of node definitions
+	private final int msgLinesChunkSize = 7;
+	private final Vector<Float> msgLines = new Vector<>(400*msgLinesChunkSize, 20*msgLinesChunkSize);
+
 	private void appendNodeToMsg(float[] pos, float radius, int color)
 	{
-		++nodeMsgCnt;
-		nodeMsg = nodeMsg.concat( String.format(" %d %f %f %f %f %d",nodeMsgCnt,pos[0],pos[1],pos[2],radius,color) );
+		msgNodes.addAll( Arrays.asList(pos[0],pos[1],pos[2],radius,(float)color) );
 	}
 
 	private void appendLineToMsg(float[] from, float[] to, int color)
 	{
-		++lineMsgCnt;
-		lineMsg = lineMsg.concat( String.format(" %d %f %f %f %f %f %f %d",lineMsgCnt,from[0],from[1],from[2],to[0],to[1],to[2],color) );
+		msgLines.addAll( Arrays.asList(from[0],from[1],from[2],to[0],to[1],to[2],(float)color) );
+	}
+
+	private final float[] rgb = new float[3]; //rgb[0] = r, rgb[2] = b
+	private void packedIntColorToRGB(final int color)
+	{
+		rgb[2] = (float)(    color     & 0x000000FF) / 255.f;
+		rgb[1] = (float)((color >>  8) & 0x000000FF) / 255.f;
+		rgb[0] = (float)((color >> 16) & 0x000000FF) / 255.f;
 	}
 
 	private void sendAndClearAllMsgs()
 	{
 		if (socket != null)
 		{
-			if (nodeMsgCnt > 0)
-				socket.send("v1 points "+nodeMsgCnt+" dim 3"+nodeMsg);
+			if (msgNodes.size() > 0)
+			{
+				final StringWriter msgContainer = new StringWriter();
+				final PrintWriter msgComposer = new PrintWriter(new BufferedWriter(msgContainer));
 
-			if (lineMsgCnt > 0)
-				socket.send("v1 lines "+lineMsgCnt+" dim 3"+lineMsg);
+				msgComposer.print("v2 points "+(msgNodes.size()/msgNodesChunkSize)+" dim 3");
+				int id=1;
+				Iterator<Float> i = msgNodes.iterator();
+				while (i.hasNext())
+				{
+					//node ID
+					msgComposer.print(" ");
+					msgComposer.print((id++)<<17);
 
-			socket.send("v1 tick Mastodon sent you "+nodeMsgCnt+" nodes with "+lineMsgCnt+" edges");
+					//pos
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+
+					//radius
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+
+					//color
+					packedIntColorToRGB(i.next().intValue());
+					msgComposer.print(" "+rgb[0]+" "+rgb[1]+" "+rgb[2]);
+				}
+				msgComposer.flush();
+
+				socket.send( msgContainer.toString() );
+			}
+
+			if (msgLines.size() > 0)
+			{
+				final StringWriter msgContainer = new StringWriter();
+				final PrintWriter msgComposer = new PrintWriter(new BufferedWriter(msgContainer));
+
+				msgComposer.print("v2 lines "+(msgLines.size()/msgLinesChunkSize)+" dim 3");
+				int id=1;
+				Iterator<Float> i = msgLines.iterator();
+				while (i.hasNext())
+				{
+					//node ID
+					msgComposer.print(" ");
+					msgComposer.print((id++)<<17);
+
+					//pos from
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+
+					//pos to
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+					msgComposer.print(" ");
+					msgComposer.print(i.next());
+
+					//color
+					packedIntColorToRGB(i.next().intValue());
+					msgComposer.print(" "+rgb[0]+" "+rgb[1]+" "+rgb[2]);
+				}
+				msgComposer.flush();
+
+				socket.send( msgContainer.toString() );
+			}
+
+			socket.send("v1 tick Mastodon sent you "+msgNodes.size()/msgNodesChunkSize
+			            +" nodes with "+msgLines.size()/msgLinesChunkSize+" edges");
 		}
 
-		nodeMsg = new String();
-		nodeMsgCnt = 0;
-		lineMsg = new String();
-		lineMsgCnt = 0;
+		msgNodes.clear();
+		msgLines.clear();
 	}
 	//---------------------------------- ZERO MQ stuff --------------------------------------
 	//---------------------------------------------------------------------------------------
@@ -271,12 +350,12 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 		// -------------- nodes --------------
 
-		float pos[]  = new float[3]; //for nodes and edges
-		float posB[] = new float[3]; //for edges
+		float[] pos  = new float[3]; //for nodes and edges
+		float[] posB = new float[3]; //for edges
 
 		//DEBUG STATS:
-		float minPos[] = {+100000,+100000,+100000};
-		float maxPos[] = {-100000,-100000,-100000};
+		float[] minPos = {+100000,+100000,+100000};
+		float[] maxPos = {-100000,-100000,-100000};
 
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
