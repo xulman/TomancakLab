@@ -30,11 +30,13 @@ import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
 import java.io.File;
 import java.util.*;
+import java.util.List;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
@@ -132,6 +134,8 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		//just close if something was opened (making a reset in this way)
 		workerClose();
 
+		final String connectURL = "localhost:8765";
+
 		System.out.println("Mastodon network sender: connecting to SimViewer");
 		boolean connected = false;
 
@@ -143,7 +147,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 			if (socket == null)
 				throw new Exception("Mastodon network sender: Cannot obtain local socket.");
 
-			socket.connect("tcp://localhost:8765");
+			socket.connect("tcp://"+connectURL);
 			connected = true;
 		}
 		catch (ZMQException e) {
@@ -172,6 +176,48 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 			if (myOwnColorProvider == null)
 				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
 
+			JPanel controlPanel = new JPanel();
+			controlPanel.setLayout(new GridLayout(2,3));
+
+			Checkbox cb = new Checkbox("Use fixed radius instead of spot's own");
+			cb.setState( useOwnRadiusInsteadOfSpotsOwn );
+			cb.addItemListener((event) -> {
+				useOwnRadiusInsteadOfSpotsOwn = ((Checkbox)event.getSource()).getState();
+				workerCurrentTime();
+			} );
+			controlPanel.add( cb );
+
+			cb = new Checkbox("Show always all spots");
+			cb.setState( alwaysShowAllNodes );
+			cb.addItemListener((event) -> {
+				alwaysShowAllNodes = ((Checkbox)event.getSource()).getState();
+				workerCurrentTime();
+			} );
+			controlPanel.add( cb );
+
+			Label l = new Label("   Connected to "+connectURL);
+			controlPanel.add(l);
+
+			Button btn = new Button("  Choose color when View is None  ");
+			btn.addActionListener( (action) -> {
+				colorWhenNoStyleIsUsed = getRGBviaDialog(colorWhenNoStyleIsUsed);
+				workerCurrentTime();
+			} );
+			controlPanel.add( btn );
+
+			btn = new Button("  Choose color for Not-colored spots  ");
+			btn.addActionListener( (action) -> {
+				colorForNotColoredNodes = getRGBviaDialog(colorForNotColoredNodes);
+				workerCurrentTime();
+			} );
+			controlPanel.add( btn );
+
+			btn = new Button("  Refresh SimViewer  ");
+			btn.addActionListener( (action) -> { workerCurrentTime(); } );
+			controlPanel.add( btn );
+
+			myOwnTSWindow.getFrame().add(controlPanel, BorderLayout.SOUTH);
+
 			//also register that this connection should be closed on this window close
 			myOwnTSWindow.onClose( this::workerClose );
 
@@ -188,6 +234,23 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 		else
 			System.out.println("Mastodon network sender: NOT connected to SimViewer");
+	}
+
+	private
+	int getRGBviaDialog(final int currentColor)
+	{
+		final Color newColor = JColorChooser.showDialog(myOwnTSWindow.getFrame(),
+				"Spot color in SimViewer", new Color(currentColor));
+		return (newColor != null? (newColor.getRGB() & 0x00FFFFFF) : currentColor);
+	}
+
+	private
+	void showRGB(final int c)
+	{
+		int r = (c >> 16) & 0x000000FF;
+		int g = (c >>  8) & 0x000000FF;
+		int b =     c     & 0x000000FF;
+		System.out.println(c+" -> "+r+","+g+","+b);
 	}
 
 	private MamutViewTrackScheme myOwnTSWindow = null;
@@ -338,7 +401,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 	//else if color styles are used:
 	public boolean alwaysShowAllNodes = true;
 	//if yes:
-	public int colorForNotColoredNodes = 0x00606060;
+	public int colorForNotColoredNodes = 0x002D4084;
 	//if no: nodes not covered/colored with the current style are not displayed
 
 	public boolean reportSpotsRangeStats = true;
@@ -518,7 +581,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
 				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
 		*/
-				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP_newer.mastodon" ),
+				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
 				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
 		final Mastodon mastodon = new Mastodon();
