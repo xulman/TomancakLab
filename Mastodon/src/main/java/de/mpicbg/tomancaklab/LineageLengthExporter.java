@@ -3,21 +3,15 @@ package de.mpicbg.tomancaklab;
 import static org.mastodon.app.ui.ViewMenuBuilder.item;
 import static org.mastodon.app.ui.ViewMenuBuilder.menu;
 
-import de.mpicbg.tomancaklab.graphexport.GraphExportable;
-import de.mpicbg.tomancaklab.graphexport.yEdGraphMLWriter;
-import de.mpicbg.tomancaklab.graphexport.GraphStreamViewer;
 import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.collection.*;
-import org.mastodon.collection.ref.IntRefHashMap;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 
 import org.mastodon.project.MamutProject;
 import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.spatial.SpatioTemporalIndex;
+import org.mastodon.revised.ui.util.FileChooser;
 import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.revised.model.mamut.Model;
-import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 
@@ -27,10 +21,12 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
-import org.scijava.log.LogService;
 
 import javax.swing.*;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 
@@ -106,6 +102,7 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 	private void exportLengths()
 	{
 		final String columnSep = "\t";
+		try {
 
 		//borrow a spot "placeholder" (and return it at the very end!)
 		final Spot parent = pluginAppModel.getAppModel().getModel().getGraph().vertices().createRef();
@@ -117,6 +114,9 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 		pluginAppModel.getAppModel().getFocusModel().getFocusedVertex( parent );
 		System.out.println("Going to export the tree from the spot: "+parent.getLabel()
 		                  +" (timepoint "+parent.getTimepoint()+")");
+
+		final File oFile = FileChooser.chooseFile(null,"LineageOf_"+parent.getLabel()+".txt", null, "Save the lineage as...", FileChooser.DialogType.SAVE );
+		final BufferedWriter jout = oFile != null? new BufferedWriter(new FileWriter(oFile)) : null;
 
 		//sets up the sweeping data structures
 		//timepoint to spot, sorted accoring to timepoints (and position in trackScheme for the same timepoints)
@@ -139,11 +139,17 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 			{
 				//report this track
 				final Spot starter = trackStarters.get( parent );
-				System.out.println(starter.getLabel()+columnSep
-				                  +starter.getTimepoint()+columnSep
-				                  +parent.getLabel()+columnSep
-				                  +parent.getTimepoint()+columnSep
-				                  +(parent.getTimepoint()-starter.getTimepoint()));
+				final String msg = starter.getLabel()+columnSep
+				                 + starter.getTimepoint()+columnSep
+				                 + parent.getLabel()+columnSep
+				                 + parent.getTimepoint()+columnSep
+				                 + (parent.getTimepoint()-starter.getTimepoint());
+				if (jout != null)
+				{
+					jout.write( msg );
+					jout.newLine();
+				}
+				System.out.println( msg );
 			}
 
 			//parent is for sure a division point,
@@ -172,6 +178,16 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( sRef );
 		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( rRef );
 		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( parent );
+
+		if (jout != null)
+		{
+			jout.flush();
+			jout.close();
+		}
+
+		} catch (IOException e) {
+			System.out.println("Some file writing problem: "+e.getMessage());
+		}
 	}
 
 	private void enlistSpot(final RefList< Spot > list, final Spot cell)
