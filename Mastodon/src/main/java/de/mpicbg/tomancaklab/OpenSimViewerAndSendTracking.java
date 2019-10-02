@@ -22,8 +22,8 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 
 import org.mastodon.project.MamutProject;
 
+import net.imagej.ImageJ;
 import org.scijava.AbstractContextual;
-import org.scijava.Context;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
@@ -572,6 +572,10 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 
 	public static void main( final String[] args ) throws Exception
 	{
+		//start up our own Fiji/Imagej2
+		final ImageJ ij = new net.imagej.ImageJ();
+		ij.ui().showUI();
+
 		Locale.setDefault( Locale.US );
 		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 
@@ -584,9 +588,7 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
 				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
-		final Mastodon mastodon = new Mastodon();
-		new Context().inject( mastodon );
-		mastodon.run();
+		final Mastodon mastodon = (Mastodon)ij.command().run(Mastodon.class, true).get().getCommand();
 		mastodon.setExitOnClose();
 		mastodon.openProject( project );
 	}
