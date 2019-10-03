@@ -32,7 +32,7 @@ import org.zeromq.ZMQException;
 
 
 @Plugin( type = Command.class, name = "Display lineage in SimViewer" )
-public class OpenSimViewerAndSendTracking extends DynamicCommand
+public class LineageToSimViewer extends DynamicCommand
 {
 	@Parameter(persist = false)
 	private MastodonPluginAppModel pluginAppModel;

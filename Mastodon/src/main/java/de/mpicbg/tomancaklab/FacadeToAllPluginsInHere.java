@@ -114,7 +114,7 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 	private void simviewerConnection()
 	{
 		this.getContext().getService(CommandService.class).run(
-			OpenSimViewerAndSendTracking.class, true,
+			LineageToSimViewer.class, true,
 			"pluginAppModel", pluginAppModel);
 	}
 
