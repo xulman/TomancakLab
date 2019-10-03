@@ -42,6 +42,7 @@ public class LineageLengthExporter extends DynamicCommand
 	public void run()
 	{
 		final String columnSep = "\t";
+		if (timePointTill == -1) timePointTill = appModel.getMaxTimepoint();
 		try {
 
 		//borrow a spot "placeholder" (and return it at the very end!)
@@ -79,17 +80,23 @@ public class LineageLengthExporter extends DynamicCommand
 			{
 				//report this track
 				final Spot starter = trackStarters.get( parent );
-				final String msg = starter.getLabel()+columnSep
-				                 + starter.getTimepoint()+columnSep
-				                 + parent.getLabel()+columnSep
-				                 + parent.getTimepoint()+columnSep
-				                 + (parent.getTimepoint()-starter.getTimepoint());
-				if (jout != null)
+
+				//only if it fits the timepoint range
+				if (starter.getTimepoint() >= timePointFrom && parent.getTimepoint() <= timePointTill)
 				{
-					jout.write( msg );
-					jout.newLine();
+					final String msg = starter.getLabel()+columnSep
+					                 + starter.getTimepoint()+columnSep
+					                 + parent.getLabel()+columnSep
+					                 + parent.getTimepoint()+columnSep
+					                 + (parent.getTimepoint()-starter.getTimepoint())+columnSep
+					                 + (parent.getTimepoint()-starter.getTimepoint())*timeStep;
+					if (jout != null)
+					{
+						jout.write( msg );
+						jout.newLine();
+					}
+					System.out.println( msg );
 				}
-				System.out.println( msg );
 			}
 
 			//parent is for sure a division point,
