@@ -8,6 +8,7 @@ import org.mastodon.revised.model.mamut.Link;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
+import org.scijava.command.DynamicCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -18,7 +19,7 @@ import java.io.IOException;
 
 
 @Plugin( type = Command.class, name = "Export lineage as lengths between divisions" )
-public class LineageLengthExporter implements Command
+public class LineageLengthExporter extends DynamicCommand
 {
 	@Parameter(persist = false)
 	private MamutAppModel appModel;

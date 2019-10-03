@@ -12,6 +12,7 @@ import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 
 import org.scijava.command.Command;
+import org.scijava.command.DynamicCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
@@ -21,7 +22,7 @@ import java.io.File;
 
 
 @Plugin( type = Command.class, name = "Export lineage with time axis converted to generations axis" )
-public class LineageExporter implements Command
+public class LineageExporter extends DynamicCommand
 {
 	@Parameter(persist = false)
 	private MamutAppModel appModel;

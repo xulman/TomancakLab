@@ -13,6 +13,7 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
+import org.scijava.command.DynamicCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -29,7 +30,7 @@ import org.zeromq.ZMQException;
 
 
 @Plugin( type = Command.class, name = "Display lineage in SimViewer" )
-public class OpenSimViewerAndSendTracking implements Command
+public class OpenSimViewerAndSendTracking extends DynamicCommand
 {
 	@Parameter(persist = false)
 	private MastodonPluginAppModel pluginAppModel;
