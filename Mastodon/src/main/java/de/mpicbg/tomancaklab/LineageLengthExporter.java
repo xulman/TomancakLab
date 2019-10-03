@@ -1,117 +1,56 @@
 package de.mpicbg.tomancaklab;
 
-import static org.mastodon.app.ui.ViewMenuBuilder.item;
-import static org.mastodon.app.ui.ViewMenuBuilder.menu;
-
-import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.collection.*;
-import org.mastodon.plugin.MastodonPlugin;
-import org.mastodon.plugin.MastodonPluginAppModel;
-
-import org.mastodon.project.MamutProject;
-import org.mastodon.revised.mamut.Mastodon;
 import org.mastodon.revised.ui.util.FileChooser;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 
-import org.scijava.AbstractContextual;
-import org.scijava.Context;
+import org.scijava.ItemVisibility;
+import org.scijava.command.Command;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.behaviour.util.Actions;
-import org.scijava.ui.behaviour.util.AbstractNamedAction;
-import org.scijava.ui.behaviour.util.RunnableAction;
 
-import javax.swing.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
 
 
-@Plugin( type = LineageLengthExporter.class )
-public class LineageLengthExporter extends AbstractContextual implements MastodonPlugin
+@Plugin( type = Command.class, name = "Export lineage as lengths between divisions" )
+public class LineageLengthExporter implements Command
 {
-	//"IDs" of all plug-ins wrapped in this class
-	private static final String t2len = "LoPaT-LineageLengths";
-	//------------------------------------------------------------------------
+	@Parameter(persist = false)
+	private MamutAppModel appModel;
 
-	@Override
-	public List< ViewMenuBuilder.MenuItem > getMenuItems()
-	{
-		//this places the plug-in's menu items into the menu,
-		//the titles of the items are defined right below
-		return Arrays.asList(
-				menu( "Plugins",
-						item( t2len ) ) );
-	}
+	@Parameter(label = "Do not report anything before this time point:",
+	           min = "0")
+	private int timePointFrom = 0;
 
-	/** titles of this plug-in's menu items */
-	private static Map< String, String > menuTexts = new HashMap<>();
-	static
-	{
-		menuTexts.put( t2len, "Export lineage lengths" );
-	}
+	@Parameter(label = "Do not report anything beyond this time point:",
+	           description = "Value of -1 means no limit.", min = "-1")
+	private int timePointTill = -1;
 
-	@Override
-	public Map< String, String > getMenuTexts()
-	{
-		return menuTexts;
-	}
-	//------------------------------------------------------------------------
+	@Parameter(label = "Time step, physical time between time points:")
+	private float timeStep = 90.0f;
 
-	private final AbstractNamedAction actionLengths;
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
+	private String fileOpenInfo = "The plugin will additionally ask for file to save the lineage.";
 
-	/** default c'tor: creates Actions available from this plug-in */
-	public LineageLengthExporter()
-	{
-		actionLengths = new RunnableAction( t2len, this::exportLengths );
-		updateEnabledActions();
-	}
-
-	/** register the actions to the application (with no shortcut keys) */
-	@Override
-	public void installGlobalActions( final Actions actions )
-	{
-		final String[] noShortCut = { "not mapped" };
-		actions.namedAction( actionLengths, noShortCut );
-	}
-
-	/** reference to the currently available project in Mastodon */
-	private MastodonPluginAppModel pluginAppModel;
-
-	/** learn about the current project's params */
-	@Override
-	public void setAppModel( final MastodonPluginAppModel model )
-	{
-		//the application reports back to us if some project is available
-		this.pluginAppModel = model;
-		updateEnabledActions();
-	}
-
-	/** enables/disables menu items based on the availability of some project */
-	private void updateEnabledActions()
-	{
-		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionLengths.setEnabled( appModel != null );
-	}
-	//------------------------------------------------------------------------
-
-	/** facade to the main workhorse */
-	private void exportLengths()
+	/** the main workhorse */
+	public void run()
 	{
 		final String columnSep = "\t";
 		try {
 
 		//borrow a spot "placeholder" (and return it at the very end!)
-		final Spot parent = pluginAppModel.getAppModel().getModel().getGraph().vertices().createRef();
-		final Spot rRef = pluginAppModel.getAppModel().getModel().getGraph().vertices().createRef();
-		final Spot sRef = pluginAppModel.getAppModel().getModel().getGraph().vertices().createRef();
-		final Link lRef = pluginAppModel.getAppModel().getModel().getGraph().edges().createRef();
+		final Spot parent = appModel.getModel().getGraph().vertices().createRef();
+		final Spot rRef = appModel.getModel().getGraph().vertices().createRef();
+		final Spot sRef = appModel.getModel().getGraph().vertices().createRef();
+		final Link lRef = appModel.getModel().getGraph().edges().createRef();
 
 		//finds the starting spot
-		pluginAppModel.getAppModel().getFocusModel().getFocusedVertex( parent );
+		appModel.getFocusModel().getFocusedVertex( parent );
 		System.out.println("Going to export the tree from the spot: "+parent.getLabel()
 		                  +" (timepoint "+parent.getTimepoint()+")");
 
@@ -121,11 +60,11 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 		//sets up the sweeping data structures
 		//timepoint to spot, sorted accoring to timepoints (and position in trackScheme for the same timepoints)
 		final RefList<Spot> discoveredDivPoints
-			= RefCollections.createRefList(pluginAppModel.getAppModel().getModel().getGraph().vertices());
+			= RefCollections.createRefList(appModel.getModel().getGraph().vertices());
 
 		//spot to spot
 		final RefRefMap< Spot, Spot > trackStarters
-			= RefMaps.createRefRefMap(pluginAppModel.getAppModel().getModel().getGraph().vertices(), 500);
+			= RefMaps.createRefRefMap(appModel.getModel().getGraph().vertices(), 500);
 
 		//starts the export by moving to the earliest division point (for which we don't have its starter)
 		if (browseDownstreamTillNextDivisionEvent(parent,sRef,lRef) > 1) discoveredDivPoints.add( parent );
@@ -174,10 +113,10 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 			}
 		}
 
-		pluginAppModel.getAppModel().getModel().getGraph().edges().releaseRef( lRef );
-		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( sRef );
-		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( rRef );
-		pluginAppModel.getAppModel().getModel().getGraph().vertices().releaseRef( parent );
+		appModel.getModel().getGraph().edges().releaseRef( lRef );
+		appModel.getModel().getGraph().vertices().releaseRef( sRef );
+		appModel.getModel().getGraph().vertices().releaseRef( rRef );
+		appModel.getModel().getGraph().vertices().releaseRef( parent );
 
 		if (jout != null)
 		{
@@ -221,23 +160,5 @@ public class LineageLengthExporter extends AbstractContextual implements Mastodo
 		} while (edgeCnt == 1);
 
 		return edgeCnt;
-	}
-
-
-	public static void main( final String[] args ) throws Exception
-	{
-		Locale.setDefault( Locale.US );
-		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-
-		//final MamutProject project = new MamutProject( new File( "/tmp/test.mastodon" ), new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
-		final MamutProject project = new MamutProject(
-				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
-				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
-
-		final Mastodon mastodon = new Mastodon();
-		new Context().inject( mastodon );
-		mastodon.run();
-		mastodon.setExitOnClose();
-		mastodon.openProject( project );
 	}
 }

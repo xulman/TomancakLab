@@ -1,140 +1,55 @@
 package de.mpicbg.tomancaklab;
 
-import static org.mastodon.app.ui.ViewMenuBuilder.item;
-import static org.mastodon.app.ui.ViewMenuBuilder.menu;
-import org.mastodon.app.ui.ViewMenuBuilder;
-import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
-
-import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.mamut.MamutViewTrackScheme;
-
 import org.mastodon.revised.trackscheme.TrackSchemeEdge;
 import org.mastodon.revised.trackscheme.TrackSchemeVertex;
 import org.mastodon.revised.ui.coloring.GraphColorGeneratorAdapter;
-
 import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.spatial.SpatioTemporalIndex;
 
-import org.mastodon.project.MamutProject;
-
-import net.imagej.ImageJ;
-import org.scijava.AbstractContextual;
+import org.scijava.ItemVisibility;
+import org.scijava.command.Command;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.behaviour.util.Actions;
-import org.scijava.ui.behaviour.util.AbstractNamedAction;
-import org.scijava.ui.behaviour.util.RunnableAction;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
-import java.io.File;
 import java.util.*;
-import java.util.List;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
 
-@Plugin( type = OpenSimViewerAndSendTracking.class )
-public class OpenSimViewerAndSendTracking extends AbstractContextual implements MastodonPlugin
+@Plugin( type = Command.class, name = "Display lineage in SimViewer" )
+public class OpenSimViewerAndSendTracking implements Command
 {
-	//"IDs" of all plug-ins wrapped in this class
-	private static final String PluginID_open = "SV-OpenSimViewer";
-	private static final String PluginID_senB = "SV-SendFrameOnBackwardTPmove";
-	private static final String PluginID_senF = "SV-SendFrameOnForwardTPmove";
-	//------------------------------------------------------------------------
-
-	@Override
-	public List< ViewMenuBuilder.MenuItem > getMenuItems()
-	{
-		//this places the plug-in's menu items into the menu,
-		//the titles of the items are defined right below
-		return Arrays.asList(
-				menu( "Plugins",
-						item( PluginID_open ) ) );
-	}
-
-	/** titles of this plug-in's menu items */
-	private static Map< String, String > menuTexts = new HashMap<>();
-	static
-	{
-		menuTexts.put( PluginID_open, "Connect to SimViewer" );
-	}
-
-	@Override
-	public Map< String, String > getMenuTexts()
-	{
-		return menuTexts;
-	}
-	//------------------------------------------------------------------------
-
-	private final AbstractNamedAction actionOpen;
-	private final AbstractNamedAction actionSendB;
-	private final AbstractNamedAction actionSendF;
-
-	/** default c'tor: creates Actions available from this plug-in */
-	public OpenSimViewerAndSendTracking()
-	{
-		actionOpen  = new RunnableAction( PluginID_open, this::workerOpen );
-		actionSendB = new RunnableAction( PluginID_senB, this::workerTimePrev );
-		actionSendF = new RunnableAction( PluginID_senF, this::workerTimeNext );
-		updateEnabledActions();
-	}
-
-	/** register the actions to the application (with no shortcut keys) */
-	@Override
-	public void installGlobalActions( final Actions actions )
-	{
-		//final String[] noShortCut = new String[] {};
-		actions.namedAction( actionOpen,  "C" );
-		actions.namedAction( actionSendB, "N" );
-		actions.namedAction( actionSendF, "M" );
-	}
-
-	/** reference to the currently available project in Mastodon */
+	@Parameter(persist = false)
 	private MastodonPluginAppModel pluginAppModel;
 
-	/** learn about the current project's params */
-	@Override
-	public void setAppModel( final MastodonPluginAppModel model )
-	{
-		//the application reports back to us if some project is available
-		this.pluginAppModel = model;
-		updateEnabledActions();
+	@Parameter
+	private String connectURL = "localhost:8765";
 
-		minTimePoint = pluginAppModel.getAppModel().getMinTimepoint();
-		maxTimePoint = pluginAppModel.getAppModel().getMaxTimepoint();
-	}
-
-	/** enables/disables menu items based on the availability of some project */
-	private void updateEnabledActions()
-	{
-		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionOpen.setEnabled(  appModel != null );
-		actionSendB.setEnabled( appModel != null );
-		actionSendF.setEnabled( appModel != null );
-	}
-
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
+	private String fileOpenInfo = "If the Trackscheme window appears without additional controls, try to resize it.";
 
 	//---------------------------------------------------------------------------------------
 	//---------------------------------- ZERO MQ stuff --------------------------------------
 	private ZMQ.Socket socket = null;
 
 	/** opens (again) the SimViewer */
-	private void workerOpen()
+	@Override
+	public void run()
 	{
 		//just close if something was opened (making a reset in this way)
 		workerClose();
-
-		final String connectURL = "localhost:8765";
 
 		System.out.println("Mastodon network sender: connecting to SimViewer");
 		boolean connected = false;
@@ -167,6 +82,9 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		if (connected)
 		{
 			System.out.println("Mastodon network sender: connected to SimViewer");
+
+			minTimePoint = pluginAppModel.getAppModel().getMinTimepoint();
+			maxTimePoint = pluginAppModel.getAppModel().getMaxTimepoint();
 
 			//open a TrackScheme window that shall be under our control,
 			//and retrieve a handle on the current GraphColorGeneratorAdapter
@@ -567,29 +485,5 @@ public class OpenSimViewerAndSendTracking extends AbstractContextual implements 
 		}
 
 		sendAndClearAllMsgs();
-	}
-
-
-	public static void main( final String[] args ) throws Exception
-	{
-		//start up our own Fiji/Imagej2
-		final ImageJ ij = new net.imagej.ImageJ();
-		ij.ui().showUI();
-
-		Locale.setDefault( Locale.US );
-		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-
-		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
-		final MamutProject project = new MamutProject(
-		/*
-				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
-				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
-		*/
-				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
-				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
-
-		final Mastodon mastodon = (Mastodon)ij.command().run(Mastodon.class, true).get().getCommand();
-		mastodon.setExitOnClose();
-		mastodon.openProject( project );
 	}
 }

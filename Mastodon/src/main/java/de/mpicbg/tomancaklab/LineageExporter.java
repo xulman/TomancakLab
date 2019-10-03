@@ -1,17 +1,9 @@
 package de.mpicbg.tomancaklab;
 
-import static org.mastodon.app.ui.ViewMenuBuilder.item;
-import static org.mastodon.app.ui.ViewMenuBuilder.menu;
-
 import de.mpicbg.tomancaklab.graphexport.GraphExportable;
 import de.mpicbg.tomancaklab.graphexport.yEdGraphMLWriter;
 import de.mpicbg.tomancaklab.graphexport.GraphStreamViewer;
-import org.mastodon.app.ui.ViewMenuBuilder;
-import org.mastodon.plugin.MastodonPlugin;
-import org.mastodon.plugin.MastodonPluginAppModel;
 
-import org.mastodon.project.MamutProject;
-import org.mastodon.revised.mamut.Mastodon;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Model;
@@ -19,103 +11,49 @@ import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 
-import org.scijava.AbstractContextual;
-import org.scijava.Context;
+import org.scijava.command.Command;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.behaviour.util.Actions;
-import org.scijava.ui.behaviour.util.AbstractNamedAction;
-import org.scijava.ui.behaviour.util.RunnableAction;
 import org.scijava.log.LogService;
+import org.scijava.widget.FileWidget;
 
-import javax.swing.*;
 import java.io.File;
-import java.util.*;
 
 
-@Plugin( type = LineageExporter.class )
-public class LineageExporter extends AbstractContextual implements MastodonPlugin
+@Plugin( type = Command.class, name = "Export lineage with time axis converted to generations axis" )
+public class LineageExporter implements Command
 {
-	//"IDs" of all plug-ins wrapped in this class
-	private static final String t2gyEd = "LoPaT-Time2Gen-yEd";
-	private static final String t2gGS  = "LoPaT-Time2Gen-GSOutlook";
-	//------------------------------------------------------------------------
+	@Parameter(persist = false)
+	private MamutAppModel appModel;
+
+	@Parameter(persist = false)
+	private boolean doyEdExport = true;
+
+	@Parameter(style = FileWidget.OPEN_STYLE)
+	private File graphMLfile = new File("/tmp/mastodon.graphml");
+
+	@Parameter
+	private LogService logServiceRef;
 
 	@Override
-	public List< ViewMenuBuilder.MenuItem > getMenuItems()
+	public void run()
 	{
-		//this places the plug-in's menu items into the menu,
-		//the titles of the items are defined right below
-		return Arrays.asList(
-				menu( "Plugins",
-						item( t2gyEd ), item ( t2gGS ) ) );
-	}
-
-	/** titles of this plug-in's menu items */
-	private static Map< String, String > menuTexts = new HashMap<>();
-	static
-	{
-		menuTexts.put( t2gyEd, "Time2Gen2yEd" );
-		menuTexts.put( t2gGS,  "Time2Gen2OutlookWindow" );
-	}
-
-	@Override
-	public Map< String, String > getMenuTexts()
-	{
-		return menuTexts;
-	}
-	//------------------------------------------------------------------------
-
-	private final AbstractNamedAction actionyEd,actionGS;
-
-	/** default c'tor: creates Actions available from this plug-in */
-	public LineageExporter()
-	{
-		actionyEd = new RunnableAction( t2gyEd, this::time2Gen2yEd );
-		actionGS  = new RunnableAction( t2gGS,  this::time2Gen2GSwindow );
-		updateEnabledActions();
-	}
-
-	/** register the actions to the application (with no shortcut keys) */
-	@Override
-	public void installGlobalActions( final Actions actions )
-	{
-		final String[] noShortCut = { "not mapped" };
-		actions.namedAction( actionyEd, noShortCut );
-		actions.namedAction( actionGS,  noShortCut );
-	}
-
-	/** reference to the currently available project in Mastodon */
-	private MastodonPluginAppModel pluginAppModel;
-
-	/** learn about the current project's params */
-	@Override
-	public void setAppModel( final MastodonPluginAppModel model )
-	{
-		//the application reports back to us if some project is available
-		this.pluginAppModel = model;
-		updateEnabledActions();
-	}
-
-	/** enables/disables menu items based on the availability of some project */
-	private void updateEnabledActions()
-	{
-		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionyEd.setEnabled( appModel != null );
-		actionGS.setEnabled(  appModel != null );
-	}
-	//------------------------------------------------------------------------
-
-	private void time2Gen2yEd()
-	{
-		//opens the GraphML file
-		final GraphExportable ge = new yEdGraphMLWriter("/tmp/mastodon.graphml");
-		time2Gen2GraphExportable( ge );
-	}
-
-	private void time2Gen2GSwindow()
-	{
-		final GraphExportable ge = new GraphStreamViewer("Mastodon Generation Lineage");
-		time2Gen2GraphExportable( ge );
+		if (doyEdExport)
+		{
+			if (graphMLfile != null)
+			{
+				//opens the GraphML file
+				final GraphExportable ge = new yEdGraphMLWriter(graphMLfile.getPath());
+				time2Gen2GraphExportable( ge );
+			}
+			else
+				throw new RuntimeException("Should never get here!");
+		}
+		else
+		{
+			final GraphExportable ge = new GraphStreamViewer("Mastodon Generation Lineage");
+			time2Gen2GraphExportable( ge );
+		}
 	}
 
 	/** implements the "LineageExporter" functionality */
@@ -123,13 +61,10 @@ public class LineageExporter extends AbstractContextual implements MastodonPlugi
 	{
 		//NB: this method could be in a class of its own... later...
 
-		//aux Fiji services
-		final LogService logServiceRef = this.getContext().getService(LogService.class).log();
-
 		//shortcuts to the data
-		final int timeFrom = pluginAppModel.getAppModel().getMinTimepoint();
-		final int timeTill = pluginAppModel.getAppModel().getMaxTimepoint();
-		final Model      model      = pluginAppModel.getAppModel().getModel();
+		final int timeFrom = appModel.getMinTimepoint();
+		final int timeTill = appModel.getMaxTimepoint();
+		final Model      model      = appModel.getModel();
 		final ModelGraph modelGraph = model.getGraph();
 
 		//aux Mastodon data: shortcuts and caches/proxies
@@ -316,23 +251,5 @@ public class LineageExporter extends AbstractContextual implements MastodonPlugi
 				return (xRightBound - xLeftBound);
 			}
 		}
-	}
-
-
-	public static void main( final String[] args ) throws Exception
-	{
-		Locale.setDefault( Locale.US );
-		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-
-		//final MamutProject project = new MamutProject( new File( "/tmp/test.mastodon" ), new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
-		final MamutProject project = new MamutProject(
-				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
-				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
-
-		final Mastodon mastodon = new Mastodon();
-		new Context().inject( mastodon );
-		mastodon.run();
-		mastodon.setExitOnClose();
-		mastodon.openProject( project );
 	}
 }
