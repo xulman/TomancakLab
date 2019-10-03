@@ -29,8 +29,6 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 {
 	//"IDs" of all plug-ins wrapped in this class
 	private static final String SVopen = "LoPaT-OpenSimViewer";
-	//private static final String SVsenB = "LoPaT-SendFrameOnBackwardTPmove";
-	//private static final String SVsenF = "LoPaT-SendFrameOnForwardTPmove";
 	private static final String t2gyEd = "LoPaT-Time2Gen-yEd";
 	private static final String t2gGS  = "LoPaT-Time2Gen-GSOutlook";
 	private static final String t2len  = "LoPaT-LineageLengths";
@@ -66,19 +64,13 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 	//------------------------------------------------------------------------
 
 	private final AbstractNamedAction actionOpen;
-	//private final AbstractNamedAction actionSendB;
-	//private final AbstractNamedAction actionSendF;
-
 	private final AbstractNamedAction actionLengths;
 	private final AbstractNamedAction actionyEd,actionGS;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public FacadeToAllPluginsInHere()
 	{
-		actionOpen  = new RunnableAction( SVopen, this::simviewerConnection );
-		//actionSendB = new RunnableAction( SVsenB, this::workerTimePrev );
-		//actionSendF = new RunnableAction( SVsenF, this::workerTimeNext );
-
+		actionOpen    = new RunnableAction( SVopen, this::simviewerConnection );
 		actionLengths = new RunnableAction( t2len,  this::exportLengths );
 		actionyEd     = new RunnableAction( t2gyEd, this::time2Gen2yEd );
 		actionGS      = new RunnableAction( t2gGS,  this::time2Gen2GSwindow );
@@ -90,13 +82,10 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 	public void installGlobalActions( final Actions actions )
 	{
 		final String[] noShortCut = { "not mapped" };
-		actions.namedAction( actionOpen,  "C" );
-		//actions.namedAction( actionSendB, "N" );
-		//actions.namedAction( actionSendF, "M" );
-
+		actions.namedAction( actionOpen,    "C" );
 		actions.namedAction( actionLengths, noShortCut );
-		actions.namedAction( actionyEd, noShortCut );
-		actions.namedAction( actionGS,  noShortCut );
+		actions.namedAction( actionyEd,     noShortCut );
+		actions.namedAction( actionGS,      noShortCut );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -115,10 +104,7 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 	private void updateEnabledActions()
 	{
 		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
-		actionOpen.setEnabled(  appModel != null );
-		//actionSendB.setEnabled( appModel != null );
-		//actionSendF.setEnabled( appModel != null );
-
+		actionOpen.setEnabled(    appModel != null );
 		actionLengths.setEnabled( appModel != null );
 		actionyEd.setEnabled(     appModel != null );
 		actionGS.setEnabled(      appModel != null );

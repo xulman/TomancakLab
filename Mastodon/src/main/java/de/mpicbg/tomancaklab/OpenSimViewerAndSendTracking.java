@@ -16,6 +16,8 @@ import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.behaviour.util.AbstractNamedAction;
+import org.scijava.ui.behaviour.util.RunnableAction;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,6 +46,9 @@ public class OpenSimViewerAndSendTracking extends DynamicCommand
 	//---------------------------------------------------------------------------------------
 	//---------------------------------- ZERO MQ stuff --------------------------------------
 	private ZMQ.Socket socket = null;
+
+	private static final String SVsenB = "LoPaT-SendFrameOnBackwardTPmove";
+	private static final String SVsenF = "LoPaT-SendFrameOnForwardTPmove";
 
 	/** opens (again) the SimViewer */
 	@Override
@@ -91,6 +96,11 @@ public class OpenSimViewerAndSendTracking extends DynamicCommand
 			//and retrieve a handle on the current GraphColorGeneratorAdapter
 			myOwnTSWindow = pluginAppModel.getWindowManager().createTrackScheme();
 			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter();
+
+			final AbstractNamedAction actionSendB = new RunnableAction( SVsenB, this::workerTimePrev );
+			final AbstractNamedAction actionSendF = new RunnableAction( SVsenF, this::workerTimeNext );
+			pluginAppModel.getAppModel().getAppActions().namedAction( actionSendB, "N" );
+			pluginAppModel.getAppModel().getAppActions().namedAction( actionSendF, "M" );
 
 			if (myOwnColorProvider == null)
 				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
