@@ -5,11 +5,13 @@
 #@float (label="Pixel size (microns per 1px):") pxSize
 #@float (label="Downscale factor:") dsRatio
 
+#@int   (label="Thickness of the fade-out smoothing layer (pixels):", min="0") pxFadeThickness
+#@float (label="Magnitude of variations in the fade-out smoothing layer:", min="0") alternationMagInFadeThickness
 #@int   (label="Thickness of the outer main (image) layer (pixels):", min="1", description="The thicker it is, the less the rendering would \"see through it\".") pxThickness
 #@int   (label="Thickness of the inner extra (blocking) layer (pixels):", min="0", description="Set to 0 to avoid creating this blocking inner layer.") pxExtraThickness
-#@float (label="Red value to draw with the extra layer:", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.")   valRExtraThickness
-#@float (label="Green value to draw with the extra layer:", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.") valGExtraThickness
-#@float (label="Blue value to draw with the extra layer:", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.")  valBExtraThickness
+#@int (label="Red value to draw with the extra layer (0-255):", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.")   valRExtraThickness
+#@int (label="Green value to draw with the extra layer (0-255):", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.") valGExtraThickness
+#@int (label="Blue value to draw with the extra layer (0-255):", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.")  valBExtraThickness
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
@@ -22,6 +24,7 @@ from ij.process import ColorProcessor
 import math
 import os
 import sys
+import random
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -44,11 +47,16 @@ realCoords = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(
 checkSize2DarrayVsImgPlus(realCoords, inImp);
 
 # make sure the 'thicknesses values' are sensible
+if pxFadeThickness < 0:
+	pxFadeThickness = 0
 if pxThickness < 1:
 	pxThickness = 1
 if pxExtraThickness < -1:
 	pxExtraThickness = 0
 blockingValue = Color(valRExtraThickness, valGExtraThickness, valBExtraThickness)
+
+# own rng generator for changes in the fade-out layer
+fadeRandom = random.Random()
 
 print("calculating the 3D image size...")
 # search for min&max per axis, while scaling back to pixel units (from the original micron ones)
@@ -82,13 +90,13 @@ print("Y: "+str(min[1])+" .. "+str(max[1]))
 print("Z: "+str(min[2])+" .. "+str(max[2]))
 
 # create an output image of float type (as float can store also integers)
-min[0]=math.floor(min[0] /dsRatio)
-min[1]=math.floor(min[1] /dsRatio)
-min[2]=math.floor(min[2] /dsRatio)
+min[0]=math.floor(min[0] /dsRatio) -pxFadeThickness-1
+min[1]=math.floor(min[1] /dsRatio) -pxFadeThickness-1
+min[2]=math.floor(min[2] /dsRatio) -pxFadeThickness-1
 
-max[0]=math.ceil(max[0] /dsRatio)
-max[1]=math.ceil(max[1] /dsRatio)
-max[2]=math.ceil(max[2] /dsRatio)
+max[0]=math.ceil(max[0] /dsRatio) +pxFadeThickness+1
+max[1]=math.ceil(max[1] /dsRatio) +pxFadeThickness+1
+max[2]=math.ceil(max[2] /dsRatio) +pxFadeThickness+1
 
 # calc image size and downscale for the final output image
 xSize = int(max[0]-min[0]+1)
@@ -122,6 +130,37 @@ for x in range(0,inImp.width):
 		dx = -coord[0] / dz
 		dy = -coord[1] / dz
 		dz = -coord[2] / dz
+
+		# the fade-out outer main (image) layer -- to fight "moire-like" effect
+		#
+		# prefetch the value to be inserted
+		origValue = inIP.getColor(x,y)
+		#
+		mult = fadeRandom.uniform(1.0-alternationMagInFadeThickness,1.0+alternationMagInFadeThickness)
+		decreaserR = mult * origValue.getRed()   / (pxFadeThickness+1)
+		decreaserG = mult * origValue.getGreen() / (pxFadeThickness+1)
+		decreaserB = mult * origValue.getBlue()  / (pxFadeThickness+1)
+		if decreaserR*pxFadeThickness > origValue.getRed():
+			decreaserR = origValue.getRed()   / (pxFadeThickness+1)
+		if decreaserG*pxFadeThickness > origValue.getGreen():
+			decreaserG = origValue.getGreen() / (pxFadeThickness+1)
+		if decreaserB*pxFadeThickness > origValue.getBlue():
+			decreaserB = origValue.getBlue()  / (pxFadeThickness+1)
+		#
+		for t in range(1,pxFadeThickness+1):
+			# orig coords (at various slices levels) (must be downscaled)
+			px = coord[0] - t*dx
+			py = coord[1] - t*dy
+			pz = coord[2] - t*dz
+
+			nx = int(math.floor((px +0.5) /dsRatio) -min[0])
+			ny = int(math.floor((py +0.5) /dsRatio) -min[1])
+			nz = int(math.floor((pz +0.5) /dsRatio) -min[2])
+
+			newValue = Color( origValue.getRed() - int(decreaserR * float(t)), origValue.getGreen() - int(decreaserG * float(t)), origValue.getBlue() - int(decreaserB * float(t)) )
+			ip = outRGBProcessors[nz]
+			ip.setColor(newValue)
+			ip.drawPixel(nx,ny)
 
 		# the outer main (image) layer
 		#
