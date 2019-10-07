@@ -131,8 +131,13 @@ for x in range(0,inImp.width):
 		# the fade-out outer main (image) layer -- to fight "moire-like" effect
 		#
 		# prefetch the value to be inserted
+		origValue = inIP.getf(x,y)
+		#
 		mult = fadeRandom.uniform(1.0-alternationMagInFadeThickness,1.0+alternationMagInFadeThickness)
-		origValue = mult * inIP.getf(x,y)
+		decreaser = mult * origValue / (pxFadeThickness+1)
+		if decreaser*pxFadeThickness > origValue:
+			decreaser = origValue / (pxFadeThickness+1)
+		#
 		for t in range(1,pxFadeThickness+1):
 			# orig coords (at various slices levels) (must be downscaled)
 			px = coord[0] - t*dx
@@ -143,12 +148,11 @@ for x in range(0,inImp.width):
 			ny = int(math.floor((py +0.5) /dsRatio) -min[1])
 			nz = int(math.floor((pz +0.5) /dsRatio) -min[2])
 
-			outFloatPixels[nz][nx + ny*xSize] = origValue - (origValue * float(t)/(pxFadeThickness+1))
+			outFloatPixels[nz][nx + ny*xSize] = origValue - (decreaser * float(t))
 
 		# the outer main (image) layer
 		#
 		# prefetch the value to be inserted
-		origValue = inIP.getf(x,y)
 		for t in range(pxThickness):
 			# orig coords (at various slices levels) (must be downscaled)
 			px = coord[0] + t*dx
