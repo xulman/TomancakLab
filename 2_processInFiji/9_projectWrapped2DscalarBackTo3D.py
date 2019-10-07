@@ -4,6 +4,7 @@
 #@File (label="Z coordinate map:") zMapFile
 #@float (label="Pixel size (microns per 1px):") pxSize
 #@float (label="Downscale factor:") dsRatio
+#@int (label="Thickness towards inside (pixels):", value="3") pxThickness
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
@@ -42,6 +43,10 @@ realCoords = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(
 
 # test that sizes match:
 checkSize2DarrayVsImgPlus(realCoords, inImp);
+
+# make sure the pxThickness is sensible
+if pxThickness < 1:
+	pxThickness = 1
 
 
 print("calculating the 3D image size...")
@@ -101,12 +106,27 @@ for x in range(0,inImp.width):
 	IJ.showProgress(float(x)/totalX)
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
-		# orig coords and downscale for the final output image
-		nx = int(math.floor((coord[0] +0.5) /dsRatio) -min[0])
-		ny = int(math.floor((coord[1] +0.5) /dsRatio) -min[1])
-		nz = int(math.floor((coord[2] +0.5) /dsRatio) -min[2])
 
-		outFloatPixels[nz][nx + ny*xSize] = inIP.getf(x,y)
+		# normalized vector towards the coordinates centre
+		dz = math.sqrt(coord[0]*coord[0] + coord[1]*coord[1] + coord[2]*coord[2]) /dsRatio
+		dx = -coord[0] / dz
+		dy = -coord[1] / dz
+		dz = -coord[2] / dz
+
+		# prefetch the value to be inserted
+		origValue = inIP.getf(x,y)
+
+		# orig coords (at various slices levels)  and downscale for the final output image
+		for t in range(pxThickness):
+			px = coord[0] + t*dx
+			py = coord[1] + t*dy
+			pz = coord[2] + t*dz
+
+			nx = int(math.floor((px +0.5) /dsRatio) -min[0])
+			ny = int(math.floor((py +0.5) /dsRatio) -min[1])
+			nz = int(math.floor((pz +0.5) /dsRatio) -min[2])
+
+			outFloatPixels[nz][nx + ny*xSize] = origValue
 
 print("constructing the 3D image...")
 stack = ij.ImageStack(xSize,ySize)
