@@ -4,17 +4,14 @@
 #@File (label="Z coordinate map:") zMapFile
 #@float (label="Pixel size (microns per 1px):") pxSize
 #@float (label="Downscale factor:") dsRatio
-#@int (label="Thickness towards inside (pixels):", value="3") pxThickness
+
+#@int   (label="Thickness of the outer main (image) layer (pixels):", min="1", description="The thicker it is, the less the rendering would \"see through it\".") pxThickness
+#@int   (label="Thickness of the inner extra (blocking) layer (pixels):", min="0", description="Set to 0 to avoid creating this blocking inner layer.") pxExtraThickness
+#@float (label="Value to draw with the extra layer:", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.") valExtraThickness
 
 # This script creates a 3D image that displays the original image before
 # it got wrapped/embedded into the input inImp 2D image.
 # The input image can be any scalar voxel type, does NOT work for RGB well.
-
-# Usage:
-# 	- Find suitable parameters with CountBigNuclei_FindParameter.py
-#	- Run Fiji
-# 	- Make sure that the update site SCF-MPI-CBG is activated
-#	- Run this script
 
 from ij import IJ
 import ij.ImagePlus
@@ -44,10 +41,11 @@ realCoords = readRealCoords(xMapFile.getAbsolutePath(),yMapFile.getAbsolutePath(
 # test that sizes match:
 checkSize2DarrayVsImgPlus(realCoords, inImp);
 
-# make sure the pxThickness is sensible
+# make sure the 'thicknesses values' are sensible
 if pxThickness < 1:
 	pxThickness = 1
-
+if pxExtraThickness < 0:
+	pxExtraThickness = 0
 
 print("calculating the 3D image size...")
 # search for min&max per axis, while scaling back to pixel units (from the original micron ones)
@@ -105,6 +103,7 @@ inIP = inImp.getProcessor();
 for x in range(0,inImp.width):
 	IJ.showProgress(float(x)/totalX)
 	for y in range(0,inImp.height):
+		# orig unscaled 3D coords
 		coord = realCoords[x][y]
 
 		# normalized vector towards the coordinates centre
@@ -113,11 +112,12 @@ for x in range(0,inImp.width):
 		dy = -coord[1] / dz
 		dz = -coord[2] / dz
 
+		# the outer main (image) layer
+		#
 		# prefetch the value to be inserted
 		origValue = inIP.getf(x,y)
-
-		# orig coords (at various slices levels)  and downscale for the final output image
 		for t in range(pxThickness):
+			# orig coords (at various slices levels) (must be downscaled)
 			px = coord[0] + t*dx
 			py = coord[1] + t*dy
 			pz = coord[2] + t*dz
@@ -127,6 +127,20 @@ for x in range(0,inImp.width):
 			nz = int(math.floor((pz +0.5) /dsRatio) -min[2])
 
 			outFloatPixels[nz][nx + ny*xSize] = origValue
+
+		# the inner extra (blocking) layer
+		#
+		for t in range(pxThickness,pxThickness+pxExtraThickness):
+			# orig coords (at various slices levels) (must be downscaled)
+			px = coord[0] + t*dx
+			py = coord[1] + t*dy
+			pz = coord[2] + t*dz
+
+			nx = int(math.floor((px +0.5) /dsRatio) -min[0])
+			ny = int(math.floor((py +0.5) /dsRatio) -min[1])
+			nz = int(math.floor((pz +0.5) /dsRatio) -min[2])
+
+			outFloatPixels[nz][nx + ny*xSize] = valExtraThickness
 
 print("constructing the 3D image...")
 stack = ij.ImageStack(xSize,ySize)
