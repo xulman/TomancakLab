@@ -6,6 +6,7 @@
 #@float (label="Downscale factor:") dsRatio
 
 #@int   (label="Thickness of the fade-out smoothing layer (pixels):", min="0") pxFadeThickness
+#@float (label="Magnitude of variations in the fade-out smoothing layer:", min="0") alternationMagInFadeThickness
 #@int   (label="Thickness of the outer main (image) layer (pixels):", min="1", description="The thicker it is, the less the rendering would \"see through it\".") pxThickness
 #@int   (label="Thickness of the inner extra (blocking) layer (pixels):", min="0", description="Set to 0 to avoid creating this blocking inner layer.") pxExtraThickness
 #@float (label="Value to draw with the extra layer:", description="This value is not considered if the above is set to 0. To make it practically invisible, set this to some small number.") valExtraThickness
@@ -21,6 +22,7 @@ from ij.process import FloatProcessor
 import math
 import os
 import sys
+import random
 
 # this section adds a folder, in which this very script is living,
 # to the current search paths so that we can import our "library script"
@@ -49,6 +51,9 @@ if pxThickness < 1:
 	pxThickness = 1
 if pxExtraThickness < 0:
 	pxExtraThickness = 0
+
+# own rng generator for changes in the fade-out layer
+fadeRandom = random.Random()
 
 print("calculating the 3D image size...")
 # search for min&max per axis, while scaling back to pixel units (from the original micron ones)
@@ -126,7 +131,8 @@ for x in range(0,inImp.width):
 		# the fade-out outer main (image) layer -- to fight "moire-like" effect
 		#
 		# prefetch the value to be inserted
-		origValue = inIP.getf(x,y)
+		mult = fadeRandom.uniform(1.0-alternationMagInFadeThickness,1.0+alternationMagInFadeThickness)
+		origValue = mult * inIP.getf(x,y)
 		for t in range(1,pxFadeThickness+1):
 			# orig coords (at various slices levels) (must be downscaled)
 			px = coord[0] - t*dx
