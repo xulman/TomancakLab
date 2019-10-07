@@ -93,12 +93,20 @@ print("creating 3D of sizes: "+str(xSize)+" x "+str(ySize)+" x "+str(zSize))
 outRGBProcessors = [ ColorProcessor(xSize,ySize) for z in range(zSize) ]
 # outRGBPixels = [ outRGBProcessors[z].getPixels() for z in range(len(outRGBProcessors)) ]
 
+# progress bar ticks...
+pbTicks = range(0,inImp.width,int(inImp.width/10))
+pbTicksVal = 0
+
 # sweep through the inImp and project pixels to outImp
 print("populating the 3D image...")
 totalX = float(inImp.width)
 inIP = inImp.getProcessor();
 for x in range(0,inImp.width):
 	IJ.showProgress(float(x)/totalX)
+	if x in pbTicks:
+		print("progress: "+str(pbTicksVal)+" %")
+		pbTicksVal = pbTicksVal+10
+
 	for y in range(0,inImp.height):
 		coord = realCoords[x][y]
 		# orig coords and downscale for the final output image
