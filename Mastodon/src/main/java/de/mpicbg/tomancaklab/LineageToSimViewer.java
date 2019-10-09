@@ -106,16 +106,51 @@ public class LineageToSimViewer extends DynamicCommand
 				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
 
 			JPanel controlPanel = new JPanel();
-			controlPanel.setLayout(new GridLayout(2,3));
+			controlPanel.setLayout(new GridLayout(2,4));
 
+			//radius spinners to be used later
+			final Label lblRadiusOwn     = new Label("  Own radius:");
+			final Label lblRadiusScaling = new Label("Radius scale:");
+			final JSpinner spnRadiusOwn     = new JSpinner( new SpinnerNumberModel(radiusOwnValue,      0.01, 100.0, 1.0) );
+			final JSpinner spnRadiusScaling = new JSpinner( new SpinnerNumberModel(radiusScalingFactor, 0.01, 100.0, 1.0) );
+
+			//1st row
 			Checkbox cb = new Checkbox("Use fixed radius instead of spot's own");
 			cb.setState( useOwnRadiusInsteadOfSpotsOwn );
 			cb.addItemListener((event) -> {
 				useOwnRadiusInsteadOfSpotsOwn = ((Checkbox)event.getSource()).getState();
+				spnRadiusOwn.setEnabled( useOwnRadiusInsteadOfSpotsOwn );
+				spnRadiusScaling.setEnabled( !useOwnRadiusInsteadOfSpotsOwn );
+				lblRadiusOwn.setEnabled( useOwnRadiusInsteadOfSpotsOwn );
+				lblRadiusScaling.setEnabled( !useOwnRadiusInsteadOfSpotsOwn );
 				workerCurrentTime();
 			} );
 			controlPanel.add( cb );
 
+			JPanel miniGrp = new JPanel();
+			lblRadiusOwn.setEnabled( useOwnRadiusInsteadOfSpotsOwn );
+			lblRadiusOwn.setAlignment( Label.RIGHT );
+			miniGrp.add( lblRadiusOwn );
+			//
+			spnRadiusOwn.setEnabled( useOwnRadiusInsteadOfSpotsOwn );
+			spnRadiusOwn.addChangeListener( (action) -> {
+				radiusOwnValue = ((Double)spnRadiusOwn.getModel().getValue()).floatValue();
+				workerCurrentTime();
+			});
+			miniGrp.add( spnRadiusOwn );
+			controlPanel.add( miniGrp );
+
+			Button btn = new Button("  Choose color when View is None  ");
+			btn.addActionListener( (action) -> {
+				colorWhenNoStyleIsUsed = getRGBviaDialog(colorWhenNoStyleIsUsed);
+				workerCurrentTime();
+			} );
+			controlPanel.add( btn );
+
+			Label l = new Label("   Connected to "+connectURL);
+			controlPanel.add(l);
+
+			//2nd row
 			cb = new Checkbox("Show always all spots");
 			cb.setState( alwaysShowAllNodes );
 			cb.addItemListener((event) -> {
@@ -124,15 +159,18 @@ public class LineageToSimViewer extends DynamicCommand
 			} );
 			controlPanel.add( cb );
 
-			Label l = new Label("   Connected to "+connectURL);
-			controlPanel.add(l);
-
-			Button btn = new Button("  Choose color when View is None  ");
-			btn.addActionListener( (action) -> {
-				colorWhenNoStyleIsUsed = getRGBviaDialog(colorWhenNoStyleIsUsed);
+			miniGrp = new JPanel();
+			lblRadiusScaling.setEnabled( !useOwnRadiusInsteadOfSpotsOwn );
+			lblRadiusScaling.setAlignment( Label.RIGHT );
+			miniGrp.add( lblRadiusScaling );
+			//
+			spnRadiusScaling.setEnabled( !useOwnRadiusInsteadOfSpotsOwn );
+			spnRadiusScaling.addChangeListener( (action) -> {
+				radiusScalingFactor = ((Double)spnRadiusScaling.getModel().getValue()).floatValue();
 				workerCurrentTime();
-			} );
-			controlPanel.add( btn );
+			});
+			miniGrp.add( spnRadiusScaling );
+			controlPanel.add( miniGrp );
 
 			btn = new Button("  Choose color for Not-colored spots  ");
 			btn.addActionListener( (action) -> {
