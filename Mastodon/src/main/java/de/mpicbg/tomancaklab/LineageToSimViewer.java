@@ -10,6 +10,8 @@ import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.spatial.SpatioTemporalIndex;
+import org.mastodon.collection.IntRefMap;
+import org.mastodon.collection.RefMaps;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
@@ -191,6 +193,8 @@ public class LineageToSimViewer extends DynamicCommand
 			//on coloring style change, repaint the currently sent time point
 			myOwnTSWindow.getColoringModel().listeners().add( this::workerSend );
 			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::workerSend ) );
+			myOwnTSWindow.getColoringModel().listeners().add( this::reportPairs );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::reportPairs ) );
 
 			//on time point change, repaint the current time point
 			myOwnTSWindow.getTimepointModel().listeners().add( this::workerCurrentTime );
@@ -399,6 +403,149 @@ public class LineageToSimViewer extends DynamicCommand
 		timePoint = myOwnTSWindow.getTimepointModel().getTimepoint();
 		workerSend();
 	}
+
+
+	IntRefMap<Spot> pairs = null;
+	IntRefMap<Spot> firstElems = null;
+	Spot sRef = null; //to avoid their re-creation with every call of isThisSpotMyNeighbor()
+	Link lRef = null;
+	private void reportPairs()
+	{
+		System.out.println("reporting some cell:");
+
+		final Model model = pluginAppModel.getAppModel().getModel();
+		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
+		final Spot spotB = model.getGraph().vertexRef();
+
+		sRef = model.getGraph().vertexRef();
+		lRef = model.getGraph().edgeRef();
+
+		if (pairs == null)
+		{
+			pairs      = RefMaps.createIntRefMap( model.getGraph().vertices(), -1, 50 );
+			firstElems = RefMaps.createIntRefMap( model.getGraph().vertices(), -1, 50 );
+		}
+
+		//for every color, this will be the first element of the latest observed pair of spots
+		firstElems.clear();
+
+		//color to 0 - Mother, 1 - daughter of the first spot, 2 - daughter of the second spot
+		final HashMap< Integer,Integer > colorToRole = new HashMap<>(10);
+
+		for (int t = minTimePoint; t <= maxTimePoint; ++t)
+		{
+			//discover new pairs for this timepoint
+			pairs.clear();
+			int nextDaughterRole = -1;
+			for ( final Spot spot : spots.getSpatialIndex( t ) )
+			{
+				//pairs are established based on the color, so consider only colored spots
+				final int color = myOwnColorProvider.spotColor( spot );
+				if (color != 0)
+				{
+					if ( pairs.containsKey( color ) )
+					{
+						//(at least) 2nd spot of the same color,
+						//we have a pair with spotB:
+						pairs.get( color, spotB );
+
+						//so we have now 'spot' and 'spotB' that form a pair,
+						//check who is gonna be reported first and store it in the 'spot'
+						if (firstElems.containsKey(color))
+						{
+							if (isThisSpotMyNeighbor(spotB, firstElems.get(color)))
+							{
+								//switch them...
+								sRef.refTo(spot);
+								spot.refTo(spotB);
+								spotB.refTo(sRef);
+							}
+						}
+						firstElems.put(color, spot);
+
+						//first time seeing this color? define a role for it
+						if (colorToRole.get(color) == null)
+						{
+							if (colorToRole.size() == 0)
+							{
+								//so far no pair was seen, we must be mother
+								colorToRole.put(color,0);
+							}
+							else
+							if (colorToRole.size() == 1)
+							{
+								//so far only mother was recorded with the following color
+								final int mColor = colorToRole.keySet().iterator().next();
+								firstElems.get( mColor, sRef );
+
+								//sRef is mother's first spot
+								if (isThisSpotMyNeighbor(spot, sRef))
+								{
+									//I am the first daughter
+									colorToRole.put(color,1);
+									nextDaughterRole = 2;
+								}
+								else
+								{
+									//I am the first daughter
+									colorToRole.put(color,2);
+									nextDaughterRole = 1;
+								}
+
+								System.out.println("# division here at timepoint "+t);
+							}
+							else
+							{
+								//second observed daughter
+								colorToRole.put(color, nextDaughterRole);
+							}
+						}
+
+
+						double dist = 0;
+						for (int dim = 0; dim < 3; ++dim)
+						{
+							final double dx = spot.getDoublePosition(dim) - spotB.getDoublePosition(dim);
+							dist += dx*dx;
+						}
+						dist = Math.sqrt( dist );
+
+						System.out.println(t+" "+colorToRole.get(color)+" "+spot.getLabel()+" "+spotB.getLabel()
+								+" "+Math.sqrt(spot.getBoundingSphereRadiusSquared())
+								+" "+dist+" "+Math.sqrt(spotB.getBoundingSphereRadiusSquared()));
+					}
+					else
+					{
+						//first element of a potential pair
+						pairs.put( color, spot );
+					}
+				}
+			}
+		}
+
+		model.getGraph().releaseRef( lRef ); lRef = null;
+		model.getGraph().releaseRef( sRef ); sRef = null;
+		model.getGraph().releaseRef( spotB );
+	}
+
+	private boolean isThisSpotMyNeighbor(final Spot myself, final Spot potentialNeig)
+	{
+	    final int nPI = potentialNeig.getInternalPoolIndex();
+
+		for (int n=0; n < myself.incomingEdges().size(); ++n)
+		{
+			myself.incomingEdges().get(n, lRef).getSource( sRef );
+			if (sRef.getInternalPoolIndex() == nPI) return true;
+		}
+		for (int n=0; n < myself.outgoingEdges().size(); ++n)
+		{
+			myself.outgoingEdges().get(n, lRef).getTarget( sRef );
+			if (sRef.getInternalPoolIndex() == nPI) return true;
+		}
+
+		return false;
+	}
+
 
 	/** sends some stuff to the SimViewer */
 	private void workerSend()
