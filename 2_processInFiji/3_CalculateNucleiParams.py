@@ -36,6 +36,9 @@ yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt"
 zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
 
 #
+#@boolean (label="Triangle method (only on straightened polygons):", value=False) doTriangleMethod
+
+#
 #@boolean (label="Show sheet with analysis data", value=True) showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
@@ -185,6 +188,8 @@ def main():
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Label
 		drawChosenNucleiValue(originalImageName+": NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
+		# the 'i' variable must be "re-directed" to pixel array that is showing the current shapes of nuclei
+		i = IJ.getImage().getProcessor().getPixels()
 
 	if showCircImage:
 		for nucl in nuclei:
@@ -205,6 +210,78 @@ def main():
 		for nucl in nuclei:
 			nucl.DrawValue = len(nucl.NeighIDs);
 		drawChosenNucleiValue(originalImageName+": Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
+
+
+	if doTriangleMethod == True:
+		if polyAsLargeSegments == True:
+			# every nucleus lists all junction points relevant to it, the neighboring
+			# nuclei must be sharing them, we have to "invert this" to maintain a list
+			# of triangles adjacent (giving rise) to any junction point
+			vertices = []
+
+			# the "2px radius" pattern
+			jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
+			       -1*w-2,                       -1*w+2,
+			        -2,                           +2,
+			       +1*w-2,                       +1*w+2,
+			       +2*w-2, +2*w-1, +2*w, +2*w+1, +2*w+2 ]
+
+			# also, build a map nucl.Label to nuclei object (to build triangles faster)
+			nucleiMap = {}
+
+			# DEBUG
+			verticesVizu = []
+
+			for nucl in nuclei:
+				nucleiMap[nucl.Label] = nucl
+
+				for jp in nucl.CoordsInnerJunctions:
+					visitedLabels = set()
+					for dp in jn:
+						if jp+dp >= 0 and jp+dp < len(i) and i[jp+dp] > 0:
+							visitedLabels.add( i[jp+dp] )
+
+					# if a junction point that is surrounded by at least three
+					# labels (nuclei/cells) is found, we'll enlist it if it has
+					# not been enlisted already
+					if len(visitedLabels) >= 3:
+						found = False
+						for t in vertices:
+							if visitedLabels <= t:
+								found = True
+								break
+
+						if found == False:
+							vertices.append(visitedLabels)
+							# DEBUG
+							verticesVizu.append(jp)
+
+			print("Discovered vertices cnt: "+str(len(vertices)))
+
+			# due to the processing order of the vertices, it may happen that A, A is subset of B
+			# and should not therefore be included, was inserted before the B:
+			# (and since removing from the list is expensive/impossible we have an "ignore list")
+			verticesIgnoredIdxs = []
+			for v in vertices:
+				if len(v) > 3:
+					for i in range(len(vertices)):
+						if vertices[i] < v:
+							verticesIgnoredIdxs.append(i)
+
+			print("Discovered duplicate vertices cnt: "+str(len(verticesIgnoredIdxs)))
+
+			# DEBUG
+			# render all vertices
+			vPixels = [0 for o in range(w * IJ.getImage().getHeight())]
+			for v in verticesVizu:
+				vPixels[v] = vPixels[v]+1
+			for i in verticesIgnoredIdxs:
+				vPixels[ verticesVizu[i] ] = 50;
+			ImagePlus( "junction points", FloatProcessor(w,IJ.getImage().getHeight(), vPixels) ).show()
+
+		else:
+			print("Skipped the requested Triangle method because it currently works "
+			     +"only together with \"Polygon boundary straightening\" enabled")
 
 
 	if (showRawData):
