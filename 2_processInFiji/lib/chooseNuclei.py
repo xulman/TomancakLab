@@ -1,3 +1,4 @@
+import math
 from ij import IJ
 from ij import ImagePlus
 from ij.process import ColorProcessor
@@ -186,6 +187,26 @@ def drawChosenNucleiValue(title, width,height, nuclei):
 	cp = FloatProcessor(width,height, OutputPixelsNew)
 	OutputImg = ImagePlus(title, cp)
 	OutputImg.show()
+
+
+def drawLine(fromXYtuple, toXYtuple, drawValue,  image,width):
+	# find the largest side of a AABB around the requested line
+	dx = int(math.fabs( toXYtuple[0] - fromXYtuple[0] ))
+	dy = int(math.fabs( toXYtuple[1] - fromXYtuple[1] ))
+	iters = max( dx,dy )
+
+	# step:
+	dx = (toXYtuple[0] - fromXYtuple[0]) / float(iters)
+	dy = (toXYtuple[1] - fromXYtuple[1]) / float(iters)
+
+	for i in range(iters+1):
+		x = int(fromXYtuple[0] + float(i)*dx +0.5)
+		y = int(fromXYtuple[1] + float(i)*dy +0.5)
+		image[ y*width +x ] = drawValue
+
+	# since 'iters' may not be sufficient to reach the line endpoint,
+	# we draw the endpoint here explicitly
+	image[ int(toXYtuple[1])*width +int(toXYtuple[0]) ] = drawValue
 
 
 def preprocessMembraneImage(realSizes):
