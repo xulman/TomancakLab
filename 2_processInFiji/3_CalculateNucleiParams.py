@@ -277,6 +277,28 @@ def main():
 				vPixels[v] = vPixels[v]+1
 			for i in verticesIgnoredIdxs:
 				vPixels[ verticesVizu[i] ] = 50;
+
+			# create triangles around the vertices:
+			triangles = []
+			for i in range(len(vertices)):
+				if i not in verticesIgnoredIdxs:
+					v = vertices[i]
+					if len(v) == 3:
+						# triangle
+						nucl = v.pop()
+						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = v.pop()
+						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = v.pop()
+						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+
+						drawLine(A,B, 30, vPixels,w)
+						drawLine(B,C, 30, vPixels,w)
+						drawLine(C,A, 30, vPixels,w)
+					else:
+						# moreAngle ;)
+						print(v)
+
 			ImagePlus( "junction points", FloatProcessor(w,IJ.getImage().getHeight(), vPixels) ).show()
 
 		else:
