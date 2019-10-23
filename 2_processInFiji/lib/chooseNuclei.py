@@ -209,6 +209,24 @@ def drawLine(fromXYtuple, toXYtuple, drawValue,  image,width):
 	image[ int(toXYtuple[1])*width +int(toXYtuple[0]) ] = drawValue
 
 
+def drawCross(atXYtuple, radius, drawValue,  image,width):
+	radius = radius+1
+	for i in range(1,radius):
+		x = int(atXYtuple[0] +0.5)
+		y = int(atXYtuple[1] -(radius-i) +0.5)
+		image[ y*width +x ] = drawValue
+
+	for i in range(-radius+1,radius):
+		x = int(atXYtuple[0] +i +0.5)
+		y = int(atXYtuple[1] +0.5)
+		image[ y*width +x ] = drawValue
+
+	for i in range(1,radius):
+		x = int(atXYtuple[0] +0.5)
+		y = int(atXYtuple[1] +i +0.5)
+		image[ y*width +x ] = drawValue
+
+
 def preprocessMembraneImage(realSizes):
 	# obtain "handles"...
 	imp = IJ.getImage()
