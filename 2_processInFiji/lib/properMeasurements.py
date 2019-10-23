@@ -138,9 +138,29 @@ def properArea(xyCoords, realAreas):
 	return sum
 
 
-# ---------- aux functions ----------
+# ---------- aux IO functions ----------
 def writeCoordsToFile(xyCoords, filename):
 	f = open(filename,"w")
 	for c in xyCoords:
 		f.write(str(c[0])+" "+str(c[1])+"\n")
 	f.close()
+
+
+# ---------- aux math functions ----------
+def crossProduct(vec3elemA, vec3elemB):
+	return [ vec3elemA[1] * vec3elemB[2] - vec3elemA[2] * vec3elemB[1],
+	         vec3elemA[2] * vec3elemB[0] - vec3elemA[0] * vec3elemB[2],
+	         vec3elemA[0] * vec3elemB[1] - vec3elemA[1] * vec3elemB[0] ]
+
+def isCCW(p2dA, p2dB, p2dC):
+	vec1 = [ p2dB[0]-p2dA[0], p2dB[1]-p2dA[1] ]
+	vec2 = [ p2dC[0]-p2dA[0], p2dC[1]-p2dA[1] ]
+	cross_elem2 = vec1[0] * vec2[1] - vec1[1] * vec2[0]
+	return cross_elem2 > 0
+
+# note that p2dC is never adjusted, is constant here
+def makeCCWorder(p2dA, p2dB, p2dC):
+	if isCCW(p2dA, p2dB, p2dC):
+		return [p2dA, p2dB, p2dC]
+	else:
+		return [p2dB, p2dA, p2dC]
