@@ -284,13 +284,14 @@ def main():
 				if i not in verticesIgnoredIdxs:
 					v = vertices[i]
 					if len(v) == 3:
-						# triangle # TODO CCW-ness
+						# triangle
 						nucl = v.pop()
 						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = v.pop()
 						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = v.pop()
 						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						[A,B,C] = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 30, vPixels,w)
 						drawLine(B,C, 30, vPixels,w)
@@ -299,7 +300,7 @@ def main():
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 					else:
-						# moreAngle ;) # TODO CCW-ness
+						# moreAngle ;)
 						# determine the centre point first
 						C = [ 0.0,0.0 ]
 						for nucl in v:
@@ -329,6 +330,7 @@ def main():
 							A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 							nucl = angSortedM[angSortedL[ i ]]
 							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+							[A,B,C] = makeCCWorder(A,B,C)
 
 							drawLine(A,B, 40, vPixels,w)
 							drawLine(B,C, 40, vPixels,w)
@@ -342,6 +344,7 @@ def main():
 						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = angSortedM[angSortedL[ len(angSortedL)-1 ]]
 						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						[A,B,C] = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 40, vPixels,w)
 						drawLine(B,C, 40, vPixels,w)
