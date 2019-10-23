@@ -284,7 +284,7 @@ def main():
 				if i not in verticesIgnoredIdxs:
 					v = vertices[i]
 					if len(v) == 3:
-						# triangle
+						# triangle # TODO CCW-ness
 						nucl = v.pop()
 						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = v.pop()
@@ -295,9 +295,60 @@ def main():
 						drawLine(A,B, 30, vPixels,w)
 						drawLine(B,C, 30, vPixels,w)
 						drawLine(C,A, 30, vPixels,w)
+
+						# DEBUG REMOVE ME
+						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 					else:
-						# moreAngle ;)
-						print(v)
+						# moreAngle ;) # TODO CCW-ness
+						# determine the centre point first
+						C = [ 0.0,0.0 ]
+						for nucl in v:
+							C[0] = C[0] + nucleiMap[nucl].CentreX
+							C[1] = C[1] + nucleiMap[nucl].CentreY
+
+						C[0] = C[0] / float(len(v))
+						C[1] = C[1] / float(len(v))
+
+						# now sort the triangles' centres according to azimuth angles
+						angSortedM = {} # M = map
+						for nucl in v:
+							ang = math.atan2( nucleiMap[nucl].CentreY - C[1], nucleiMap[nucl].CentreX - C[0] )
+
+							# make sure we are not loosing this nucl because of the same azimuth
+							while ang in angSortedM:
+								print("WARNING: this is very unexpected! 3 mutualy neighboring cells in a line!?")
+								ang = ang+0.001
+
+							angSortedM[ang] = nucl
+
+						# get array of the angles, sort it, sweep it
+						angSortedL = sorted(angSortedM.keys()) # L = List
+
+						for i in range(1,len(angSortedL)):
+							nucl = angSortedM[angSortedL[ i-1 ]]
+							A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+							nucl = angSortedM[angSortedL[ i ]]
+							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+
+							drawLine(A,B, 40, vPixels,w)
+							drawLine(B,C, 40, vPixels,w)
+							drawLine(C,A, 40, vPixels,w)
+
+							# DEBUG REMOVE ME
+							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
+
+						# add the last triangle
+						nucl = angSortedM[angSortedL[ 0 ]]
+						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = angSortedM[angSortedL[ len(angSortedL)-1 ]]
+						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+
+						drawLine(A,B, 40, vPixels,w)
+						drawLine(B,C, 40, vPixels,w)
+						drawLine(C,A, 40, vPixels,w)
+
+						# DEBUG REMOVE ME
+						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
 			ImagePlus( "junction points", FloatProcessor(w,IJ.getImage().getHeight(), vPixels) ).show()
 
