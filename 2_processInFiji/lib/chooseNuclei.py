@@ -6,6 +6,8 @@ from ij.process import FloatProcessor
 
 from Nucleus import Nucleus
 
+from properMeasurements import makeCCWorder
+
 from testPseudoClosing import pseudoClosing
 from testPseudoClosing import pseudoDilation
 
@@ -225,6 +227,36 @@ def drawCross(atXYtuple, radius, drawValue,  image,width):
 		x = int(atXYtuple[0] +0.5)
 		y = int(atXYtuple[1] +i +0.5)
 		image[ y*width +x ] = drawValue
+
+
+def draw2DTriangle(A,B,C, drawValue, image,width):
+	A,B,C = makeCCWorder(A,B,C)
+	draw2DCCWTriangle(A,B,C, drawValue, image,width)
+
+
+def draw2DCCWTriangle(A,B,C, drawValue, image,width):
+	# "integered" bounding box around the triangle
+	bbMin = [ int( min(min(A[0],B[0]),C[0]) ), int( min(min(A[1],B[1]),C[1]) ) ]
+	bbMax = [ int( max(max(A[0],B[0]),C[0]) ), int( max(max(A[1],B[1]),C[1]) ) ]
+	#print("BBox:", bbMin[0],bbMax[0],"->",bbMin[1],bbMax[1])
+
+	# CCW oriented edges of the triangle
+	e1 = [ B[0]-A[0], B[1]-A[1] ]
+	e2 = [ C[0]-B[0], C[1]-B[1] ]
+	e3 = [ A[0]-C[0], A[1]-C[1] ]
+
+	# adjust the edges so that the scalar product tests "being inside the triangle"
+	e1 = [ e1[1], -e1[0] ] # CCW rotate 90deg
+	e2 = [ e2[1], -e2[0] ]
+	e3 = [ e3[1], -e3[0] ]
+
+	for y in range(bbMin[1], bbMax[1]+1):
+		for x in range(bbMin[0], bbMax[0]+1):
+			# is [x,y] inside?
+			if ((x-A[0])*e1[0] + (y-A[1])*e1[1] >= 0) and \
+			   ((x-B[0])*e2[0] + (y-B[1])*e2[1] >= 0) and \
+			   ((x-C[0])*e3[0] + (y-C[1])*e3[1] >= 0):
+				image[y*width +x] = drawValue
 
 
 def preprocessMembraneImage(realSizes):
