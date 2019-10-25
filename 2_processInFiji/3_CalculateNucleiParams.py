@@ -214,6 +214,8 @@ def main():
 
 	if doTriangleMethod == True:
 		if polyAsLargeSegments == True:
+			print("Calculating the cell alignment parameter (the triangle method).")
+
 			# every nucleus lists all junction points relevant to it, the neighboring
 			# nuclei must be sharing them, we have to "invert this" to maintain a list
 			# of triangles adjacent (giving rise) to any junction point
@@ -256,7 +258,7 @@ def main():
 							# DEBUG
 							verticesVizu.append(jp)
 
-			print("Discovered vertices cnt: "+str(len(vertices)))
+			print("  Discovered vertices cnt: "+str(len(vertices)))
 
 			# due to the processing order of the vertices, it may happen that A, A is subset of B
 			# and should not therefore be included, was inserted before the B:
@@ -268,9 +270,9 @@ def main():
 						if vertices[i] < v:
 							verticesIgnoredIdxs.append(i)
 
-			print("Discovered duplicate vertices cnt: "+str(len(verticesIgnoredIdxs)))
+			print("  Discovered duplicate vertices cnt: "+str(len(verticesIgnoredIdxs)))
 
-			# DEBUG
+			print("  Rendering vertices as crosses to be checked against the NEW SHAPES image...")
 			# render all vertices
 			imgHeight = IJ.getImage().getHeight()
 			vPixels = [0 for o in range(w * imgHeight)]
@@ -301,6 +303,11 @@ def main():
 			if len(detectedVertices) != (len(vertices)-len(verticesIgnoredIdxs)):
 				print("  WARNING: Control check failed: detectedVertices="+str(len(detectedVertices))+" is not discoveredVerticesCnt - duplicateVerticesCnt")
 
+			print("  Generating triangles and calculating their cell alignment indices...")
+
+			# DEBUG
+			# render all triangles
+			tPixels = [0 for o in range(w * imgHeight)]
 
 			# create triangles around the vertices:
 			triangles = []
@@ -320,6 +327,9 @@ def main():
 						drawLine(A,B, 10, vPixels,w)
 						drawLine(B,C, 10, vPixels,w)
 						drawLine(C,A, 10, vPixels,w)
+
+						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -355,10 +365,13 @@ def main():
 							nucl = angSortedM[angSortedL[ i ]]
 							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 							A,B,C = makeCCWorder(A,B,C)
+
 							drawLine(A,B, 15, vPixels,w)
 							drawLine(B,C, 15, vPixels,w)
 							drawLine(C,A, 15, vPixels,w)
 
+							area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+							draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 							# DEBUG REMOVE ME
 							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -374,10 +387,14 @@ def main():
 						drawLine(B,C, 15, vPixels,w)
 						drawLine(C,A, 15, vPixels,w)
 
+						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
+			ImagePlus( "cell_alignment_index",                         FloatProcessor(w,imgHeight, tPixels) ).show()
 
 		else:
 			print("Skipped the requested Triangle method because it currently works "
