@@ -164,3 +164,75 @@ def makeCCWorder(p2dA, p2dB, p2dC):
 		return p2dA, p2dB, p2dC
 	else:
 		return p2dB, p2dA, p2dC
+
+
+# row major!  Mat = ( a b )
+#                   ( c d )
+def matInverse(Mat2DAsArray):
+	a = Mat2DAsArray[0]
+	b = Mat2DAsArray[1]
+	c = Mat2DAsArray[2]
+	d = Mat2DAsArray[3]
+
+	det = 1.0 / (a*d - b*c)
+	return [ d*det, -b*det, -c*det, a*det ]
+
+
+# row major!  Mat = ( a b )
+#                   ( c d )
+def matDet(Mat2DAsArray):
+	a = Mat2DAsArray[0]
+	b = Mat2DAsArray[1]
+	c = Mat2DAsArray[2]
+	d = Mat2DAsArray[3]
+
+	return (a*d - b*c)
+
+
+# row major!  Mat = ( a b )
+#                   ( c d )
+def matMult(Mat2DAsArrayLeft, Mat2DAsArrayRight):
+	q = Mat2DAsArrayLeft[0]
+	w = Mat2DAsArrayLeft[1]
+	e = Mat2DAsArrayLeft[2]
+	r = Mat2DAsArrayLeft[3]
+
+	a = Mat2DAsArrayRight[0]
+	s = Mat2DAsArrayRight[1]
+	d = Mat2DAsArrayRight[2]
+	f = Mat2DAsArrayRight[3]
+
+	return [ q*a+w*d, q*s+w*f, e*a+r*d, e*s+r*f ]
+
+
+#-------------------------------------------------------------------------
+# the following code was cloned (and modified to avoid Numpy requirement
+# in order to run in Fiji's Jython) from computeAreaAndElongationNematic()
+# by Matthias Merkel, http://www.matthiasmerkel.de
+#-------------------------------------------------------------------------
+# the columns of this matrix are the two vectors r1-r0 and r2-r0; where ri are the corners of a regular triangle, sorted in ccw direction; the area of the triangle is 1.
+_Side0 = 2.0/math.sqrt(math.sqrt(3)) # side of a regular triangle with area 1
+RTM = [-0.5*math.sqrt(3) *_Side0, -0.5*math.sqrt(3) *_Side0, 0.5 *_Side0, -0.5 *_Side0]
+RTMinvted = matInverse(RTM)
+
+def computeAreaAndElongationNematic_nonNumpy(p2dA, p2dB, p2dC):
+	curTriangleMatrix = [ p2dB[0] - p2dA[0], p2dC[0] - p2dA[0], p2dB[1] - p2dA[1], p2dC[1] - p2dA[1] ]
+	shape = matMult(curTriangleMatrix, RTMinvted)
+
+	area = matDet(shape)
+	linScalingFactor = math.sqrt(math.fabs(area))
+	theta = math.atan2(shape[2]-shape[1], shape[0]+shape[3])
+
+	n_xx = 0.5*(shape[0]-shape[3])
+	n_xy = 0.5*(shape[1]+shape[2])
+	twoPhi = theta + 2* 0.5*math.atan2(n_xy, n_xx)
+
+	n_norm = math.sqrt(n_xx*n_xx + n_xy*n_xy)
+	normQ = math.asinh(n_norm / linScalingFactor)
+
+	n_xx = normQ*math.cos(twoPhi)
+	n_xy = normQ*math.sin(twoPhi)
+	n_norm = math.sqrt(n_xx*n_xx + n_xy*n_xy)
+
+	return area, n_norm
+#-------------------------------------------------------------------------
