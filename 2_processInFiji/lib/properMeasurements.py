@@ -156,11 +156,11 @@ def isCCW(p2dA, p2dB, p2dC):
 	vec1 = [ p2dB[0]-p2dA[0], p2dB[1]-p2dA[1] ]
 	vec2 = [ p2dC[0]-p2dA[0], p2dC[1]-p2dA[1] ]
 	cross_elem2 = vec1[0] * vec2[1] - vec1[1] * vec2[0]
-	return cross_elem2 > 0
+	return cross_elem2 < 0
 
 # note that p2dC is never adjusted, is constant here
 def makeCCWorder(p2dA, p2dB, p2dC):
 	if isCCW(p2dA, p2dB, p2dC):
-		return [p2dA, p2dB, p2dC]
+		return p2dA, p2dB, p2dC
 	else:
-		return [p2dB, p2dA, p2dC]
+		return p2dB, p2dA, p2dC

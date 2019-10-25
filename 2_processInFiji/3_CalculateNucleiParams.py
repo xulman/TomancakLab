@@ -315,7 +315,7 @@ def main():
 						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = v.pop()
 						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-						[A,B,C] = makeCCWorder(A,B,C)
+						A,B,C = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 10, vPixels,w)
 						drawLine(B,C, 10, vPixels,w)
@@ -354,7 +354,7 @@ def main():
 							A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 							nucl = angSortedM[angSortedL[ i ]]
 							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-							[A,B,C] = makeCCWorder(A,B,C)
+							A,B,C = makeCCWorder(A,B,C)
 							drawLine(A,B, 15, vPixels,w)
 							drawLine(B,C, 15, vPixels,w)
 							drawLine(C,A, 15, vPixels,w)
@@ -368,7 +368,7 @@ def main():
 						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						nucl = angSortedM[angSortedL[ len(angSortedL)-1 ]]
 						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-						[A,B,C] = makeCCWorder(A,B,C)
+						A,B,C = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 15, vPixels,w)
 						drawLine(B,C, 15, vPixels,w)
