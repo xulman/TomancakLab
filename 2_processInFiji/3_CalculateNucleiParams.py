@@ -479,7 +479,10 @@ def startSession(folder,tpFile):
 	IJ.open(folder+"/"+tpFile)
 	IJ.selectWindow(tpFile);
 
-def closeSession(tpFile):
+def closeSession(folder,tpFile):
+	if doTriangleMethod:
+		closeSession_TriangleMethod(folder,tpFile)
+
 	IJ.selectWindow(tpFile+": NEW SHAPES");
 	IJ.getImage().close();
 
@@ -495,12 +498,32 @@ def closeSession(tpFile):
 	IJ.getImage().close();
 
 
+def closeSession_TriangleMethod(folder,tpFile):
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__histogramOfqs.tif")
+	IJ.getImage().close();
+
+	IJ.selectWindow("cell_alignment_index")
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices.tif")
+	IJ.getImage().close();
+
+	IJ.selectWindow("junctionPointsAsCrosses_withInducedTriangles")
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__verticesAndTriangles.tif")
+	IJ.getImage().close();
+
+	if showShapeFactorImage:
+		IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellShapeIndices_akaShapeFactor.tif")
+		IJ.getImage().close();
+
+
 def doOneTP(tpFile):
 	print(tpFile+" Starting.............")
-	startSession("/Users/ulman/p_Akanksha/curated/curated2/",tpFile)
+	inFolder  = "/Users/ulman/p_Akanksha/curated/curated2/"
+	outFolder = "/Users/ulman/p_Akanksha/curated/curated2/"
+
+	startSession(inFolder,tpFile)
 	main()
 	print(tpFile+" Done.")
-	closeSession(tpFile)
+	closeSession(outFolder,tpFile)
 
 
 # HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
