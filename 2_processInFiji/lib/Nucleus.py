@@ -356,7 +356,16 @@ class Nucleus:
 		           -2,                           +2,
 		       +1*w-2,                       +1*w+2,
 		       +2*w-2, +2*w-1, +2*w, +2*w+1, +2*w+2 ]
-		# offsets of the junction-points
+
+		# offsets of the junction-points, but in two flavours:
+		# truly and only the (inner) junction points - that is such boundary points
+		# that are surrounded by at least three different labels (that is three different
+		# nuclei/cells)
+		self.CoordsInnerJunctions = []
+		#
+		# all important boundary-shaping points: includes the self.CoordsInnerJunctions plus
+		# points on the "outside of the nuclei/cell" -- points that saw only one (mine) label;
+		# these are typically on the outskirts of the (unwrapped) image
 		self.CoordsJunctions = []
 
 		# also an "inner" neighborhood -- that is "instantiated" around
@@ -389,6 +398,7 @@ class Nucleus:
 
 					if seenMyNuclei == False and seenOtherNuclei == True:
 						self.CoordsJunctions.append(oo)
+						self.CoordsInnerJunctions.append(oo)
 						break
 
 			if seenOtherNucleiAtAll == False:

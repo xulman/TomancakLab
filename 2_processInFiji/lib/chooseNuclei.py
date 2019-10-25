@@ -1,9 +1,12 @@
+import math
 from ij import IJ
 from ij import ImagePlus
 from ij.process import ColorProcessor
 from ij.process import FloatProcessor
 
 from Nucleus import Nucleus
+
+from properMeasurements import makeCCWorder
 
 from testPseudoClosing import pseudoClosing
 from testPseudoClosing import pseudoDilation
@@ -186,6 +189,74 @@ def drawChosenNucleiValue(title, width,height, nuclei):
 	cp = FloatProcessor(width,height, OutputPixelsNew)
 	OutputImg = ImagePlus(title, cp)
 	OutputImg.show()
+
+
+def drawLine(fromXYtuple, toXYtuple, drawValue,  image,width):
+	# find the largest side of a AABB around the requested line
+	dx = int(math.fabs( toXYtuple[0] - fromXYtuple[0] ))
+	dy = int(math.fabs( toXYtuple[1] - fromXYtuple[1] ))
+	iters = max( dx,dy )
+
+	# step:
+	dx = (toXYtuple[0] - fromXYtuple[0]) / float(iters)
+	dy = (toXYtuple[1] - fromXYtuple[1]) / float(iters)
+
+	for i in range(iters+1):
+		x = int(fromXYtuple[0] + float(i)*dx +0.5)
+		y = int(fromXYtuple[1] + float(i)*dy +0.5)
+		image[ y*width +x ] = drawValue
+
+	# since 'iters' may not be sufficient to reach the line endpoint,
+	# we draw the endpoint here explicitly
+	image[ int(toXYtuple[1])*width +int(toXYtuple[0]) ] = drawValue
+
+
+def drawCross(atXYtuple, radius, drawValue,  image,width):
+	radius = radius+1
+	for i in range(1,radius):
+		x = int(atXYtuple[0] +0.5)
+		y = int(atXYtuple[1] -(radius-i) +0.5)
+		image[ y*width +x ] = drawValue
+
+	for i in range(-radius+1,radius):
+		x = int(atXYtuple[0] +i +0.5)
+		y = int(atXYtuple[1] +0.5)
+		image[ y*width +x ] = drawValue
+
+	for i in range(1,radius):
+		x = int(atXYtuple[0] +0.5)
+		y = int(atXYtuple[1] +i +0.5)
+		image[ y*width +x ] = drawValue
+
+
+def draw2DTriangle(A,B,C, drawValue, image,width):
+	A,B,C = makeCCWorder(A,B,C)
+	draw2DCCWTriangle(A,B,C, drawValue, image,width)
+
+
+def draw2DCCWTriangle(A,B,C, drawValue, image,width):
+	# "integered" bounding box around the triangle
+	bbMin = [ int( min(min(A[0],B[0]),C[0]) ), int( min(min(A[1],B[1]),C[1]) ) ]
+	bbMax = [ int( max(max(A[0],B[0]),C[0]) ), int( max(max(A[1],B[1]),C[1]) ) ]
+	#print("BBox:", bbMin[0],bbMax[0],"->",bbMin[1],bbMax[1])
+
+	# CCW oriented edges of the triangle
+	e1 = [ B[0]-A[0], B[1]-A[1] ]
+	e2 = [ C[0]-B[0], C[1]-B[1] ]
+	e3 = [ A[0]-C[0], A[1]-C[1] ]
+
+	# adjust the edges so that the scalar product tests "being inside the triangle"
+	e1 = [ e1[1], -e1[0] ] # CCW rotate 90deg
+	e2 = [ e2[1], -e2[0] ]
+	e3 = [ e3[1], -e3[0] ]
+
+	for y in range(bbMin[1], bbMax[1]+1):
+		for x in range(bbMin[0], bbMax[0]+1):
+			# is [x,y] inside?
+			if ((x-A[0])*e1[0] + (y-A[1])*e1[1] >= 0) and \
+			   ((x-B[0])*e2[0] + (y-B[1])*e2[1] >= 0) and \
+			   ((x-C[0])*e3[0] + (y-C[1])*e3[1] >= 0):
+				image[y*width +x] = drawValue
 
 
 def preprocessMembraneImage(realSizes):

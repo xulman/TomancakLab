@@ -36,6 +36,9 @@ yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt"
 zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
 
 #
+#@boolean (label="Triangle method (only on straightened polygons):", value=False) doTriangleMethod
+
+#
 #@boolean (label="Show sheet with analysis data", value=True) showRawData
 #@boolean (label="Show image with areas") showAreaImage
 #@boolean (label="Show image with circularities") showCircImage
@@ -185,6 +188,8 @@ def main():
 		for nucl in nuclei:
 			nucl.DrawValue = nucl.Label
 		drawChosenNucleiValue(originalImageName+": NEW SHAPES", imp.getWidth(),imp.getHeight(), nuclei)
+		# the 'i' variable must be "re-directed" to pixel array that is showing the current shapes of nuclei
+		i = IJ.getImage().getProcessor().getPixels()
 
 	if showCircImage:
 		for nucl in nuclei:
@@ -205,6 +210,216 @@ def main():
 		for nucl in nuclei:
 			nucl.DrawValue = len(nucl.NeighIDs);
 		drawChosenNucleiValue(originalImageName+": Neighborhood counts", imp.getWidth(),imp.getHeight(), nuclei)
+
+
+	if doTriangleMethod == True:
+		if polyAsLargeSegments == True:
+			print("Calculating the cell alignment parameter (the triangle method).")
+
+			# every nucleus lists all junction points relevant to it, the neighboring
+			# nuclei must be sharing them, we have to "invert this" to maintain a list
+			# of triangles adjacent (giving rise) to any junction point
+			vertices = []
+
+			# the "2px radius" pattern
+			jn = [ -2*w-2, -2*w-1, -2*w, -2*w+1, -2*w+2,
+			       -1*w-2,                       -1*w+2,
+			        -2,                           +2,
+			       +1*w-2,                       +1*w+2,
+			       +2*w-2, +2*w-1, +2*w, +2*w+1, +2*w+2 ]
+
+			# also, build a map nucl.Label to nuclei object (to build triangles faster)
+			nucleiMap = {}
+
+			# DEBUG
+			verticesVizu = []
+
+			for nucl in nuclei:
+				nucleiMap[nucl.Label] = nucl
+
+				for jp in nucl.CoordsInnerJunctions:
+					visitedLabels = set()
+					for dp in jn:
+						if jp+dp >= 0 and jp+dp < len(i) and i[jp+dp] > 0:
+							visitedLabels.add( i[jp+dp] )
+
+					# if a junction point that is surrounded by at least three
+					# labels (nuclei/cells) is found, we'll enlist it if it has
+					# not been enlisted already
+					if len(visitedLabels) >= 3:
+						found = False
+						for t in vertices:
+							if visitedLabels <= t:
+								found = True
+								break
+
+						if found == False:
+							vertices.append(visitedLabels)
+							# DEBUG
+							verticesVizu.append(jp)
+
+			print("  Discovered vertices cnt: "+str(len(vertices)))
+
+			# due to the processing order of the vertices, it may happen that A, A is subset of B
+			# and should not therefore be included, was inserted before the B:
+			# (and since removing from the list is expensive/impossible we have an "ignore list")
+			verticesIgnoredIdxs = []
+			for v in vertices:
+				if len(v) > 3:
+					for i in range(len(vertices)):
+						if vertices[i] < v:
+							verticesIgnoredIdxs.append(i)
+
+			print("  Discovered duplicate vertices cnt: "+str(len(verticesIgnoredIdxs)))
+
+			print("  Rendering vertices as crosses to be checked against the NEW SHAPES image...")
+			# render all vertices
+			imgHeight = IJ.getImage().getHeight()
+			vPixels = [0 for o in range(w * imgHeight)]
+			for v in verticesVizu:
+				vPixels[v] = vPixels[v]+1
+			for i in verticesIgnoredIdxs:
+				vPixels[ verticesVizu[i] ] = 0;
+
+			# expand all rendered vertices into crosses shown with the very same color,
+			# and check that none vertex was detected twice -- since each is induced from two different
+			# cell (at least) trios, existence of two overlapping is possible to exist only by mistake
+			detectedVertices = []
+			for offset in range(len(vPixels)):
+				if vPixels[offset] > 0:
+					detectedVertices.append(offset)
+
+					if vPixels[offset] > 1:
+						y = int(offset/w)
+						x = offset - y*w
+						print("  WARNING: Duplicate vertex at ["+str(x)+","+str(y)+"], and that should not be like that.")
+
+			for offset in detectedVertices:
+				y = int(offset/w)
+				x = offset - y*w
+				if x > 2 and x < w-3 and y > 2 and y < imgHeight-3:
+					drawCross([x,y],2,vPixels[offset], vPixels,w)
+
+			if len(detectedVertices) != (len(vertices)-len(verticesIgnoredIdxs)):
+				print("  WARNING: Control check failed: detectedVertices="+str(len(detectedVertices))+" is not discoveredVerticesCnt - duplicateVerticesCnt")
+
+			print("  Generating triangles and calculating their cell alignment indices...")
+
+			# DEBUG
+			# render all triangles
+			tPixels = [0 for o in range(w * imgHeight)]
+
+			# for the average cell alignment index
+			Q = 0
+			aSum = 0
+			# list of individual values of q (one per triangle)
+			qs = []
+
+			# create triangles around the vertices:
+			triangles = []
+			for i in range(len(vertices)):
+				if i not in verticesIgnoredIdxs:
+					v = vertices[i]
+					if len(v) == 3:
+						# triangle
+						nucl = v.pop()
+						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = v.pop()
+						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = v.pop()
+						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						A,B,C = makeCCWorder(A,B,C)
+
+						drawLine(A,B, 10, vPixels,w)
+						drawLine(B,C, 10, vPixels,w)
+						drawLine(C,A, 10, vPixels,w)
+
+						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						Q = Q + area*q
+						aSum = aSum + area
+						qs.append(q)
+
+						# DEBUG REMOVE ME
+						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
+					else:
+						# moreAngle ;)
+						# determine the centre point first
+						C = [ 0.0,0.0 ]
+						for nucl in v:
+							C[0] = C[0] + nucleiMap[nucl].CentreX
+							C[1] = C[1] + nucleiMap[nucl].CentreY
+
+						C[0] = C[0] / float(len(v))
+						C[1] = C[1] / float(len(v))
+
+						# now sort the triangles' centres according to azimuth angles
+						angSortedM = {} # M = map
+						for nucl in v:
+							ang = math.atan2( nucleiMap[nucl].CentreY - C[1], nucleiMap[nucl].CentreX - C[0] )
+
+							# make sure we are not loosing this nucl because of the same azimuth
+							while ang in angSortedM:
+								print("WARNING: this is very unexpected! 3 mutualy neighboring cells in a line!?")
+								ang = ang+0.001
+
+							angSortedM[ang] = nucl
+
+						# get array of the angles, sort it, sweep it
+						angSortedL = sorted(angSortedM.keys()) # L = List
+
+						for i in range(1,len(angSortedL)):
+							nucl = angSortedM[angSortedL[ i-1 ]]
+							A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+							nucl = angSortedM[angSortedL[ i ]]
+							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+							A,B,C = makeCCWorder(A,B,C)
+
+							drawLine(A,B, 15, vPixels,w)
+							drawLine(B,C, 15, vPixels,w)
+							drawLine(C,A, 15, vPixels,w)
+
+							area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+							draw2DCCWTriangle(A,B,C, q, tPixels,w)
+							Q = Q + area*q
+							aSum = aSum + area
+							qs.append(q)
+
+							# DEBUG REMOVE ME
+							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
+
+						# add the last triangle
+						nucl = angSortedM[angSortedL[ 0 ]]
+						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nucl = angSortedM[angSortedL[ len(angSortedL)-1 ]]
+						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						A,B,C = makeCCWorder(A,B,C)
+
+						drawLine(A,B, 15, vPixels,w)
+						drawLine(B,C, 15, vPixels,w)
+						drawLine(C,A, 15, vPixels,w)
+
+						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						Q = Q + area*q
+						aSum = aSum + area
+						qs.append(q)
+
+						# DEBUG REMOVE ME
+						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
+
+			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
+			ImagePlus( "cell_alignment_index",                         FloatProcessor(w,imgHeight, tPixels) ).show()
+
+			Q = Q / aSum
+			print("Q="+str(Q))
+
+			qsHistImg = ImagePlus( "local_cell_alignment_indices", FloatProcessor(1,len(qs), qs) )
+			IJ.run(qsHistImg,  "Histogram", "20")
+
+		else:
+			print("Skipped the requested Triangle method because it currently works "
+			     +"only together with \"Polygon boundary straightening\" enabled")
 
 
 	if (showRawData):
@@ -264,7 +479,10 @@ def startSession(folder,tpFile):
 	IJ.open(folder+"/"+tpFile)
 	IJ.selectWindow(tpFile);
 
-def closeSession(tpFile):
+def closeSession(folder,tpFile):
+	if doTriangleMethod:
+		closeSession_TriangleMethod(folder,tpFile)
+
 	IJ.selectWindow(tpFile+": NEW SHAPES");
 	IJ.getImage().close();
 
@@ -280,12 +498,32 @@ def closeSession(tpFile):
 	IJ.getImage().close();
 
 
+def closeSession_TriangleMethod(folder,tpFile):
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__histogramOfqs.tif")
+	IJ.getImage().close();
+
+	IJ.selectWindow("cell_alignment_index")
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices.tif")
+	IJ.getImage().close();
+
+	IJ.selectWindow("junctionPointsAsCrosses_withInducedTriangles")
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__verticesAndTriangles.tif")
+	IJ.getImage().close();
+
+	if showShapeFactorImage:
+		IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellShapeIndices_akaShapeFactor.tif")
+		IJ.getImage().close();
+
+
 def doOneTP(tpFile):
 	print(tpFile+" Starting.............")
-	startSession("/Users/ulman/p_Akanksha/curated/curated2/",tpFile)
+	inFolder  = "/Users/ulman/p_Akanksha/curated/curated2/"
+	outFolder = "/Users/ulman/p_Akanksha/curated/curated2/"
+
+	startSession(inFolder,tpFile)
 	main()
 	print(tpFile+" Done.")
-	closeSession(tpFile)
+	closeSession(outFolder,tpFile)
 
 
 # HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
