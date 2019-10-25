@@ -309,6 +309,12 @@ def main():
 			# render all triangles
 			tPixels = [0 for o in range(w * imgHeight)]
 
+			# for the average cell alignment index
+			Q = 0
+			aSum = 0
+			# list of individual values of q (one per triangle)
+			qs = []
+
 			# create triangles around the vertices:
 			triangles = []
 			for i in range(len(vertices)):
@@ -330,6 +336,9 @@ def main():
 
 						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
 						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						Q = Q + area*q
+						aSum = aSum + area
+						qs.append(q)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -372,6 +381,9 @@ def main():
 
 							area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
 							draw2DCCWTriangle(A,B,C, q, tPixels,w)
+							Q = Q + area*q
+							aSum = aSum + area
+							qs.append(q)
 
 							# DEBUG REMOVE ME
 							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -389,12 +401,21 @@ def main():
 
 						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
 						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						Q = Q + area*q
+						aSum = aSum + area
+						qs.append(q)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
 			ImagePlus( "cell_alignment_index",                         FloatProcessor(w,imgHeight, tPixels) ).show()
+
+			Q = Q / aSum
+			print("Q="+str(Q))
+
+			qsHistImg = ImagePlus( "local_cell_alignment_indices", FloatProcessor(1,len(qs), qs) )
+			IJ.run(qsHistImg,  "Histogram", "20")
 
 		else:
 			print("Skipped the requested Triangle method because it currently works "
