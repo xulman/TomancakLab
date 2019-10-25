@@ -314,6 +314,7 @@ def main():
 			aSum = 0
 			# list of individual values of q (one per triangle)
 			qs = []
+			negativeAreaCnt = 0
 
 			# create triangles around the vertices:
 			triangles = []
@@ -334,11 +335,15 @@ def main():
 						drawLine(B,C, 10, vPixels,w)
 						drawLine(C,A, 10, vPixels,w)
 
-						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
-						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+						if area < 0:
+							negativeAreaCnt = negativeAreaCnt+1
+
 						Q = Q + area*q
 						aSum = aSum + area
 						qs.append(q)
+
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -379,11 +384,15 @@ def main():
 							drawLine(B,C, 15, vPixels,w)
 							drawLine(C,A, 15, vPixels,w)
 
-							area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
-							draw2DCCWTriangle(A,B,C, q, tPixels,w)
+							area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+							if area < 0:
+								negativeAreaCnt = negativeAreaCnt+1
+
 							Q = Q + area*q
 							aSum = aSum + area
 							qs.append(q)
+
+							draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 							# DEBUG REMOVE ME
 							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -399,11 +408,15 @@ def main():
 						drawLine(B,C, 15, vPixels,w)
 						drawLine(C,A, 15, vPixels,w)
 
-						area,q = computeAreaAndElongationNematic_nonNumpy(A,B,C)
-						draw2DCCWTriangle(A,B,C, q, tPixels,w)
+						area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+						if area < 0:
+							negativeAreaCnt = negativeAreaCnt+1
+
 						Q = Q + area*q
 						aSum = aSum + area
 						qs.append(q)
+
+						draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -413,6 +426,7 @@ def main():
 
 			Q = Q / aSum
 			print("Q="+str(Q))
+			print("negativeAreaCnt="+str(negativeAreaCnt)+"      must be 0!")
 
 			qsHistImg = ImagePlus( "local_cell_alignment_indices", FloatProcessor(1,len(qs), qs) )
 			IJ.run(qsHistImg,  "Histogram", "20")
