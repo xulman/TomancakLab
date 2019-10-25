@@ -272,11 +272,35 @@ def main():
 
 			# DEBUG
 			# render all vertices
-			vPixels = [0 for o in range(w * IJ.getImage().getHeight())]
+			imgHeight = IJ.getImage().getHeight()
+			vPixels = [0 for o in range(w * imgHeight)]
 			for v in verticesVizu:
 				vPixels[v] = vPixels[v]+1
 			for i in verticesIgnoredIdxs:
-				vPixels[ verticesVizu[i] ] = 50;
+				vPixels[ verticesVizu[i] ] = 0;
+
+			# expand all rendered vertices into crosses shown with the very same color,
+			# and check that none vertex was detected twice -- since each is induced from two different
+			# cell (at least) trios, existence of two overlapping is possible to exist only by mistake
+			detectedVertices = []
+			for offset in range(len(vPixels)):
+				if vPixels[offset] > 0:
+					detectedVertices.append(offset)
+
+					if vPixels[offset] > 1:
+						y = int(offset/w)
+						x = offset - y*w
+						print("  WARNING: Duplicate vertex at ["+str(x)+","+str(y)+"], and that should not be like that.")
+
+			for offset in detectedVertices:
+				y = int(offset/w)
+				x = offset - y*w
+				if x > 2 and x < w-3 and y > 2 and y < imgHeight-3:
+					drawCross([x,y],2,vPixels[offset], vPixels,w)
+
+			if len(detectedVertices) != (len(vertices)-len(verticesIgnoredIdxs)):
+				print("  WARNING: Control check failed: detectedVertices="+str(len(detectedVertices))+" is not discoveredVerticesCnt - duplicateVerticesCnt")
+
 
 			# create triangles around the vertices:
 			triangles = []
@@ -293,9 +317,9 @@ def main():
 						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						[A,B,C] = makeCCWorder(A,B,C)
 
-						drawLine(A,B, 30, vPixels,w)
-						drawLine(B,C, 30, vPixels,w)
-						drawLine(C,A, 30, vPixels,w)
+						drawLine(A,B, 10, vPixels,w)
+						drawLine(B,C, 10, vPixels,w)
+						drawLine(C,A, 10, vPixels,w)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -331,10 +355,10 @@ def main():
 							nucl = angSortedM[angSortedL[ i ]]
 							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 							[A,B,C] = makeCCWorder(A,B,C)
+							drawLine(A,B, 15, vPixels,w)
+							drawLine(B,C, 15, vPixels,w)
+							drawLine(C,A, 15, vPixels,w)
 
-							drawLine(A,B, 40, vPixels,w)
-							drawLine(B,C, 40, vPixels,w)
-							drawLine(C,A, 40, vPixels,w)
 
 							# DEBUG REMOVE ME
 							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
@@ -346,14 +370,14 @@ def main():
 						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
 						[A,B,C] = makeCCWorder(A,B,C)
 
-						drawLine(A,B, 40, vPixels,w)
-						drawLine(B,C, 40, vPixels,w)
-						drawLine(C,A, 40, vPixels,w)
+						drawLine(A,B, 15, vPixels,w)
+						drawLine(B,C, 15, vPixels,w)
+						drawLine(C,A, 15, vPixels,w)
 
 						# DEBUG REMOVE ME
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
-			ImagePlus( "junction points", FloatProcessor(w,IJ.getImage().getHeight(), vPixels) ).show()
+			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
 
 		else:
 			print("Skipped the requested Triangle method because it currently works "
