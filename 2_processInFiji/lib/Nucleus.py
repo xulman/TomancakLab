@@ -38,6 +38,15 @@ class Nucleus:
 		self.CentreX = 0.0
 		self.CentreY = 0.0
 
+		# the Nematic parameter derived for this nuclei: the parameter Q is actually
+		# computed for every triangle (of a triangle mesh that is determined by the
+		# actual configuration of the nuclei), so every triangle contributes to three
+		# nuclei, and one nuclei is typically part of multiple triangles; thus, the Q
+		# for this nuclei cannot be computed directly, instead it is aggregated from
+		# relevant triangles and therefore we see here _sum_ and _cnt_ attributes
+		self.Qsum = 0.0
+		self.Qcnt = 0.0
+
 		# calculate real size and geometrical centre
 		for pix in Pixels:
 			self.Area += realSizes[pix[0]][pix[1]]

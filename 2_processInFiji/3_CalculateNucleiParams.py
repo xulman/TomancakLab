@@ -89,6 +89,13 @@ from Nucleus import Nucleus
 import math
 
 
+# this is the theoretical border line to determine between solid-state
+# and fluid-state of a cell based on its shapeFactor value (by comparing
+# the shapeFactor with the value of p - given by pCurveOfQ)
+def pCurveOfQ(Q):
+	return 3.94 + 4 * 0.43 * Q*Q
+
+
 def main():
 	print("wait until \"Done.\" (or error) appears...")
 	originalImageName = IJ.getImage().getTitle()
@@ -323,12 +330,12 @@ def main():
 					v = vertices[i]
 					if len(v) == 3:
 						# triangle
-						nucl = v.pop()
-						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-						nucl = v.pop()
-						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-						nucl = v.pop()
-						C = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nuclA = v.pop()
+						A = [ nucleiMap[nuclA].CentreX, nucleiMap[nuclA].CentreY ]
+						nuclB = v.pop()
+						B = [ nucleiMap[nuclB].CentreX, nucleiMap[nuclB].CentreY ]
+						nuclC = v.pop()
+						C = [ nucleiMap[nuclC].CentreX, nucleiMap[nuclC].CentreY ]
 						A,B,C = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 10, vPixels,w)
@@ -342,6 +349,13 @@ def main():
 						Q = Q + area*q
 						aSum = aSum + area
 						qs.append(q)
+
+						nucleiMap[nuclA].Qsum += area*q
+						nucleiMap[nuclA].Qcnt += area
+						nucleiMap[nuclB].Qsum += area*q
+						nucleiMap[nuclB].Qcnt += area
+						nucleiMap[nuclC].Qsum += area*q
+						nucleiMap[nuclC].Qcnt += area
 
 						draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
@@ -374,10 +388,10 @@ def main():
 						angSortedL = sorted(angSortedM.keys()) # L = List
 
 						for i in range(1,len(angSortedL)):
-							nucl = angSortedM[angSortedL[ i-1 ]]
-							A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-							nucl = angSortedM[angSortedL[ i ]]
-							B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+							nuclA = angSortedM[angSortedL[ i-1 ]]
+							A = [ nucleiMap[nuclA].CentreX, nucleiMap[nuclA].CentreY ]
+							nuclB = angSortedM[angSortedL[ i ]]
+							B = [ nucleiMap[nuclB].CentreX, nucleiMap[nuclB].CentreY ]
 							A,B,C = makeCCWorder(A,B,C)
 
 							drawLine(A,B, 15, vPixels,w)
@@ -392,16 +406,21 @@ def main():
 							aSum = aSum + area
 							qs.append(q)
 
+							nucleiMap[nuclA].Qsum += area*q
+							nucleiMap[nuclA].Qcnt += area
+							nucleiMap[nuclB].Qsum += area*q
+							nucleiMap[nuclB].Qcnt += area
+
 							draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 							# DEBUG REMOVE ME
 							#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
 						# add the last triangle
-						nucl = angSortedM[angSortedL[ 0 ]]
-						A = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
-						nucl = angSortedM[angSortedL[ len(angSortedL)-1 ]]
-						B = [ nucleiMap[nucl].CentreX, nucleiMap[nucl].CentreY ]
+						nuclA = angSortedM[angSortedL[ 0 ]]
+						A = [ nucleiMap[nuclA].CentreX, nucleiMap[nuclA].CentreY ]
+						nuclB = angSortedM[angSortedL[ len(angSortedL)-1 ]]
+						B = [ nucleiMap[nuclB].CentreX, nucleiMap[nuclB].CentreY ]
 						A,B,C = makeCCWorder(A,B,C)
 
 						drawLine(A,B, 15, vPixels,w)
@@ -416,6 +435,11 @@ def main():
 						aSum = aSum + area
 						qs.append(q)
 
+						nucleiMap[nuclA].Qsum += area*q
+						nucleiMap[nuclA].Qcnt += area
+						nucleiMap[nuclB].Qsum += area*q
+						nucleiMap[nuclB].Qcnt += area
+
 						draw2DCCWTriangle(A,B,C, q, tPixels,w)
 
 						# DEBUG REMOVE ME
@@ -424,12 +448,36 @@ def main():
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
 			ImagePlus( "cell_alignment_index",                         FloatProcessor(w,imgHeight, tPixels) ).show()
 
+			# finish Q, and obtain value of the pCurve at Q
+			# global Q
 			Q = Q / aSum
-			print("Q="+str(Q))
-			print("negativeAreaCnt="+str(negativeAreaCnt)+"      must be 0!")
+			#
+			# local Qs
+			for nucl in nuclei:
+				if nucl.Qcnt > 0:
+					nucl.Qsum /= nucl.Qcnt
+				else:
+					print("  Cell ID "+nucl.Color+" was really not part of any triangle!?")
+
+			print("Q= "+str(Q)+"   pCurve(Q)= "+str(pCurveOfQ(Q)))
+			print("negativeAreaCnt="+str(negativeAreaCnt)+"  ...must be 0!")
 
 			qsHistImg = ImagePlus( "local_cell_alignment_indices", FloatProcessor(1,len(qs), qs) )
 			IJ.run(qsHistImg,  "Histogram", "20")
+
+			if showShapeFactorImage:
+				# render the nuclei again with shapeFactors - pCurveAtQ
+				SAthres = [0 for o in range(w * imgHeight)]
+
+				for nucl in nuclei:
+					pCurveAtQ = pCurveOfQ(nucl.Qsum)
+					for pix in nucl.Pixels:
+						SAthres[pix[1]*w + pix[0]] = nucl.ShapeFactor - pCurveAtQ
+
+					nucl.DrawValue = nucl.Qsum
+
+				ImagePlus( "realShapeFactors_minus_predictedTransitionShapeFactor", FloatProcessor(w,imgHeight, SAthres) ).show()
+				drawChosenNucleiValue(originalImageName+": Alignment index", imp.getWidth(),imp.getHeight(), nuclei)
 
 		else:
 			print("Skipped the requested Triangle method because it currently works "
@@ -513,11 +561,18 @@ def closeSession(folder,tpFile):
 
 
 def closeSession_TriangleMethod(folder,tpFile):
+	if showShapeFactorImage:
+		IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices_perCell.tif")
+		IJ.getImage().close();
+
+		IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellShapeIndices_minusPredictedThreshold.tif")
+		IJ.getImage().close();
+
 	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__histogramOfqs.tif")
 	IJ.getImage().close();
 
 	IJ.selectWindow("cell_alignment_index")
-	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices.tif")
+	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices_perTriangle.tif")
 	IJ.getImage().close();
 
 	IJ.selectWindow("junctionPointsAsCrosses_withInducedTriangles")
