@@ -455,7 +455,7 @@ def main():
 						#drawCross( [(A[0]+B[0]+C[0])/3.0, (A[1]+B[1]+C[1])/3.0], 5, 80, vPixels,w)
 
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
-			ImagePlus( "cell_alignment_index",                         FloatProcessor(w,imgHeight, tPixels) ).show()
+			ImagePlus( "cell_alignment_index_per_triangle",            FloatProcessor(w,imgHeight, tPixels) ).show()
 
 			# finish Q, and obtain value of the pCurve at Q
 			# global Q
@@ -486,7 +486,7 @@ def main():
 					nucl.DrawValue = nucl.Qsum
 
 				ImagePlus( "realShapeFactors_minus_predictedTransitionShapeFactor", FloatProcessor(w,imgHeight, SAthres) ).show()
-				drawChosenNucleiValue(originalImageName+": Alignment index", imp.getWidth(),imp.getHeight(), nuclei)
+				drawChosenNucleiValue(originalImageName+": Alignment index per cell", imp.getWidth(),imp.getHeight(), nuclei)
 
 		else:
 			print("Skipped the requested Triangle method because it currently works "
@@ -580,7 +580,7 @@ def closeSession_TriangleMethod(folder,tpFile):
 	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__histogramOfqs.tif")
 	IJ.getImage().close();
 
-	IJ.selectWindow("cell_alignment_index")
+	IJ.selectWindow("cell_alignment_index_per_triangle")
 	IJ.save(IJ.getImage(),folder+"/"+tpFile+"__cellAlignmentIndices_perTriangle.tif")
 	IJ.getImage().close();
 
