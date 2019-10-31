@@ -138,6 +138,37 @@ def properArea(xyCoords, realAreas):
 	return sum
 
 
+# assuming the A,B,C are 2D vertices of a triangle in CCW order
+def createProper2dTriangle(A,B,C, realCoordinates):
+	# s as surface, sA will be a 3D coordinate
+	sA = getPixelAtRealPos(realCoordinates, A[0],A[1])
+	sB = getPixelAtRealPos(realCoordinates, B[0],B[1])
+	sC = getPixelAtRealPos(realCoordinates, C[0],C[1])
+
+	# bring sA (and the whole triangle) to [0,0,0]
+	sB[0] -= sA[0]
+	sB[1] -= sA[1]
+	sB[2] -= sA[2]
+
+	sC[0] -= sA[0]
+	sC[1] -= sA[1]
+	sC[2] -= sA[2]
+
+	# a triangle in a 2D plane:
+	# normalizedAB=[nax,nay] is "x" axis
+	# A is at [0,0]
+	# B is at [|AB|,0]
+	# C is AB rotated by ang, at radius of |AC|
+
+	lenAB = math.sqrt(sB[0]*sB[0] + sB[1]*sB[1] + sB[2]*sB[2])
+	lenAC = math.sqrt(sC[0]*sC[0] + sC[1]*sC[1] + sC[2]*sC[2])
+	angBAC = math.acos( (sB[0]*sC[0] + sB[1]*sC[1] + sB[2]*sC[2]) / (lenAB*lenAC) )
+
+	# rotate (lenAC,0) by angBAC
+	nC = [ lenAC*math.cos(angBAC), -lenAC*math.sin(angBAC) ]
+	return [0,0], [lenAB,0], nC
+
+
 # ---------- aux IO functions ----------
 def writeCoordsToFile(xyCoords, filename):
 	f = open(filename,"w")
@@ -215,6 +246,7 @@ _Side0 = 2.0/math.sqrt(math.sqrt(3)) # side of a regular triangle with area 1
 RTM = [-0.5*math.sqrt(3) *_Side0, -0.5*math.sqrt(3) *_Side0, 0.5 *_Side0, -0.5 *_Side0]
 RTMinvted = matInverse(RTM)
 
+# the method assumes CW order of vertices
 def computeAreaAndElongationNematic_nonNumpy(p2dA, p2dB, p2dC):
 	curTriangleMatrix = [ p2dB[0] - p2dA[0], p2dC[0] - p2dA[0], p2dB[1] - p2dA[1], p2dC[1] - p2dA[1] ]
 	shape = matMult(curTriangleMatrix, RTMinvted)
