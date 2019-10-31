@@ -31,19 +31,6 @@ image = IJ.getImage();
 # check the compatibility...
 checkSize2DarrayVsImgPlus(realCoordinates,image)
 
-def reportInterpolatedPoints(coords, x1,y1, x2,y2):
-	dx = x2-x1
-	dy = y2-y1
-	length = math.sqrt(dx*dx + dy*dy)
-
-	# how many 0.1 long intervals fit into the whole vector
-	steps = int(math.ceil(length*10.0))
-	for step in range(steps):
-		x=x1 + dx*float(step)/steps
-		y=y1 + dy*float(step)/steps
-		coords.append([x,y])
-	# NB: the [x2,y2] will be written as the first point of the next segment
-
 def collectAndReportPoints():
 	# Get current ROI, i.e. from the current slice
 	roi = image.getRoi()
