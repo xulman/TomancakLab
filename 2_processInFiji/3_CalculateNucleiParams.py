@@ -37,6 +37,8 @@ zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt"
 
 #
 #@boolean (label="Triangle method (only on straightened polygons):", value=False) doTriangleMethod
+#@int (label="Triangle method - centre X for distances in scatter plot (px):") tCentreX
+#@int (label="Triangle method - centre Y for distances in scatter plot (px):") tCentreY
 
 #
 #@boolean (label="Show sheet with analysis data", value=True) showRawData
@@ -457,6 +459,9 @@ def main():
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
 			ImagePlus( "cell_alignment_index_per_triangle",            FloatProcessor(w,imgHeight, tPixels) ).show()
 
+			ff = open("/tmp/scatter.txt","w")
+			ff.write("# Q\tp\tdist from ["+str(tCentreX)+","+str(tCentreY)+"] where p is ShapeFactor\n")
+
 			# finish Q, and obtain value of the pCurve at Q
 			# global Q
 			Q = Q / aSum
@@ -465,8 +470,15 @@ def main():
 			for nucl in nuclei:
 				if nucl.Qcnt > 0:
 					nucl.Qsum /= nucl.Qcnt
+
+					# also report data for the scatter plot
+					coords = []
+					reportInterpolatedPoints(coords, nucl.CentreX,nucl.CentreY, tCentreX,tCentreY)
+					ff.write(str(nucl.Qsum)+"\t"+str(nucl.ShapeFactor)+"\t"+str(properLength(coords,realCoordinates))+"\n")
 				else:
 					print("  Cell ID "+nucl.Color+" was really not part of any triangle!?")
+
+			ff.close()
 
 			print("Q= "+str(Q)+"   pCurve(Q)= "+str(pCurveOfQ(Q)))
 			print("negativeAreaCnt="+str(negativeAreaCnt)+"  ...must be 0!")
