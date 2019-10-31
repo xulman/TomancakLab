@@ -342,7 +342,10 @@ def main():
 						drawLine(B,C, 10, vPixels,w)
 						drawLine(C,A, 10, vPixels,w)
 
-						area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+						# correct the triangle after the distortion from the 3D->2D projection
+						AA,BB,CC = createProper2dTriangle(A,B,C, realCoordinates)
+
+						area,q = computeAreaAndElongationNematic_nonNumpy(BB,AA,CC)
 						if area < 0:
 							negativeAreaCnt = negativeAreaCnt+1
 
@@ -398,7 +401,10 @@ def main():
 							drawLine(B,C, 15, vPixels,w)
 							drawLine(C,A, 15, vPixels,w)
 
-							area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+							# correct the triangle after the distortion from the 3D->2D projection
+							AA,BB,CC = createProper2dTriangle(A,B,C, realCoordinates)
+
+							area,q = computeAreaAndElongationNematic_nonNumpy(BB,AA,CC)
 							if area < 0:
 								negativeAreaCnt = negativeAreaCnt+1
 
@@ -427,7 +433,10 @@ def main():
 						drawLine(B,C, 15, vPixels,w)
 						drawLine(C,A, 15, vPixels,w)
 
-						area,q = computeAreaAndElongationNematic_nonNumpy(B,A,C)
+						# correct the triangle after the distortion from the 3D->2D projection
+						AA,BB,CC = createProper2dTriangle(A,B,C, realCoordinates)
+
+						area,q = computeAreaAndElongationNematic_nonNumpy(BB,AA,CC)
 						if area < 0:
 							negativeAreaCnt = negativeAreaCnt+1
 
