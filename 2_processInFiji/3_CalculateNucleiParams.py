@@ -47,6 +47,8 @@ zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt"
 #@boolean (label="Show image with shape factors") showShapeFactorImage
 #@boolean (label="Show image with neighbor counts") showNeigImage
 
+#@boolean (label="Triangle method - paranoid (debug) checks:", value=False) doTriangleMethodParanoid
+
 # This script should be used to find suitable parameters for CountBigNucleiCorrected.py
 # You'll see nuclei of various colors:
 # green - fit both conditions      (area good, circularity good)
@@ -346,6 +348,17 @@ def main():
 
 						# correct the triangle after the distortion from the 3D->2D projection
 						AA,BB,CC = createProper2dTriangle(A,B,C, realCoordinates)
+
+						if doTriangleMethodParanoid:
+							# the triangle in (the original) 3D
+							aa = getPixelAtRealPos(realCoordinates, A[0],A[1])
+							bb = getPixelAtRealPos(realCoordinates, B[0],B[1])
+							cc = getPixelAtRealPos(realCoordinates, C[0],C[1])
+
+							l1,a1,l2,a2,l3 = getAnglesAndLengthsOfTriangle(bb,aa,cc)
+							L1,A1,L2,A2,L3 = getAnglesAndLengthsOfTriangle(BB,AA,CC)
+							if math.fabs(l1-L1) > 0.0001 or math.fabs(l2-L2) > 0.0001 or math.fabs(l3-L3) > 0.0001 or math.fabs(a1-A1) > 0.0001 or math.fabs(a2-A2) > 0.0001:
+								print("WARNING: proper 2D triangle is not corresponding to 3D original triangle.")
 
 						area,q = computeAreaAndElongationNematic_nonNumpy(BB,AA,CC)
 						if area < 0:

@@ -183,6 +183,52 @@ def createProper2dTriangle(A,B,C, realCoordinates):
 	return [0,0], [lenAB,0], nC
 
 
+# assuming the A,B,C are 2D vertices of a triangle in CCW order
+def getAnglesAndLengthsOfTriangle(A,B,C):
+	# copy because we will modify
+	sA = list(A)
+	sB = list(B)
+	sC = list(C)
+
+	sB[0] -= sA[0]
+	sB[1] -= sA[1]
+
+	sC[0] -= sA[0]
+	sC[1] -= sA[1]
+
+	lenAB = -99
+	lenAC = -99
+	angBAC = -99
+
+	if len(A) == 3:
+		# 3D
+		sB[2] -= sA[2]
+		sC[2] -= sA[2]
+
+		lenAB = math.sqrt(sB[0]*sB[0] + sB[1]*sB[1] + sB[2]*sB[2])
+		lenAC = math.sqrt(sC[0]*sC[0] + sC[1]*sC[1] + sC[2]*sC[2])
+		angBAC = math.acos( (sB[0]*sC[0] + sB[1]*sC[1] + sB[2]*sC[2]) / (lenAB*lenAC) )
+
+		sC[0] -= sB[0]
+		sC[1] -= sB[1]
+		sC[2] -= sB[2]
+		lenBC = math.sqrt(sC[0]*sC[0] + sC[1]*sC[1] + sC[2]*sC[2])
+		angABC = math.acos( (-sB[0]*sC[0] - sB[1]*sC[1] - sB[2]*sC[2]) / (lenAB*lenBC) )
+
+	else:
+		# 2D
+		lenAB = math.sqrt(sB[0]*sB[0] + sB[1]*sB[1])
+		lenAC = math.sqrt(sC[0]*sC[0] + sC[1]*sC[1])
+		angBAC = math.acos( (sB[0]*sC[0] + sB[1]*sC[1]) / (lenAB*lenAC) )
+
+		sC[0] -= sB[0]
+		sC[1] -= sB[1]
+		lenBC = math.sqrt(sC[0]*sC[0] + sC[1]*sC[1])
+		angABC = math.acos( (-sB[0]*sC[0] - sB[1]*sC[1]) / (lenAB*lenBC) )
+
+	return lenAB, angBAC, lenAC, angABC, lenBC
+
+
 # ---------- aux IO functions ----------
 def writeCoordsToFile(xyCoords, filename):
 	f = open(filename,"w")
