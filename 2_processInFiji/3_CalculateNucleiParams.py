@@ -99,6 +99,8 @@ import math
 def pCurveOfQ(Q):
 	return 3.94 + 4 * 0.43 * Q*Q
 
+# content of the future file that contains scatter plot data w.r.t. triangle method
+scatterData = []
 
 def main():
 	print("wait until \"Done.\" (or error) appears...")
@@ -627,6 +629,14 @@ def doOneTP(tpFile):
 	main()
 	print(tpFile+" Done.")
 	closeSession(outFolder,tpFile)
+
+
+def saveScatterPlot(filename):
+	print("Saving scatter data: "+filename)
+	ff = open(filename,"w")
+	for scLine in scatterData:
+		ff.write(scLine)
+	ff.close()
 
 
 # HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
