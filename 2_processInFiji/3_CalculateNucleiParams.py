@@ -646,14 +646,14 @@ def saveScatterPlot(filename):
 
 # HAVE UNCOMMENTED EITHER THESE TWO/THREE LINES, OR ALL THE LINES UNDERNEATH THESE TWO
 # single, currently opened image mode
-main()
-saveScatterPlot("/tmp/scatterData.txt")
-print("Done.")
+#main()
+#saveScatterPlot("/tmp/scatterData.txt")
+#print("Done.")
 
 
 # batch processing mode
-#doOneTP("10.tif", 760,1285)
-#doOneTP("310.tif",760,1285)
-#doOneTP("340.tif",630,1290)
-#doOneTP("425.tif",438,1310)
-#doOneTP("555.tif",452,1330)
+doOneTP("10.tif", 760,1285)
+doOneTP("310.tif",760,1285)
+doOneTP("340.tif",630,1290)
+doOneTP("425.tif",438,1310)
+doOneTP("555.tif",452,1330)
