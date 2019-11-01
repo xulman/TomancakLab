@@ -474,8 +474,7 @@ def main():
 			ImagePlus( "junctionPointsAsCrosses_withInducedTriangles", FloatProcessor(w,imgHeight, vPixels) ).show()
 			ImagePlus( "cell_alignment_index_per_triangle",            FloatProcessor(w,imgHeight, tPixels) ).show()
 
-			ff = open("/tmp/scatter.txt","w")
-			ff.write("# Q\tp\tdist from ["+str(tCentreX)+","+str(tCentreY)+"] where p is ShapeFactor\n")
+			scatterData.append("# Q\tp\tdist from ["+str(tCentreX)+","+str(tCentreY)+"] where p is ShapeFactor\n")
 
 			# finish Q, and obtain value of the pCurve at Q
 			# global Q
@@ -489,11 +488,9 @@ def main():
 					# also report data for the scatter plot
 					coords = []
 					reportInterpolatedPoints(coords, nucl.CentreX,nucl.CentreY, tCentreX,tCentreY)
-					ff.write(str(nucl.Qsum)+"\t"+str(nucl.ShapeFactor)+"\t"+str(properLength(coords,realCoordinates))+"\n")
+					scatterData.append(str(nucl.Qsum)+"\t"+str(nucl.ShapeFactor)+"\t"+str(properLength(coords,realCoordinates))+"\n")
 				else:
 					print("  Cell ID "+nucl.Color+" was really not part of any triangle!?")
-
-			ff.close()
 
 			print("Q= "+str(Q)+"   pCurve(Q)= "+str(pCurveOfQ(Q)))
 			print("negativeAreaCnt="+str(negativeAreaCnt)+"  ...must be 0!")
@@ -620,13 +617,21 @@ def closeSession_TriangleMethod(folder,tpFile):
 		IJ.getImage().close();
 
 
-def doOneTP(tpFile):
+def doOneTP(tpFile, tCntrX,tCntrY):
+	global tCentreX
+	global tCentreY
+	global scatterData
+
 	print(tpFile+" Starting.............")
 	inFolder  = "/Users/ulman/p_Akanksha/curated/curated2/"
 	outFolder = "/Users/ulman/p_Akanksha/curated/curated2/"
 
 	startSession(inFolder,tpFile)
+	tCentreX = tCntrX
+	tCentreY = tCntrY
+	scatterData = []
 	main()
+	saveScatterPlot(outFolder+"/"+tpFile+"__scatterData.txt")
 	print(tpFile+" Done.")
 	closeSession(outFolder,tpFile)
 
@@ -639,15 +644,16 @@ def saveScatterPlot(filename):
 	ff.close()
 
 
-# HAVE UNCOMMENTED EITHER THESE TWO LINES, OR ALL THE LINES UNDERNEATH THESE TWO
+# HAVE UNCOMMENTED EITHER THESE TWO/THREE LINES, OR ALL THE LINES UNDERNEATH THESE TWO
 # single, currently opened image mode
 main()
+saveScatterPlot("/tmp/scatterData.txt")
 print("Done.")
 
 
 # batch processing mode
-#doOneTP("10.tif")
-#doOneTP("310.tif")
-#doOneTP("340.tif")
-#doOneTP("425.tif")
-#doOneTP("555.tif")
+#doOneTP("10.tif", 760,1285)
+#doOneTP("310.tif",760,1285)
+#doOneTP("340.tif",630,1290)
+#doOneTP("425.tif",438,1310)
+#doOneTP("555.tif",452,1330)
