@@ -82,6 +82,15 @@ class Nucleus:
 		# initially empty -> use setNeighborsList() to have it filled
 		self.NeighIDs = set()
 
+		# flag to see if this nucleus is at/near the image boundary
+		self.IsAtImageBoundary = False
+		#
+		# boundary is 2px wide frame, so boundary touching is, e.g., [2,*]
+		minX = 3 # the min OK (=not touching) coordinate
+		minY = 4
+		maxX = ip.getWidth()-4
+		maxY = ip.getHeight()-5
+
 		# sequential scan through the boundary pixels:
 		# (to be able to smooth out the boundary line consequently)
 		#
@@ -125,6 +134,10 @@ class Nucleus:
 			if thisColor != ColorLeft or thisColor != ColorAbove or thisColor != ColorRight or thisColor != ColorBelow:
 				# found border-forming pixel, enlist it
 				self.EdgePixels.append(o)
+
+				# test for "being at/near the image boundary"
+				if pix[0] < minX or pix[0] > maxX or pix[1] < minY or pix[1] > maxY:
+					self.IsAtImageBoundary = True
 
 		# length of the boundary in pixel
 		self.EdgeSize = len(self.EdgePixels)
@@ -475,10 +488,11 @@ class Nucleus:
 	# do not qualify for this study
 	def doesQualify(self, areaConsidered,areaMin,areaMax, circConsidered,circMin,circMax):
 		if (circConsidered == True and (self.Circularity < circMin or self.Circularity > circMax)):
-			return False;
+			return False
 		if (areaConsidered == True and (self.Area < areaMin or self.Area > areaMax)):
-			return False;
-		return True;
+			return False
+		#return True;
+		return not self.IsAtImageBoundary
 
 
 	# updates the Pixels, Area, Size, CentreX and CentreY attributes of this object
