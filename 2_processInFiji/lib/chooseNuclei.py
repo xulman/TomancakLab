@@ -268,6 +268,7 @@ def preprocessMembraneImage(realSizes):
 	# (aka: avoid troubles when processing an empty image later)
 	if getCurrentMaxPixelValue(ip) > 1:
 		# remove small components -- which is typically holes inside the nuclei
+		IJ.run("3D OC Options", "nb_of_obj._voxels dots_size=5 font_size=10 white_numbers redirect_to=none")
 		IJ.run("3D Objects Counter", "threshold=2 slice=1 min.=20 max.=9999999 objects")
 		sizeFilteredImg = IJ.getImage()
 
