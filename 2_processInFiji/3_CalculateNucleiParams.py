@@ -30,10 +30,22 @@ class SimpleFile:
 	def getAbsolutePath(self):
 		return self.path
 
-aMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"_area.txt")
-xMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_X.txt")
-yMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Y.txt")
-zMapFile = SimpleFile(mapFolder.getAbsolutePath()+"/"+mapCylinder+"coords_Z.txt")
+aMapFile = 0
+xMapFile = 0
+yMapFile = 0
+zMapFile = 0
+
+def prepareMapFilePaths(rootPath):
+	global aMapFile
+	global xMapFile
+	global yMapFile
+	global zMapFile
+	aMapFile = SimpleFile(rootPath+"/"+mapCylinder+"_area.txt")
+	xMapFile = SimpleFile(rootPath+"/"+mapCylinder+"coords_X.txt")
+	yMapFile = SimpleFile(rootPath+"/"+mapCylinder+"coords_Y.txt")
+	zMapFile = SimpleFile(rootPath+"/"+mapCylinder+"coords_Z.txt")
+
+prepareMapFilePaths( mapFolder.getAbsolutePath() )
 
 #
 #@boolean (label="Triangle method (only on straightened polygons):", value=False) doTriangleMethod
@@ -623,8 +635,8 @@ def doOneTP(tpFile, tCntrX,tCntrY):
 	global scatterData
 
 	print(tpFile+" Starting.............")
-	inFolder  = "/Users/ulman/p_Akanksha/curated/curated2/"
-	outFolder = "/Users/ulman/p_Akanksha/curated/curated2/"
+	inFolder  = "/home/ulman/data/AJ__ZenKD/curated/"
+	outFolder = "/home/ulman/data/AJ__ZenKD/curated/"
 
 	startSession(inFolder,tpFile)
 	tCentreX = tCntrX
@@ -652,8 +664,23 @@ def saveScatterPlot(filename):
 
 
 # batch processing mode
-doOneTP("10.tif", 760,1285)
-doOneTP("310.tif",760,1285)
-doOneTP("340.tif",630,1290)
-doOneTP("425.tif",438,1310)
-doOneTP("555.tif",452,1330)
+#doOneTP("10.tif", 760,1285)
+#doOneTP("310.tif",760,1285)
+#doOneTP("340.tif",630,1290)
+#doOneTP("425.tif",438,1310)
+#doOneTP("555.tif",452,1330)
+
+# ZenKD
+areaMin = 20
+prepareMapFilePaths(mapFolder.getAbsolutePath()+"/0")
+doOneTP("0.tif", 851,1130)
+
+areaMin = 100
+prepareMapFilePaths(mapFolder.getAbsolutePath()+"/90")
+doOneTP("90.tif", 940,1344)
+
+prepareMapFilePaths(mapFolder.getAbsolutePath()+"/114")
+doOneTP("114.tif", 930,1298)
+
+prepareMapFilePaths(mapFolder.getAbsolutePath()+"/137")
+doOneTP("137.tif", 998,1864)
