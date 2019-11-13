@@ -212,7 +212,7 @@ def main():
 		# remove nuclei near vertical border
 		mustStay = []
 		for nucl in nuclei:
-			if nucl.CentreX > 50 and nucl.CentreX < 1600:
+			if nucl.CentreX > 70 and nucl.CentreX < 1545:
 				mustStay.append(nucl)
 
 		nuclei = mustStay
