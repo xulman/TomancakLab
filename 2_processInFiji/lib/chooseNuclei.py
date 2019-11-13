@@ -275,8 +275,10 @@ def preprocessMembraneImage(realSizes):
 		# skeletonize (at the input resolution)
 		IJ.setThreshold(0,0)
 		IJ.run("Convert to Mask")
-		IJ.run("Grays");
-		IJ.run("Skeletonize","BlackBackground=false")
+		IJ.run("Grays")
+		IJ.run("Options...", "black=0")
+		IJ.run("Skeletonize")
+		#IJ.run("Dialog Prompt Demo")
 
 		# upscale to the desired resolution, now skeleton gets fatter
 		IJ.run("Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledSkeleton.tif");
@@ -287,7 +289,8 @@ def preprocessMembraneImage(realSizes):
 		sizeFilteredImg.close()
 
 		# thin it again (by skeletonizing again)
-		IJ.run("Skeletonize","BlackBackground=false")
+		IJ.run("Options...", "black=0")
+		IJ.run("Skeletonize")
 		# must dilate because "Threshold to label map (2D, 3D)" (which is used
 		# in findComponents()) uses 8-neigborhood and would leak through the skeleton
 		IJ.run("Dilate")
