@@ -208,6 +208,14 @@ def main():
 	if inputImageShowsNuclei:
 		print("No. of neighborhood was not counted, works only with membrane images.")
 
+	if polyAsLargeSegments == True:
+		# remove nuclei near vertical border
+		mustStay = []
+		for nucl in nuclei:
+			if nucl.CentreX > 50 and nucl.CentreX < 1650:
+				mustStay.append(nucl)
+
+		nuclei = mustStay
 
 	if polyAsLargeSegments == True or polySmoothDo == True:
 		for nucl in nuclei:
