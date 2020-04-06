@@ -25,16 +25,16 @@ hs_err_pid*
 
 
 # Maven #
-/target/
+/Mastodon/target/
 
 # Eclipse #
-/.classpath
-/.project
-/.settings/
+.classpath
+.project
+.settings/
 
 # IntelliJ #
 /.idea/
-/*.iml
+*.iml
 
 # Apple #
 .DS_Store
