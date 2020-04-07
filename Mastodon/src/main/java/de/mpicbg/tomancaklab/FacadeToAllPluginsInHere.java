@@ -160,8 +160,8 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
 				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
 		*/
-				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
-				new File( "/Users/ulman/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
+				new File( "/Users/ulman/data/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
+				new File( "/Users/ulman/data/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
 		final Mastodon mastodon = (Mastodon)ij.command().run(Mastodon.class, true).get().getCommand();
 		mastodon.setExitOnClose();

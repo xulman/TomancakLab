@@ -2,9 +2,9 @@ package de.mpicbg.tomancaklab;
 
 import org.mastodon.plugin.MastodonPluginAppModel;
 import org.mastodon.revised.mamut.MamutViewTrackScheme;
-import org.mastodon.revised.trackscheme.TrackSchemeEdge;
-import org.mastodon.revised.trackscheme.TrackSchemeVertex;
-import org.mastodon.revised.ui.coloring.GraphColorGeneratorAdapter;
+import org.mastodon.revised.ui.coloring.ColoringModel;
+import org.mastodon.revised.ui.coloring.GraphColorGenerator;
+import org.mastodon.model.TimepointListener;
 import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.revised.model.mamut.Spot;
@@ -93,17 +93,17 @@ public class LineageToSimViewer extends DynamicCommand
 			maxTimePoint = pluginAppModel.getAppModel().getMaxTimepoint();
 
 			//open a TrackScheme window that shall be under our control,
-			//and retrieve a handle on the current GraphColorGeneratorAdapter
 			myOwnTSWindow = pluginAppModel.getWindowManager().createTrackScheme();
-			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter();
+			//
+			//and retrieve a handle on the current GraphColorGenerator
+			if (myOwnTSWindow.getGraphColorGeneratorAdapter() == null)
+				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
+			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter().getColorGenerator();
 
 			final AbstractNamedAction actionSendB = new RunnableAction( SVsenB, this::workerTimePrev );
 			final AbstractNamedAction actionSendF = new RunnableAction( SVsenF, this::workerTimeNext );
 			pluginAppModel.getAppModel().getAppActions().namedAction( actionSendB, "N" );
 			pluginAppModel.getAppModel().getAppActions().namedAction( actionSendF, "M" );
-
-			if (myOwnColorProvider == null)
-				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
 
 			JPanel controlPanel = new JPanel();
 			controlPanel.setLayout(new GridLayout(2,4));
@@ -189,12 +189,16 @@ public class LineageToSimViewer extends DynamicCommand
 			myOwnTSWindow.onClose( this::workerClose );
 
 			//on coloring style change, repaint the currently sent time point
-			myOwnTSWindow.getColoringModel().listeners().add( this::workerSend );
-			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( this::workerSend ) );
+			//NB: one explicit reference so that add() and remove() can really complement themselves
+			final ColoringModel.ColoringChangedListener listenerRefOnWorkerSend = this::workerSend;
+			myOwnTSWindow.getColoringModel().listeners().add( listenerRefOnWorkerSend );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getColoringModel().listeners().remove( listenerRefOnWorkerSend ) );
 
 			//on time point change, repaint the current time point
-			myOwnTSWindow.getTimepointModel().listeners().add( this::workerCurrentTime );
-			myOwnTSWindow.onClose( () -> myOwnTSWindow.getTimepointModel().listeners().remove( this::workerCurrentTime ));
+			//NB: see above...
+			final TimepointListener listenerRefOnWorkerCurrentTime = this::workerCurrentTime;
+			myOwnTSWindow.getTimepointModel().listeners().add( listenerRefOnWorkerCurrentTime );
+			myOwnTSWindow.onClose( () -> myOwnTSWindow.getTimepointModel().listeners().remove( listenerRefOnWorkerCurrentTime ));
 
 			//finally, send the current content to the SimViewer
 			this.workerCurrentTime();
@@ -221,7 +225,7 @@ public class LineageToSimViewer extends DynamicCommand
 	}
 
 	private MamutViewTrackScheme myOwnTSWindow = null;
-	private GraphColorGeneratorAdapter<Spot, Link, TrackSchemeVertex, TrackSchemeEdge> myOwnColorProvider = null;
+	private GraphColorGenerator<Spot, Link> myOwnColorProvider = null;
 
 	private void workerClose()
 	{
@@ -427,7 +431,7 @@ public class LineageToSimViewer extends DynamicCommand
 			if ( ! myOwnTSWindow.getColoringModel().noColoring() )
 			{
 				//some color style is used, take color from it
-				color = myOwnColorProvider.spotColor( spot );
+				color = myOwnColorProvider.color( spot );
 
 				//did this spot got some color, that is, is it colored in this style?
 				if (color == 0)
