@@ -33,7 +33,7 @@ hs_err_pid*
 .settings/
 
 # IntelliJ #
-/.idea/
+.idea/
 *.iml
 
 # Apple #
