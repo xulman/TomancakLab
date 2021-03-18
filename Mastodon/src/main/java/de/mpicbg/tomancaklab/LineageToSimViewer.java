@@ -98,7 +98,6 @@ public class LineageToSimViewer extends DynamicCommand
 			//and retrieve a handle on the current GraphColorGenerator
 			if (myOwnTSWindow.getGraphColorGeneratorAdapter() == null)
 				throw new RuntimeException("TrackScheme window created without GraphColorGeneratorAdaptor!?");
-			myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter().getColorGenerator();
 
 			final AbstractNamedAction actionSendB = new RunnableAction( SVsenB, this::workerTimePrev );
 			final AbstractNamedAction actionSendF = new RunnableAction( SVsenF, this::workerTimeNext );
@@ -409,6 +408,9 @@ public class LineageToSimViewer extends DynamicCommand
 	{
 		//assure that the timePoint is valid
 		timePoint = Math.min( Math.max( timePoint, minTimePoint ), maxTimePoint );
+
+		//get fresh/current "color service"
+		myOwnColorProvider = myOwnTSWindow.getGraphColorGeneratorAdapter().getColorGenerator();
 
 		final Model model = pluginAppModel.getAppModel().getModel();
 		final ModelGraph modelGraph = model.getGraph();
