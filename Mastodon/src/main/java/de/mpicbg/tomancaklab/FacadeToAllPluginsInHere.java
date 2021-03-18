@@ -3,11 +3,11 @@ package de.mpicbg.tomancaklab;
 import static org.mastodon.app.ui.ViewMenuBuilder.item;
 import static org.mastodon.app.ui.ViewMenuBuilder.menu;
 import org.mastodon.app.ui.ViewMenuBuilder;
-import org.mastodon.plugin.MastodonPlugin;
-import org.mastodon.plugin.MastodonPluginAppModel;
-import org.mastodon.revised.mamut.Mastodon;
-import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.project.MamutProject;
+import org.mastodon.mamut.WindowManager;
+import org.mastodon.mamut.plugin.MamutPlugin;
+import org.mastodon.mamut.plugin.MamutPluginAppModel;
+import org.mastodon.mamut.MamutAppModel;
+import org.mastodon.mamut.project.MamutProject;
 
 import net.imagej.ImageJ;
 import org.scijava.AbstractContextual;
@@ -25,7 +25,7 @@ import java.util.List;
 
 
 @Plugin( type = FacadeToAllPluginsInHere.class )
-public class FacadeToAllPluginsInHere extends AbstractContextual implements MastodonPlugin
+public class FacadeToAllPluginsInHere extends AbstractContextual implements MamutPlugin
 {
 	//"IDs" of all plug-ins wrapped in this class
 	private static final String SVopen = "LoPaT-OpenSimViewer";
@@ -89,11 +89,11 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 	}
 
 	/** reference to the currently available project in Mastodon */
-	private MastodonPluginAppModel pluginAppModel;
+	private MamutPluginAppModel pluginAppModel;
 
 	/** learn about the current project's params */
 	@Override
-	public void setAppModel( final MastodonPluginAppModel model )
+	public void setAppPluginModel( final MamutPluginAppModel model )
 	{
 		//the application reports back to us if some project is available
 		this.pluginAppModel = model;
@@ -156,15 +156,10 @@ public class FacadeToAllPluginsInHere extends AbstractContextual implements Mast
 
 		//final MamutProject project = new MamutProject( null, new File( "x=1000 y=1000 z=100 sx=1 sy=1 sz=10 t=400.dummy" ) );
 		final MamutProject project = new MamutProject(
-		/*
-				new File( "/Users/ulman/DATA/Mette/dataset.mastodon" ),
-				new File( "/Users/ulman/DATA/Mette/dataset_hdf5.xml" ) );
-		*/
 				new File( "/Users/ulman/data/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.mastodon" ),
 				new File( "/Users/ulman/data/p_Johannes/Polyclad/2019-09-06_EcNr2_NLSH2B-GFP_T-OpenSPIM_singleTP.xml" ) );
 
-		final Mastodon mastodon = (Mastodon)ij.command().run(Mastodon.class, true).get().getCommand();
-		mastodon.setExitOnClose();
-		mastodon.openProject( project );
+		final WindowManager windowManager = new WindowManager(ij.getContext());
+		windowManager.getProjectManager().open(project);
 	}
 }

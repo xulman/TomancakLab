@@ -1,10 +1,10 @@
 package de.mpicbg.tomancaklab;
 
 import org.mastodon.collection.*;
-import org.mastodon.revised.ui.util.FileChooser;
-import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.revised.model.mamut.Spot;
-import org.mastodon.revised.model.mamut.Link;
+import org.mastodon.ui.util.FileChooser;
+import org.mastodon.mamut.MamutAppModel;
+import org.mastodon.mamut.model.Spot;
+import org.mastodon.mamut.model.Link;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;

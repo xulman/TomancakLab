@@ -1,14 +1,14 @@
 package de.mpicbg.tomancaklab;
 
-import org.mastodon.plugin.MastodonPluginAppModel;
-import org.mastodon.revised.mamut.MamutViewTrackScheme;
-import org.mastodon.revised.ui.coloring.ColoringModel;
-import org.mastodon.revised.ui.coloring.GraphColorGenerator;
+import org.mastodon.mamut.plugin.MamutPluginAppModel;
+import org.mastodon.mamut.MamutViewTrackScheme;
+import org.mastodon.ui.coloring.ColoringModel;
+import org.mastodon.ui.coloring.GraphColorGenerator;
 import org.mastodon.model.TimepointListener;
-import org.mastodon.revised.model.mamut.Model;
-import org.mastodon.revised.model.mamut.ModelGraph;
-import org.mastodon.revised.model.mamut.Spot;
-import org.mastodon.revised.model.mamut.Link;
+import org.mastodon.mamut.model.Model;
+import org.mastodon.mamut.model.ModelGraph;
+import org.mastodon.mamut.model.Spot;
+import org.mastodon.mamut.model.Link;
 import org.mastodon.spatial.SpatioTemporalIndex;
 
 import org.scijava.ItemVisibility;
@@ -35,7 +35,7 @@ import org.zeromq.ZMQException;
 public class LineageToSimViewer extends DynamicCommand
 {
 	@Parameter(persist = false)
-	private MastodonPluginAppModel pluginAppModel;
+	private MamutPluginAppModel pluginAppModel;
 
 	@Parameter
 	private String connectURL = "localhost:8765";

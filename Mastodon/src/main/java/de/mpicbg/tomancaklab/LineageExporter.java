@@ -5,11 +5,11 @@ import de.mpicbg.tomancaklab.graphexport.yEdGraphMLWriter;
 import de.mpicbg.tomancaklab.graphexport.GraphStreamViewer;
 
 import org.mastodon.spatial.SpatioTemporalIndex;
-import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.revised.model.mamut.Model;
-import org.mastodon.revised.model.mamut.ModelGraph;
-import org.mastodon.revised.model.mamut.Spot;
-import org.mastodon.revised.model.mamut.Link;
+import org.mastodon.mamut.MamutAppModel;
+import org.mastodon.mamut.model.Model;
+import org.mastodon.mamut.model.ModelGraph;
+import org.mastodon.mamut.model.Spot;
+import org.mastodon.mamut.model.Link;
 
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
