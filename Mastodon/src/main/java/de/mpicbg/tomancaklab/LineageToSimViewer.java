@@ -240,11 +240,11 @@ public class LineageToSimViewer extends DynamicCommand
 
 	//stores repeating xyzRC chunks of node definitions
 	private final int msgNodesChunkSize = 5;
-	private final Vector<Float> msgNodes = new Vector<>(400*msgNodesChunkSize, 20*msgNodesChunkSize);
+	private final Vector<Float> msgNodes = new Vector<>(1000*msgNodesChunkSize, 200*msgNodesChunkSize);
 
 	//stores repeating xyzxyzC chunks of node definitions
 	private final int msgLinesChunkSize = 7;
-	private final Vector<Float> msgLines = new Vector<>(400*msgLinesChunkSize, 20*msgLinesChunkSize);
+	private final Vector<Float> msgLines = new Vector<>(1000*msgLinesChunkSize, 200*msgLinesChunkSize);
 
 	private void appendNodeToMsg(float[] pos, float radius, int color)
 	{
