@@ -449,9 +449,7 @@ public class LineageToSimViewer extends DynamicCommand
 
 			//spot radius
 			final float radius = useOwnRadiusInsteadOfSpotsOwn ?
-				( spot.edges().size() > 2 ? 2*radiusOwnValue : radiusOwnValue )
-				:
-				radiusScalingFactor * (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
+				radiusOwnValue : radiusScalingFactor * (float)Math.sqrt(spot.getBoundingSphereRadiusSquared());
 
 			appendNodeToMsg(pos,radius,color);
 
