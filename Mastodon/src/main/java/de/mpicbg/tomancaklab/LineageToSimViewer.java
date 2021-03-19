@@ -105,13 +105,13 @@ public class LineageToSimViewer extends DynamicCommand
 			pluginAppModel.getAppModel().getAppActions().namedAction( actionSendF, "M" );
 
 			JPanel controlPanel = new JPanel();
-			controlPanel.setLayout(new GridLayout(2,4));
+			controlPanel.setLayout(new GridLayout(3,4));
 
 			//radius spinners to be used later
 			final Label lblRadiusOwn     = new Label("  Own radius:");
 			final Label lblRadiusScaling = new Label("Radius scale:");
 			final JSpinner spnRadiusOwn     = new JSpinner( new SpinnerNumberModel(radiusOwnValue,      0.01, 100.0, 1.0) );
-			final JSpinner spnRadiusScaling = new JSpinner( new SpinnerNumberModel(radiusScalingFactor, 0.01, 100.0, 1.0) );
+			final JSpinner spnRadiusScaling = new JSpinner( new SpinnerNumberModel(radiusScalingFactor, 0.01, 100.0, 0.1) );
 
 			//1st row
 			Checkbox cb = new Checkbox("Use fixed radius instead of spot's own");
@@ -181,6 +181,49 @@ public class LineageToSimViewer extends DynamicCommand
 			btn = new Button("  Refresh SimViewer  ");
 			btn.addActionListener( (action) -> { workerCurrentTime(); } );
 			controlPanel.add( btn );
+
+			//3rd row
+			miniGrp = new JPanel();
+			l = new Label("Show past edges:");
+			l.setAlignment( Label.RIGHT );
+			miniGrp.add(l);
+			//
+			final JSpinner pastEdgesSpinner = new JSpinner(new SpinnerNumberModel(deltaBackPoints, 0, 1000, 1));
+			pastEdgesSpinner.addChangeListener( (action) -> {
+				deltaBackPoints = (int)(pastEdgesSpinner.getModel().getValue());
+				workerCurrentTime();
+			});
+			miniGrp.add( pastEdgesSpinner );
+			controlPanel.add( miniGrp );
+
+			miniGrp = new JPanel();
+			l = new Label("Show future edges:");
+			l.setAlignment( Label.RIGHT );
+			miniGrp.add(l);
+			//
+			final JSpinner futureEdgesSpinner = new JSpinner(new SpinnerNumberModel(deltaForwardPoints, 0, 1000, 1));
+			futureEdgesSpinner.addChangeListener( (action) -> {
+				deltaForwardPoints = (int)futureEdgesSpinner.getValue();
+				workerCurrentTime();
+			});
+			miniGrp.add( futureEdgesSpinner );
+			controlPanel.add( miniGrp );
+
+			btn = new Button("  Choose links color when not from spots  ");
+			btn.addActionListener( (action) -> {
+				colorForNotColoredLinks = getRGBviaDialog(colorForNotColoredLinks);
+				workerCurrentTime();
+			} );
+			controlPanel.add( btn );
+
+			final Checkbox linksColorToggle = new Checkbox("Links take color from spots");
+			linksColorToggle.setState(colorLinksAreFromSpots);
+			linksColorToggle.addItemListener( (action) -> {
+				colorLinksAreFromSpots = linksColorToggle.getState();
+				System.out.println("new button state: "+ colorLinksAreFromSpots);
+				workerCurrentTime();
+			} );
+			controlPanel.add( linksColorToggle );
 
 			myOwnTSWindow.getFrame().add(controlPanel, BorderLayout.SOUTH);
 
@@ -358,9 +401,6 @@ public class LineageToSimViewer extends DynamicCommand
 
 	// --------- future GUI control points ---------
 	//
-	public int deltaBackPoints = 0;
-	public int deltaForwardPoints = 0;
-
 	public boolean useOwnRadiusInsteadOfSpotsOwn = false;
 	//if yes:
 	public float radiusOwnValue = 2.f;
@@ -373,6 +413,11 @@ public class LineageToSimViewer extends DynamicCommand
 	//if yes:
 	public int colorForNotColoredNodes = 0x002D4084;
 	//if no: nodes not covered/colored with the current style are not displayed
+
+	public int deltaBackPoints = 0;
+	public int deltaForwardPoints = 0;
+	public int colorForNotColoredLinks = 0x002D4084;
+	public boolean colorLinksAreFromSpots = false;
 
 	public boolean reportSpotsRangeStats = true;
 	//
@@ -492,7 +537,7 @@ public class LineageToSimViewer extends DynamicCommand
 					{
 						spot.localize(pos);
 						sRef.localize(posB);
-						appendLineToMsg(pos,posB, 4);
+						appendLineToMsg(pos,posB, colorForNotColoredLinks);
 					}
 				}
 				for (int n=0; n < spot.outgoingEdges().size(); ++n)
@@ -502,7 +547,7 @@ public class LineageToSimViewer extends DynamicCommand
 					{
 						spot.localize(pos);
 						sRef.localize(posB);
-						appendLineToMsg(pos,posB, 4);
+						appendLineToMsg(pos,posB, colorForNotColoredLinks);
 					}
 				}
 			}
@@ -521,7 +566,7 @@ public class LineageToSimViewer extends DynamicCommand
 					{
 						spot.localize(pos);
 						sRef.localize(posB);
-						appendLineToMsg(pos,posB, 5);
+						appendLineToMsg(pos,posB, colorForNotColoredLinks);
 					}
 				}
 				for (int n=0; n < spot.outgoingEdges().size(); ++n)
@@ -531,7 +576,7 @@ public class LineageToSimViewer extends DynamicCommand
 					{
 						spot.localize(pos);
 						sRef.localize(posB);
-						appendLineToMsg(pos,posB, 5);
+						appendLineToMsg(pos,posB, colorForNotColoredLinks);
 					}
 				}
 			}
