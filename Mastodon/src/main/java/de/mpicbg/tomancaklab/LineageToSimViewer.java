@@ -419,7 +419,7 @@ public class LineageToSimViewer extends DynamicCommand
 	public int deltaBackPoints = 0;
 	public int deltaForwardPoints = 0;
 	public int colorForNotColoredLinks = 0x002D4084;
-	public boolean colorLinksAreFromSpots = false;
+	public boolean colorLinksAreFromSpots = true;
 
 	public boolean reportSpotsRangeStats = true;
 	//
