@@ -10,6 +10,8 @@ import org.mastodon.mamut.model.ModelGraph;
 import org.mastodon.mamut.model.Spot;
 import org.mastodon.mamut.model.Link;
 import org.mastodon.spatial.SpatioTemporalIndex;
+import org.mastodon.collection.RefSet;
+import org.mastodon.collection.ref.RefSetImp;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
@@ -470,11 +472,17 @@ public class LineageToSimViewer extends DynamicCommand
 		float[] minPos = {+100000,+100000,+100000};
 		float[] maxPos = {-100000,-100000,-100000};
 
+		//for links:
+		final Link lRef = modelGraph.edgeRef();              //link reference
+		final Spot sRef = modelGraph.vertices().createRef(); //aux spot reference
+		final Spot sREF = modelGraph.vertices().createRef(); //aux spot reference
+
 		//send nodes from the current timepoint
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
 			//spot color
 			int color = colorWhenNoStyleIsUsed;
+			int linkColor = colorForNotColoredLinks;
 			if ( ! myOwnTSWindow.getColoringModel().noColoring() )
 			{
 				//some color style is used, take color from it
@@ -487,6 +495,8 @@ public class LineageToSimViewer extends DynamicCommand
 					if (alwaysShowAllNodes) color = colorForNotColoredNodes;
 					else continue;
 				}
+
+				if (colorLinksAreFromSpots) linkColor = color;
 			}
 
 			//spot position
@@ -507,6 +517,76 @@ public class LineageToSimViewer extends DynamicCommand
 					maxPos[i] = Math.max(maxPos[i],pos[i]);
 				}
 			}
+
+			RefSet<Spot> todoSpots = new RefSetImp<>(modelGraph.vertices().getRefPool(),10);
+
+			//edges - backward
+			todoSpots.add( spot );
+			while (todoSpots.size() > 0)
+			{
+				//take one from the pool
+				sREF.refTo( todoSpots.iterator().next() );
+				todoSpots.remove( sREF );
+
+				//cache its position & time
+				sREF.localize(pos);
+				int currTime = sREF.getTimepoint();
+
+				for (int n=0; n < sREF.incomingEdges().size(); ++n)
+				{
+					sREF.incomingEdges().get(n, lRef).getSource( sRef );
+					if (sRef.getTimepoint() < currTime && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
+					{
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, linkColor);
+						todoSpots.add( sRef );
+					}
+				}
+				for (int n=0; n < sREF.outgoingEdges().size(); ++n)
+				{
+					sREF.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() < currTime && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
+					{
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, linkColor);
+						todoSpots.add( sRef );
+					}
+				}
+			}
+
+			//edges - forward
+			todoSpots.add( spot );
+			while (todoSpots.size() > 0)
+			{
+				//take one from the pool
+				sREF.refTo( todoSpots.iterator().next() );
+				todoSpots.remove( sREF );
+
+				//cache its position & time
+				sREF.localize(pos);
+				int currTime = sREF.getTimepoint();
+
+				for (int n=0; n < sREF.incomingEdges().size(); ++n)
+				{
+					sREF.incomingEdges().get(n, lRef).getSource( sRef );
+					if (sRef.getTimepoint() > currTime && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
+					{
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, linkColor);
+						todoSpots.add( sRef );
+					}
+				}
+				for (int n=0; n < sREF.outgoingEdges().size(); ++n)
+				{
+					sREF.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() > currTime && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
+					{
+						sRef.localize(posB);
+						appendLineToMsg(pos,posB, linkColor);
+						todoSpots.add( sRef );
+					}
+				}
+			}
 		}
 
 		//DEBUG STATS:
@@ -518,70 +598,10 @@ public class LineageToSimViewer extends DynamicCommand
 			    +minPos[2]+"-"+maxPos[2]);
 		}
 
-
-		// -------------- edges --------------
-
-		final Link lRef = modelGraph.edgeRef();              //link reference
-		final Spot sRef = modelGraph.vertices().createRef(); //aux spot reference
-
-		//send edges backward up to a desired no. of timepoints
-		for (int time = timePoint; time > (timePoint-deltaBackPoints) && time > minTimePoint; --time)
-		{
-			//over all spots in the current time point
-			for ( final Spot spot : spots.getSpatialIndex( time ) )
-			{
-				for (int n=0; n < spot.incomingEdges().size(); ++n)
-				{
-					spot.incomingEdges().get(n, lRef).getSource( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
-					{
-						spot.localize(pos);
-						sRef.localize(posB);
-						appendLineToMsg(pos,posB, colorForNotColoredLinks);
-					}
-				}
-				for (int n=0; n < spot.outgoingEdges().size(); ++n)
-				{
-					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
-					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= (timePoint-deltaBackPoints))
-					{
-						spot.localize(pos);
-						sRef.localize(posB);
-						appendLineToMsg(pos,posB, colorForNotColoredLinks);
-					}
-				}
-			}
-		}
-
-		//send edges forward up to a desired no. of timepoints
-		for (int time = timePoint; time < (timePoint+deltaForwardPoints) && time < maxTimePoint; ++time)
-		{
-			//over all spots in the current time point
-			for ( final Spot spot : spots.getSpatialIndex( time ) )
-			{
-				for (int n=0; n < spot.incomingEdges().size(); ++n)
-				{
-					spot.incomingEdges().get(n, lRef).getSource( sRef );
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
-					{
-						spot.localize(pos);
-						sRef.localize(posB);
-						appendLineToMsg(pos,posB, colorForNotColoredLinks);
-					}
-				}
-				for (int n=0; n < spot.outgoingEdges().size(); ++n)
-				{
-					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
-					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= (timePoint+deltaForwardPoints))
-					{
-						spot.localize(pos);
-						sRef.localize(posB);
-						appendLineToMsg(pos,posB, colorForNotColoredLinks);
-					}
-				}
-			}
-		}
-
 		sendAndClearAllMsgs();
+
+		modelGraph.releaseRef( sREF );
+		modelGraph.releaseRef( sRef );
+		modelGraph.releaseRef( lRef );
 	}
 }
