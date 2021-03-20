@@ -11,8 +11,8 @@
 
 
   <groupId>de.mpicbg.tomancaklab</groupId>
-  <artifactId>Mastodon-Plugins</artifactId>
-  <version>1.0.0-withSimViewer</version>
+  <artifactId>mastodon-simviewer</artifactId>
+  <version>1.0.0</version>
 
 	<organization>
 		<name>MPI-CBG</name>
