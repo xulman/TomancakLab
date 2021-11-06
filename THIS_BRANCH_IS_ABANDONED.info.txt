@@ -1,0 +1,7 @@
+... in favour of mastodon-ext-viewers project
+(likely under mastodon-sc organization on github.com)
+
+The `master` branch continues existing and holding the
+official content of this repo/package.
+
+6th Nov 2021, Vlado U.
