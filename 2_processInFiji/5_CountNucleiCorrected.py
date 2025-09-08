@@ -109,13 +109,16 @@ if RoiD != None:
 			# ------- analysis starts here -------
 			# Count number of nuclei inside the ROI (is inside whenever only single pixel is inside the ROI),
 			# to optimize for speed, we render all valid nuclei and detect which nuclei are touching the ROI
+			#
+			# indeed, re-rendering makes sure only filtered-in (criteria passing) nuclei will be rendered,
+			# and a subset from these will be processed further (as the 'nucleiInROI')
 
 			# assign a unique integer value to every nuclei
 			for i in range(len(nuclei)):
 				nuclei[i].DrawValue = i+1
 
 			# render the nuclei (NB: will be of the right size, ROI coords will be compatible)
-			drawChosenNucleiValue("nuclei vizu'ed", width,height, nuclei)
+			drawChosenNucleiValue("all detected nuclei (own labels)", width,height, nuclei)
 			imp = IJ.getImage()
 			ip = imp.getProcessor()
 
@@ -125,10 +128,16 @@ if RoiD != None:
 				val = ip.getf(point.x,point.y)
 				# add only non-background voxels
 				if val > 0:
-					colorsInROI.add(val)
+					colorsInROI.add(int(val)) # enlist as int, not as the rendered float
 
-			numberOfNuclei = len(colorsInROI)
+			nucleiInROI = []
+			for c in colorsInROI:
+				nucleiInROI.append( nuclei[c-1] )
+
+			numberOfNuclei  = len(colorsInROI)
 			imp.close()
+			print("all detected and passing nuclei: "+str(len(nuclei)))
+			print("        out of these in the ROI: "+str(numberOfNuclei))
 
 			# ------- reporting starts here -------
 			#Extract number from filename if existing (for the sorting afterwards)
