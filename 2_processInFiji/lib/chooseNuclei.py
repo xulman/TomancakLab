@@ -1,4 +1,3 @@
-import math
 from ij import IJ
 from ij import ImagePlus
 from ij.process import ColorProcessor
@@ -6,67 +5,22 @@ from ij.process import FloatProcessor
 
 from Nucleus import Nucleus
 
-from properMeasurements import makeCCWorder
-
-from testPseudoClosing import pseudoClosing
-from testPseudoClosing import pseudoDilation
-
 def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
 
 	# fix pixel values
-	valueOnBG = 0 if bgPixelValue == 2 else 255
-	valueOnFG = 255 - valueOnBG
-
 	for x in range(imp.getWidth()):
 		for y in range(imp.getHeight()):
-			if ip.getPixel(x, y) == bgPixelValue:
-				ip.set(x,y,valueOnBG)
+			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
+				ip.set(x,y,0)
 			else:
-				ip.set(x,y,valueOnFG)
+				ip.set(x,y,255)
 
-	# da frame :)
-	for x in range(imp.getWidth()):
-		ip.set(x,0,0);
-		ip.set(x,1,0);
-	for y in range(imp.getHeight()):
-		ip.set(0,               y,0);
-		ip.set(1,               y,0);
-		ip.set(imp.getWidth()-2,y,0);
-		ip.set(imp.getWidth()-1,y,0);
-	for x in range(imp.getWidth()):
-		ip.set(x,imp.getHeight()-2,0);
-		ip.set(x,imp.getHeight()-1,0);
-
-	#Detect connected components (aka Nuclei)
-	IJ.run("Threshold to label map (2D, 3D)", "threshold=20")
+	#Detect Nuclei
+	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
 	labelMap = IJ.getImage()
-	labelMap.setTitle(prefix+"labelled_image")
-
-	# test and fail iff 'labelMap' contains no components
-	if getCurrentMaxPixelValue(labelMap.getProcessor()) == 1:
-		print "empty input image detected, returning with no components"
-		return []
-
-	pseudoDilation(labelMap)
-	labelMap.updateAndRepaintWindow()
-	pseudoClosing(labelMap)
-	labelMap.updateAndRepaintWindow()
-
-	# restore da frame (pseudoDilation could have damaged it)
 	LPP = labelMap.getProcessor()
-	for x in range(labelMap.getWidth()):
-		LPP.set(x,0,0);
-		LPP.set(x,1,0);
-	for y in range(labelMap.getHeight()):
-		LPP.set(0,               y,0);
-		LPP.set(1,               y,0);
-		LPP.set(labelMap.getWidth()-2,y,0);
-		LPP.set(labelMap.getWidth()-1,y,0);
-	for x in range(labelMap.getWidth()):
-		LPP.set(x,labelMap.getHeight()-2,0);
-		LPP.set(x,labelMap.getHeight()-1,0);
 
 	#Detect all pixels belonging to one Color
 	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
@@ -80,28 +34,38 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 				else:
 					#print "detected (1st run): "+str(MyColor)
 					pixelPerColor[MyColor] = [[x,y]]
+	labelMap.close()
 
 	# a list of detected objects (connected components)
 	components = []
 	for Color in pixelPerColor:
-		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],LPP,realSizes,realCoords))
+		components.append(Nucleus(prefix+str(Color),pixelPerColor[Color],ip,realSizes,realCoords))
 
 	return components
 
 
 def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax):
-	return chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, False)
-
-def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaMax, filterCirc,circularityMin,circularityMax, reDetectNuclei):
 	# obtain "handle" to the pixels, and impose a bgPixelValue'ed frame at the border of the image
 	ip = imp.getProcessor()
 
+	# make sure the image is always visible for this processing
+	imp.show()
+
+	# da frame :)
+	for x in range(imp.getWidth()):
+		ip.set(x,0,bgPixelValue);
+		ip.set(x,1,bgPixelValue);
+	for y in range(imp.getHeight()):
+		ip.set(0,               y,bgPixelValue);
+		ip.set(1,               y,bgPixelValue);
+		ip.set(imp.getWidth()-2,y,bgPixelValue);
+		ip.set(imp.getWidth()-1,y,bgPixelValue);
+	for x in range(imp.getWidth()):
+		ip.set(x,imp.getHeight()-2,bgPixelValue);
+		ip.set(x,imp.getHeight()-1,bgPixelValue);
+
 	# obtain list of all components that are found initially in the image
 	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
-
-	# reference on the image in the currently active window
-	# (which is the 'labelled_image')
-	lip = IJ.getImage().getProcessor();
 
 	# output list of nuclei
 	nuclei = []
@@ -118,19 +82,11 @@ def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,ar
 			for pix in comp.Pixels:
 				ip.setf(pix[0],pix[1], 0)
 		else:
-			#erase from 'labelled_image'
-			for pix in comp.Pixels:
-				lip.setf(pix[0],pix[1], 0)
 			areThereSomeObjectsLeft = True
 
-	# update the 'labelled_image' and the input image (with left-out components)
-	IJ.getImage().updateAndRepaintWindow()
-	imp.updateAndRepaintWindow()
-
-	if areThereSomeObjectsLeft and reDetectNuclei:
-		# bring the input image into forefront... (so that we can work on it)
-		IJ.selectWindow(imp.getTitle())
-
+	areThereSomeObjectsLeft = False
+	if areThereSomeObjectsLeft:
+		# close (and slightly dilate) the original image
 		# NB: the sense of what is BG and FG is switched, hence we start with erosion...
 		IJ.run("Erode")
 		IJ.run("Erode")
@@ -139,8 +95,21 @@ def chooseNucleiNew(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,ar
 		IJ.run("Dilate")
 		IJ.run("Dilate")
 
+		# da frame :)
+		for x in range(imp.getWidth()):
+			ip.set(x,0,bgPixelValue);
+			ip.set(x,1,bgPixelValue);
+		for y in range(imp.getHeight()):
+			ip.set(0,               y,bgPixelValue);
+			ip.set(1,               y,bgPixelValue);
+			ip.set(imp.getWidth()-2,y,bgPixelValue);
+			ip.set(imp.getWidth()-1,y,bgPixelValue);
+		for x in range(imp.getWidth()):
+			ip.set(x,imp.getHeight()-2,bgPixelValue);
+			ip.set(x,imp.getHeight()-1,bgPixelValue);
+
 		# find again the new components
-		components = findComponents(imp,255,realSizes,realCoords,"2_")
+		components = findComponents(imp,bgPixelValue,realSizes,realCoords,"2_")
 
 		# and filter again this new components
 		for comp in components:
@@ -189,139 +158,3 @@ def drawChosenNucleiValue(title, width,height, nuclei):
 	cp = FloatProcessor(width,height, OutputPixelsNew)
 	OutputImg = ImagePlus(title, cp)
 	OutputImg.show()
-
-
-def drawLine(fromXYtuple, toXYtuple, drawValue,  image,width):
-	# find the largest side of a AABB around the requested line
-	dx = int(math.fabs( toXYtuple[0] - fromXYtuple[0] ))
-	dy = int(math.fabs( toXYtuple[1] - fromXYtuple[1] ))
-	iters = max( dx,dy )
-
-	# step:
-	dx = (toXYtuple[0] - fromXYtuple[0]) / float(iters)
-	dy = (toXYtuple[1] - fromXYtuple[1]) / float(iters)
-
-	for i in range(iters+1):
-		x = int(fromXYtuple[0] + float(i)*dx +0.5)
-		y = int(fromXYtuple[1] + float(i)*dy +0.5)
-		image[ y*width +x ] = drawValue
-
-	# since 'iters' may not be sufficient to reach the line endpoint,
-	# we draw the endpoint here explicitly
-	image[ int(toXYtuple[1])*width +int(toXYtuple[0]) ] = drawValue
-
-
-def drawCross(atXYtuple, radius, drawValue,  image,width):
-	radius = radius+1
-	for i in range(1,radius):
-		x = int(atXYtuple[0] +0.5)
-		y = int(atXYtuple[1] -(radius-i) +0.5)
-		image[ y*width +x ] = drawValue
-
-	for i in range(-radius+1,radius):
-		x = int(atXYtuple[0] +i +0.5)
-		y = int(atXYtuple[1] +0.5)
-		image[ y*width +x ] = drawValue
-
-	for i in range(1,radius):
-		x = int(atXYtuple[0] +0.5)
-		y = int(atXYtuple[1] +i +0.5)
-		image[ y*width +x ] = drawValue
-
-
-def draw2DTriangle(A,B,C, drawValue, image,width):
-	A,B,C = makeCCWorder(A,B,C)
-	draw2DCCWTriangle(A,B,C, drawValue, image,width)
-
-
-def draw2DCCWTriangle(A,B,C, drawValue, image,width):
-	# "integered" bounding box around the triangle
-	bbMin = [ int( min(min(A[0],B[0]),C[0]) ), int( min(min(A[1],B[1]),C[1]) ) ]
-	bbMax = [ int( max(max(A[0],B[0]),C[0]) ), int( max(max(A[1],B[1]),C[1]) ) ]
-	#print("BBox:", bbMin[0],bbMax[0],"->",bbMin[1],bbMax[1])
-
-	# CCW oriented edges of the triangle
-	e1 = [ B[0]-A[0], B[1]-A[1] ]
-	e2 = [ C[0]-B[0], C[1]-B[1] ]
-	e3 = [ A[0]-C[0], A[1]-C[1] ]
-
-	# adjust the edges so that the scalar product tests "being inside the triangle"
-	e1 = [ e1[1], -e1[0] ] # CCW rotate 90deg
-	e2 = [ e2[1], -e2[0] ]
-	e3 = [ e3[1], -e3[0] ]
-
-	for y in range(bbMin[1], bbMax[1]+1):
-		for x in range(bbMin[0], bbMax[0]+1):
-			# is [x,y] inside?
-			if ((x-A[0])*e1[0] + (y-A[1])*e1[1] >= 0) and \
-			   ((x-B[0])*e2[0] + (y-B[1])*e2[1] >= 0) and \
-			   ((x-C[0])*e3[0] + (y-C[1])*e3[1] >= 0):
-				image[y*width +x] = drawValue
-
-
-def preprocessMembraneImage(realSizes):
-	# obtain "handles"...
-	imp = IJ.getImage()
-	ip = imp.getProcessor()
-
-	# are there any membrane pixels at all?
-	# (aka: avoid troubles when processing an empty image later)
-	if getCurrentMaxPixelValue(ip) > 1:
-		# remove small components -- which is typically holes inside the nuclei
-		IJ.run("3D OC Options", "nb_of_obj._voxels dots_size=5 font_size=10 white_numbers redirect_to=none")
-		IJ.run("3D Objects Counter", "threshold=2 slice=1 min.=20 max.=9999999 objects")
-		sizeFilteredImg = IJ.getImage()
-
-		# skeletonize (at the input resolution)
-		IJ.setThreshold(0,0)
-		IJ.run("Convert to Mask")
-		IJ.run("Grays")
-		IJ.run("Options...", "black=0")
-		IJ.run("Skeletonize")
-		#IJ.run("Dialog Prompt Demo")
-
-		# upscale to the desired resolution, now skeleton gets fatter
-		IJ.run("Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledSkeleton.tif");
-		upScaledSkeleton = IJ.getImage()
-
-		# close the previous image
-		sizeFilteredImg.changes = False
-		sizeFilteredImg.close()
-
-		# thin it again (by skeletonizing again)
-		IJ.run("Options...", "black=0")
-		IJ.run("Skeletonize")
-		# must dilate because "Threshold to label map (2D, 3D)" (which is used
-		# in findComponents()) uses 8-neigborhood and would leak through the skeleton
-		IJ.run("Dilate")
-		# BTW: now the 'upScaledSkeleton' is up-scaled and ready for finding components
-
-		# also up-scale the input image
-		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledOrigImg.tif");
-
-		# and replace all 'old 2' (upscaled input membranes) with 'new 2' (upscaled skeleton)
-		imp = IJ.getImage()
-		ip = imp.getProcessor()
-		sp = upScaledSkeleton.getProcessor()
-
-		for x in range(imp.getWidth()):
-			for y in range(imp.getHeight()):
-				if ip.getPixel(x,y) == 2:
-					ip.set(x,y,0)
-				if sp.getPixel(x,y) == 0:
-					ip.set(x,y,2)
-
-		# close also the solo-skeleton image
-		upScaledSkeleton.changes = False
-		upScaledSkeleton.close()
-	else:
-		print "empty input image detected, no membrane preprocessing"
-		IJ.run(imp,"Scale...", "x=- y=- width="+str(len(realSizes))+" height="+str(len(realSizes[0]))+" interpolation=None average create title=upScaledOrigImg.tif");
-
-
-def getCurrentMaxPixelValue(ip):
-	maxVal = 0
-	for i in ip.getPixels():
-		maxVal = maxVal if maxVal >= i else i
-
-	return maxVal
