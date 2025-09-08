@@ -171,7 +171,7 @@ if RoiD != None:
 					number = int(number)
 					numbers.append(number)
 
-			results.append((filename,numberOfNuclei))
+			results.append((filename,numberOfNuclei,nucleiInROI))
 			densities.append(float(numberOfNuclei)/float(RoiSize))
 
 			print('Successfully processed "'+ filename+'"')
@@ -207,6 +207,16 @@ if RoiD != None:
 	#IJ.saveAs("Results", InputFolder+"/nucleiList.txt")
 	#IJ.saveAs("Results", InputFolder+"/nucleiList.csv")
 	table.save(InputFolder+"/nucleiList.csv")
+
+	realSizesTable = ResultsTable()
+	for i in range(len(results)):
+		for n in range(len(results[i][2])):
+			realSizesTable.incrementCounter()
+			realSizesTable.addValue('Image', results[i][0])
+			realSizesTable.addValue('Nucleus Label', n+1)
+			realSizesTable.addValue('Nucleus Real Area', results[i][2][n].Area)
+	realSizesTable.show('Real sizes')
+	realSizesTable.save(InputFolder+"/nucleiRealSizes.csv")
 
 	print
 	print('All files processed.')
