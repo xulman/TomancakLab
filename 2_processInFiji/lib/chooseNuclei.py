@@ -30,7 +30,7 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	for x in range(labelMap.width):
 		for y in range(labelMap.height):
 			MyColor = int(ip.getf(x,y))
-			if MyColor > 11:
+			if MyColor > 0:
 				if MyColor in pixelPerColor:
 					pixelPerColor[MyColor].append([x,y])
 				else:
