@@ -141,8 +141,8 @@ def drawChosenNuclei(width,height, nuclei):
 	OutputImg.show()
 
 
-def drawChosenNucleiValue(width,height, nuclei):
-	drawChosenNucleiValue("Visualized Nuclei",width,height, nuclei)
+#def drawChosenNucleiValue(width,height, nuclei):
+#	drawChosenNucleiValue("Visualized Nuclei",width,height, nuclei)
 
 def drawChosenNucleiValue(title, width,height, nuclei):
 	# will place Nucleus.DrawValue into the image

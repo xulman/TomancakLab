@@ -115,7 +115,7 @@ if RoiD != None:
 				nuclei[i].DrawValue = i+1
 
 			# render the nuclei (NB: will be of the right size, ROI coords will be compatible)
-			drawChosenNucleiValue(width,height, nuclei)
+			drawChosenNucleiValue("nuclei vizu'ed", width,height, nuclei)
 			imp = IJ.getImage()
 			ip = imp.getProcessor()
 
