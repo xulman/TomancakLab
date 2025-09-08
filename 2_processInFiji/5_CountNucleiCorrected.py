@@ -145,12 +145,16 @@ if RoiD != None:
 			for i in range(len(nucleiInROI)):
 				nucleiInROI[i].DrawValue = i+1
 			drawChosenNucleiValue("all detected nuclei LABELS in the ROI", width,height, nucleiInROI)
+			IJ.saveAsTiff( IJ.getImage(), (InputFolder+filename)[:-4]+"_usedNucleiLabels.tif" )
+			IJ.run("Close")
 
 			# assign to every nuclei its real size as a draw value
 			# happens on the full range (for all passing nuclei), but these are the same objects...
 			for i in range(len(nuclei)):
 				nuclei[i].DrawValue = nuclei[i].Area
 			drawChosenNucleiValue("all detected nuclei REAL AREAS in the ROI", width,height, nucleiInROI)
+			IJ.saveAsTiff( IJ.getImage(), (InputFolder+filename)[:-4]+"_usedNucleiSizes.tif" )
+			IJ.run("Close")
 
 
 			# ------- reporting starts here -------
