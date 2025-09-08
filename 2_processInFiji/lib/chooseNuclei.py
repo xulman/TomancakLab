@@ -9,32 +9,34 @@ def findComponents(imp,bgPixelValue,realSizes,realCoords,prefix):
 	# obtain "handle" to the pixels
 	ip = imp.getProcessor()
 
-	# fix pixel values
-	for x in range(imp.getWidth()):
-		for y in range(imp.getHeight()):
-			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
-				ip.set(x,y,0)
-			else:
-				ip.set(x,y,255)
+#	# fix pixel values
+#	for x in range(imp.getWidth()):
+#		for y in range(imp.getHeight()):
+#			if (ip.getPixel(x, y) == bgPixelValue or ip.getPixel(x, y) == 0):
+#				ip.set(x,y,0)
+#			else:
+#				ip.set(x,y,255)
+#
+#	#Detect Nuclei
+#	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
+#	labelMap = IJ.getImage()
+#	LPP = labelMap.getProcessor()
 
-	#Detect Nuclei
-	IJ.run(imp, "HMaxima local maximum detection (2D, 3D)", "minimum=1 threshold=0")
-	labelMap = IJ.getImage()
-	LPP = labelMap.getProcessor()
+	labelMap = ip
 
 	#Detect all pixels belonging to one Color
 	# (builds a list of lists of pixel coords -- pixelPerColor[label][0] = first coordinate
 	pixelPerColor = {}
 	for x in range(labelMap.width):
 		for y in range(labelMap.height):
-			MyColor = int(LPP.getf(x,y))
-			if MyColor != 0:
+			MyColor = int(ip.getf(x,y))
+			if MyColor > 11:
 				if MyColor in pixelPerColor:
 					pixelPerColor[MyColor].append([x,y])
 				else:
 					#print "detected (1st run): "+str(MyColor)
 					pixelPerColor[MyColor] = [[x,y]]
-	labelMap.close()
+#	labelMap.close()
 
 	# a list of detected objects (connected components)
 	components = []
@@ -51,18 +53,18 @@ def chooseNuclei(imp,bgPixelValue,realSizes,realCoords, filterArea,areaMin,areaM
 	# make sure the image is always visible for this processing
 	imp.show()
 
-	# da frame :)
-	for x in range(imp.getWidth()):
-		ip.set(x,0,bgPixelValue);
-		ip.set(x,1,bgPixelValue);
-	for y in range(imp.getHeight()):
-		ip.set(0,               y,bgPixelValue);
-		ip.set(1,               y,bgPixelValue);
-		ip.set(imp.getWidth()-2,y,bgPixelValue);
-		ip.set(imp.getWidth()-1,y,bgPixelValue);
-	for x in range(imp.getWidth()):
-		ip.set(x,imp.getHeight()-2,bgPixelValue);
-		ip.set(x,imp.getHeight()-1,bgPixelValue);
+#	# da frame :)
+#	for x in range(imp.getWidth()):
+#		ip.set(x,0,bgPixelValue);
+#		ip.set(x,1,bgPixelValue);
+#	for y in range(imp.getHeight()):
+#		ip.set(0,               y,bgPixelValue);
+#		ip.set(1,               y,bgPixelValue);
+#		ip.set(imp.getWidth()-2,y,bgPixelValue);
+#		ip.set(imp.getWidth()-1,y,bgPixelValue);
+#	for x in range(imp.getWidth()):
+#		ip.set(x,imp.getHeight()-2,bgPixelValue);
+#		ip.set(x,imp.getHeight()-1,bgPixelValue);
 
 	# obtain list of all components that are found initially in the image
 	components = findComponents(imp,bgPixelValue,realSizes,realCoords,"1_")
