@@ -139,6 +139,18 @@ if RoiD != None:
 			print("all detected and passing nuclei: "+str(len(nuclei)))
 			print("        out of these in the ROI: "+str(numberOfNuclei))
 
+			# relabel so that array offset/index matches with the label
+			# (so that nucleiInROI[x] is of label x+1, just like above/before for all passing/filtered-in nuclei)
+			for i in range(len(nucleiInROI)):
+				nucleiInROI[i].DrawValue = i+1
+			drawChosenNucleiValue("all detected nuclei LABELS in the ROI", width,height, nucleiInROI)
+
+			# assign to every nuclei its real size as a draw value
+			for i in range(len(nuclei)):
+				nuclei[i].DrawValue = nuclei[i].Area
+			drawChosenNucleiValue("all detected nuclei REAL AREAS in the ROI", width,height, nucleiInROI)
+
+
 			# ------- reporting starts here -------
 			#Extract number from filename if existing (for the sorting afterwards)
 			number = ''
