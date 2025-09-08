@@ -202,10 +202,11 @@ if RoiD != None:
 			table.addValue('Number of Nuclei',results[i][1])
 			table.addValue('Density', densities[i])
 
-	table.show('Results')
-	IJ.saveAs("Results", InputFolder+"/nucleiList.xls")
-	IJ.saveAs("Results", InputFolder+"/nucleiList.txt")
-	IJ.saveAs("Results", InputFolder+"/nucleiList.csv")
+	table.show('Discovered counts')
+	#IJ.saveAs("Results", InputFolder+"/nucleiList.xls")
+	#IJ.saveAs("Results", InputFolder+"/nucleiList.txt")
+	#IJ.saveAs("Results", InputFolder+"/nucleiList.csv")
+	table.save(InputFolder+"/nucleiList.csv")
 
 	print
 	print('All files processed.')
