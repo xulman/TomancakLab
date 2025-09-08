@@ -82,7 +82,7 @@ def followTrack(root,ID,parent=0,gen=0):
 	print("new track #"+str(ID)+" @ time="+str(time)+" from spot="+str(root))
 
 	# initiate the CTCTRACKS record
-	CTCTRACKS[ID]=[ID,time,-10,parent,gen]
+	CTCTRACKS[ID]=[ID,time,-10,parent]
 
 	if debugTrees:
 		#prefix tree writing
@@ -126,26 +126,6 @@ def writeCTCTRACKS(fileName):
 	for t in CTCTRACKS:
 		T = CTCTRACKS[t]
 		fo.write(str(T[0])+" "+str(T[1])+" "+str(T[2])+" "+str(T[3])+"\n")
-
-	fo.close()
-
-
-def writeGenTRACKS(fileName):
-	fo = open(fileName,"w")
-
-	for t in CTCTRACKS:
-		T = CTCTRACKS[t]
-		fo.write(str(T[0])+" "+str(T[4])+" "+str(T[4])+" "+str(T[3])+"\n")
-
-	fo.close()
-
-
-def writeGenTRACKS(fileName,duration):
-	fo = open(fileName,"w")
-
-	for t in CTCTRACKS:
-		T = CTCTRACKS[t]
-		fo.write(str(T[0])+" "+str(T[4]*duration)+" "+str(T[4]*duration +duration)+" "+str(T[3])+"\n")
 
 	fo.close()
 
@@ -216,8 +196,8 @@ def readInputXMLfile(filePath):
 			eT = int(parseOutNumber(line,idx))
 
 			# debug
-			# print(str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3]))
-			# print(str(eS)+" -> "+str(eT))
+			# print str(SPOTS[eS][3])+" -> "+str(SPOTS[eT][3])
+			# print str(eS)+" -> "+str(eT)
 
 			# note that SOURCE_ID and TARGET_ID can actually contain
 			# both an edge from SOURCE to TARGET and also from TARGET to SOURCE

@@ -1,16 +1,13 @@
 from __future__ import print_function
 #@File (label="Input Mamuth XML file:") xmlFile
-#@String (label="Draw only up to these time points (e.g. 1-5,7,9):") drawAtTheseTimepoints
-#@File (style="directory", label="Choose output folder and ADD TIFF filename to it:", value="/tmp/tp.tif") tifFile
+#@String (label="Draw only up to these time points:") drawAtTheseTimepoints
+#@File (label="Output trajectories TIFF file:") tifFile
 #@int (label="Original image X size:") xSize
 #@int (label="Original image Y size:") ySize
 #@int (label="Original image Z size:") zSize
 #@boolean (label="Squash everything to 2D:") shouldDoTwoD
-#@int (label="Downsampling factor:", value="1") xDown
-#@int (label="Thickness of trajectories in pixels:", min="1") trackThickness
-
-#@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TRACKSEP=", value="1000") TRACKSEP
-#@int (label="Pixel values are trackID*TRACKSEP + timePoint*TIMESEP where TIMESEP=",  value="1")    TIMESEP
+#@int (label="Downsampling factor:") xDown
+#@int (label="Thickness of trajectories in pixels:") trackThickness
 
 from ij import IJ
 import ij.ImagePlus
@@ -28,7 +25,6 @@ ThisFile    = os.path.dirname(inspect.getfile(inspect.currentframe()))
 sys.path.append(ScriptsRoot+os.sep+ThisFile+os.sep+"lib")
 sys.path.append(ThisFile+os.sep+"lib")
 from MamutXMLreader import *
-from tools import *
 
 
 # adjust the size of the output image immediately
@@ -41,22 +37,80 @@ if shouldDoTwoD:
 	zSize = 1
 
 # ------------------------------------------------------------------------------------
-# labels are of this form: trackID*TRACKSEP + (timePoint-TSHIFT)*TIMESEP
-# requirements:
-#   trackID should start from 0 or 1 and should not be too many of them
-#   the time interval must not be longer than TRACKSEP
+def parseOutTimes(tps):
+	out = []
 
-# dividing by TRACKSEP (e.g. via Fiji->Image->Math) one can strip away
-# time information/coordinate and only the trackIDs remain; by taking modulo
-# of TRACKSEP one can strip away the trackIDs and only time information remain;
-# thresholding by 1, one can strip away all tracking information (track ID & time coordinate)
+	while len(tps) > 0:
+
+		# find the next ',' or '-'
+		ic = tps.find(',')
+		ih = tps.find('-')
+
+		#print "found , @ " + str(ic) + " and - @ " + str(ih)
+
+		# -1 means 'not found'
+		if ic == -1:
+			# processing for sure the last term
+			ic = len(tps)
+
+		# make sure if hyphen is not found to go to the "comma branch"
+		if ih == -1:
+			ih = ic+1
+
+
+		# take the one that is closer to the beginning
+		if ic < ih:
+			# we're parsing out N,
+			N = int(tps[0:ic])
+
+			out.append(N)
+			tps = tps[ic+1:]
+
+			print("parsed out: single timepoint "+str(N))
+		else:
+			# we're parsing out N-M,
+			N = int(tps[0:ih])
+			M = int(tps[ih+1:ic])
+
+			for i in range(N,M+1):
+				out.append(i)
+
+			tps = tps[ic+1:]
+
+			print("parsed out: timepoint interval "+str(N)+" to "+str(M))
+
+	out.sort()
+
+	# ww = out.unique()
+	ww = []
+	for i in range(len(out)):
+		if i == 0 or out[i-1] != out[i]:
+			ww.append(out[i])
+
+	return ww
+# ------------------------------------------------------------------------------------
+
+
+# labels are of this form: trackID*SEPARATOR + (timePoint-TSHIFT)
+# requirements:
+#   trackID has to start from 0 or 1, should not be too many of them
+#   the time interval must not be longer than SEPARATOR
+
+# dividing by SEPARATOR (e.g. via Image->Math) one can strip away time information/coordinate;
+# thresholding by 1, one can strip away all tracking information (track ID, time coordinate)
+SEPARATOR = 0
 
 # ------------------------------------------------------------------------------------
 # draws a line made of many (overlapping) balls, of width R from
 # spotA to spotB that belongs to track ID, into the image, but
 # don't draw no further than given stopTime; the TSHIFT is a helping
-# parameter connected to the TIMESEP
+# parameter connected to the SEPARATOR
 def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
+	# the coordinates will get divided by Down, and R as well;
+	# in this function, however, we want R to represent already the final
+	# width (radius), so we multiply by Down (to get divided later...)
+	R = R * Down
+
 	xC = spotA[0]
 	yC = spotA[1]
 	zC = spotA[2]
@@ -69,7 +123,7 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		zD = 0
 
 	# the final color becomes Col+deltaTime
-	Col = ID*TRACKSEP + (spotA[3] -TSHIFT)*TIMESEP
+	Col = ID*SEPARATOR +spotA[3] -TSHIFT
 
 	# the line length (LL)
 	LL = math.sqrt((xC-xD)*(xC-xD) + (yC-yD)*(yC-yD) + (zC-zD)*(zC-zD))
@@ -79,9 +133,7 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 
 	# if "line is decimated into a point", just draw one spot
 	if SN == 0:
-		drawBall(xC,yC,zC,R*Down,Col,img,Down)
-		# NB: the coordinates and _radius_ will get divided by Down,
-		#     but we want R to represent already the final radius
+		drawBall(xC,yC,zC,R,Col,img)
 		return
 
 	# (real) length of one segment
@@ -108,7 +160,45 @@ def drawLine(spotA,spotB,stopTime, R,ID,TSHIFT,img):
 		y = yC  +  float(i)*ySV
 		z = zC  +  float(i)*zSV
 
-		drawBall(x,y,z,R*Down,Col+int(i*deltaT*TIMESEP),img,Down)
+		drawBall(x,y,z,R,Col+int(i*deltaT),img)
+
+
+# ------------------------------------------------------------------------------------
+# draws ball of radius R with center xC,yC,zC with colour Col into the image
+def drawBall(xC,yC,zC,R,Col,img):
+	xC = int(math.ceil(xC / Down))
+	yC = int(math.ceil(yC / Down))
+	zC = int(math.ceil(zC / Down))
+	R  = int(math.ceil(R  / Down))
+
+	if shouldDoTwoD:
+		zC = 0
+
+	#print("SPOT: "+str(xC)+","+str(yC)+","+str(zC)+" r="+str(R)+" @ ID="+str(Col))
+
+	x_min = xC-R if xC > R       else 0
+	x_max = xC+R if xC+R < xSize else xSize-1
+
+	y_min = yC-R if yC > R       else 0
+	y_max = yC+R if yC+R < ySize else ySize-1
+
+	z_min = zC-R if zC > R       else 0
+	z_max = zC+R if zC+R < zSize else zSize-1
+
+	R2 = R*R
+
+	# sweep the bounds and draw the ball
+	for x in range(x_min,x_max+1):
+		dx = (x-xC) * (x-xC)
+
+		for y in range(y_min,y_max+1):
+			dxy = dx + ((y-yC) * (y-yC))
+
+			for z in range(z_min,z_max+1):
+				dz = (z-zC) * (z-zC)
+
+				if dxy+dz <= R2:
+					img[z][x + y*xSize] = Col
 
 
 # ------------------------------------------------------------------------------------
@@ -136,24 +226,14 @@ def main(timePointList):
 	for sp in outShortProcessors:
 		stack.addSlice(sp)
 
-	# create the wrapping data structure...
-	simpleImg = SimpleImg(img,xSize,ySize,zSize)
-
-	# now: 'img' is an array of arrays that essentially shadow the pixel data
-	# from the 'stack' (ImageStack that has been built around 'img'),
-	# and 'simpleImg' only wraps (holds it) around the 'img'
-
 	outImp = ij.ImagePlus("trajectories", stack)
 	outImp.show()
 	#NB: the img is essentially a "python overlay" over the IJ1 image stack's pixel data
 
 	print("detected interval of time points ["+str(minT)+","+str(maxT)+"]")
-	print("drawing scheme: TRACKSEP="+str(TRACKSEP)+", TIMESEP="+str(TIMESEP))
 
 
 	for maxDrawTime in timePointList:
-		simpleImg.setPixelsToZero()
-
 		# scan all tracks
 		for tID in TRACKS:
 			TRACK = TRACKS[tID]
@@ -169,7 +249,7 @@ def main(timePointList):
 					spotA = SPOTS[TRACK[tA]]
 					if spotA[3] < maxDrawTime:
 						spotB = SPOTS[TRACK[tB]]
-						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, simpleImg)
+						drawLine(spotA,spotB,maxDrawTime, trackThickness, tID,minT, img)
 
 				tA = tB
 
@@ -186,7 +266,6 @@ def main(timePointList):
 try:
 	tpList = parseOutTimes(drawAtTheseTimepoints);
 	main(tpList)
-	print("done.")
 except ValueError as ve:
 	print(ve)
 
