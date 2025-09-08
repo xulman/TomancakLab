@@ -130,14 +130,15 @@ if RoiD != None:
 				if val > 0:
 					colorsInROI.add(int(val)) # enlist as int, not as the rendered float
 
-			nucleiInROI = []
-			for c in colorsInROI:
-				nucleiInROI.append( nuclei[c-1] )
-
-			numberOfNuclei  = len(colorsInROI)
+			numberOfNuclei = len(colorsInROI)
 			imp.close()
 			print("all detected and passing nuclei: "+str(len(nuclei)))
 			print("        out of these in the ROI: "+str(numberOfNuclei))
+
+			# selected nuclei inside the ROI (whose label was seen inside the ROI)
+			nucleiInROI = []
+			for c in colorsInROI:
+				nucleiInROI.append( nuclei[c-1] )
 
 			# relabel so that array offset/index matches with the label
 			# (so that nucleiInROI[x] is of label x+1, just like above/before for all passing/filtered-in nuclei)
@@ -146,6 +147,7 @@ if RoiD != None:
 			drawChosenNucleiValue("all detected nuclei LABELS in the ROI", width,height, nucleiInROI)
 
 			# assign to every nuclei its real size as a draw value
+			# happens on the full range (for all passing nuclei), but these are the same objects...
 			for i in range(len(nuclei)):
 				nuclei[i].DrawValue = nuclei[i].Area
 			drawChosenNucleiValue("all detected nuclei REAL AREAS in the ROI", width,height, nucleiInROI)
